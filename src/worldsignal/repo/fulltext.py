@@ -21,7 +21,8 @@ PAUSE_AFTER = {  # error -> how long the site is left alone
     "http_429": timedelta(hours=6),
     "paywall": timedelta(hours=3),
 }
-FINAL_ERRORS = {"bot_check", "paywall", "not_article", "http_401", "http_403", "http_404", "http_410", "http_429"}
+FINAL_ERRORS = {"bot_check", "paywall", "not_article", "aggregator_link", "http_401", "http_403", "http_404", "http_410",
+                "http_429"}
 
 
 def _priority(reason: str, sort_at: str) -> float:

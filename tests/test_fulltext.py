@@ -229,6 +229,22 @@ def test_worker_uses_the_browser_for_paid_sites_and_the_chosen_profile(world, tm
     assert FakeSession.instances[0].closed and FakeSession.instances[1].profile == tmp_path / "main"
 
 
+def test_old_google_news_links_are_not_opened(world, tmp_path):
+    repo, ids = world["repo"], world["ids"]
+    with world["db"].transaction() as c:
+        c.execute("UPDATE articles SET url = 'https://news.google.com/rss/articles/CBMiabc?oc=5' WHERE id = ?", (ids["a2"],))
+    repo.request(ids["a2"])
+    opened: list[str] = []
+
+    async def http(url):
+        opened.append(url)
+        return Page(200, article_page(), url)
+
+    run(make_ft_worker(world, tmp_path, http=http).step())
+    ft = repo.get(ids["a2"])
+    assert opened == [] and ft["status"] == "failed" and ft["error_code"] == "aggregator_link"
+
+
 def test_worker_waits_while_the_profile_is_open_elsewhere(world, tmp_path):
     repo, ids = world["repo"], world["ids"]
     world["sources"].update_source(source_of(world, "a1"), {"fulltext_mode": "browser"})

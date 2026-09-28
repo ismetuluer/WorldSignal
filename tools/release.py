@@ -33,6 +33,7 @@ REQUIRED = {
     "sürüm bilgisi": f"{TOP}/version.txt",
     "arayüz dosyaları": f"{TOP}/_internal/worldsignal/ui/index.html",
     "kaynak kataloğu": f"{TOP}/_internal/worldsignal/catalog/sources.json",
+    "ülke verisi": f"{TOP}/_internal/worldsignal/catalog/countries.json",
 }
 
 

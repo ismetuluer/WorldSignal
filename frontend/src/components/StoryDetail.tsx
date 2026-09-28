@@ -15,6 +15,7 @@ import { storyWhy, type AiLang } from "../lib/aiText";
 import { useToast } from "./Toasts";
 import { MemberFullText } from "./FullText";
 import { openableUrl } from "../lib/links";
+import { ExclusiveBadge } from "./Badges";
 
 const COMPONENTS = ["sources", "freshness", "turkey", "interest"] as const;
 
@@ -364,6 +365,7 @@ function StoryBody({
               <div className="article-meta">
                 <span className="article-source">{m.source_name}</span>
                 <time dateTime={m.sort_at} title={i18n.dateTime(m.sort_at)}>{i18n.relative(m.sort_at)}</time>
+                {m.exclusive ? <ExclusiveBadge source={m.source_name} /> : null}
                 {m.language !== i18n.lang ? <span className="badge">{i18n.languageName(m.language)}</span> : null}
                 {m.paywalled ? (
                   <span className="badge badge-warning">

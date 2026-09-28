@@ -505,11 +505,79 @@
    "region": "global",
    "language": "en",
    "paywalled": false,
-   "note": "Reuters herkese açık RSS yayınını kapattı. Başlıklar Bing Haberler'in herkese açık RSS aramasından (site:reuters.com) gelir; bağlantılar doğrudan Reuters sayfasına gider.",
+   "note": "Reuters herkese açık RSS yayınını kapattı; robots.txt dosyası da otomatik okuyuculara siteyi kapatıyor. Başlıklar Bing Haberler'in herkese açık RSS aramasından gelir; bağlantılar doğrudan yayıncının sayfasına gider. Bing tek aramada yalnızca en yeni 12 haberi verdiği için Reuters bölüm bölüm aranır (18 arama).",
    "feeds": [
     {
      "url": "https://www.bing.com/news/search?q=site%3Areuters.com&format=rss&qft=sortbydate%3d%221%22",
      "label": "Bing Haberler: site:reuters.com"
+    },
+    {
+     "url": "https://www.bing.com/news/search?q=site%3Areuters.com%2Fworld&format=rss&qft=sortbydate%3d%221%22",
+     "label": "Bing Haberler: site:reuters.com/world"
+    },
+    {
+     "url": "https://www.bing.com/news/search?q=site%3Areuters.com%2Fbusiness&format=rss&qft=sortbydate%3d%221%22",
+     "label": "Bing Haberler: site:reuters.com/business"
+    },
+    {
+     "url": "https://www.bing.com/news/search?q=site%3Areuters.com%2Fmarkets&format=rss&qft=sortbydate%3d%221%22",
+     "label": "Bing Haberler: site:reuters.com/markets"
+    },
+    {
+     "url": "https://www.bing.com/news/search?q=site%3Areuters.com%2Ftechnology&format=rss&qft=sortbydate%3d%221%22",
+     "label": "Bing Haberler: site:reuters.com/technology"
+    },
+    {
+     "url": "https://www.bing.com/news/search?q=site%3Areuters.com%2Flegal&format=rss&qft=sortbydate%3d%221%22",
+     "label": "Bing Haberler: site:reuters.com/legal"
+    },
+    {
+     "url": "https://www.bing.com/news/search?q=site%3Areuters.com%2Fsustainability&format=rss&qft=sortbydate%3d%221%22",
+     "label": "Bing Haberler: site:reuters.com/sustainability"
+    },
+    {
+     "url": "https://www.bing.com/news/search?q=site%3Areuters.com%2Fsports&format=rss&qft=sortbydate%3d%221%22",
+     "label": "Bing Haberler: site:reuters.com/sports"
+    },
+    {
+     "url": "https://www.bing.com/news/search?q=site%3Areuters.com%2Fscience&format=rss&qft=sortbydate%3d%221%22",
+     "label": "Bing Haberler: site:reuters.com/science"
+    },
+    {
+     "url": "https://www.bing.com/news/search?q=site%3Areuters.com%2Fworld%2Fmiddle-east&format=rss&qft=sortbydate%3d%221%22",
+     "label": "Bing Haberler: site:reuters.com/world/middle-east"
+    },
+    {
+     "url": "https://www.bing.com/news/search?q=site%3Areuters.com%2Fworld%2Feurope&format=rss&qft=sortbydate%3d%221%22",
+     "label": "Bing Haberler: site:reuters.com/world/europe"
+    },
+    {
+     "url": "https://www.bing.com/news/search?q=site%3Areuters.com%2Fworld%2Fasia-pacific&format=rss&qft=sortbydate%3d%221%22",
+     "label": "Bing Haberler: site:reuters.com/world/asia-pacific"
+    },
+    {
+     "url": "https://www.bing.com/news/search?q=site%3Areuters.com%2Fworld%2Fus&format=rss&qft=sortbydate%3d%221%22",
+     "label": "Bing Haberler: site:reuters.com/world/us"
+    },
+    {
+     "url": "https://www.bing.com/news/search?q=site%3Areuters.com%2Fworld%2Fafrica&format=rss&qft=sortbydate%3d%221%22",
+     "label": "Bing Haberler: site:reuters.com/world/africa"
+    },
+    {
+     "url": "https://www.bing.com/news/search?q=site%3Areuters.com%2Fworld%2Famericas&format=rss&qft=sortbydate%3d%221%22",
+     "label": "Bing Haberler: site:reuters.com/world/americas"
+    },
+    {
+     "url": "https://www.bing.com/news/search?q=site%3Areuters.com%2Fworld%2Fchina&format=rss&qft=sortbydate%3d%221%22",
+     "label": "Bing Haberler: site:reuters.com/world/china"
+    },
+    {
+     "url": "https://www.bing.com/news/search?q=site%3Areuters.com%2Fbusiness%2Fenergy&format=rss&qft=sortbydate%3d%221%22",
+     "label": "Bing Haberler: site:reuters.com/business/energy"
+    },
+    {
+     "url": "https://www.bing.com/news/search?q=site%3Areuters.com%2Fbusiness%2Ffinance&format=rss&qft=sortbydate%3d%221%22",
+     "label": "Bing Haberler: site:reuters.com/business/finance"
     }
    ]
   },
@@ -522,11 +590,71 @@
    "region": "global",
    "language": "en",
    "paywalled": false,
-   "note": "AP'nin resmî RSS yayını yok. Başlıklar Bing Haberler'in herkese açık RSS aramasından (site:apnews.com) gelir; bağlantılar doğrudan Associated Press sayfasına gider.",
+   "note": "AP'nin resmî RSS yayını yok; site otomatik okuyuculara robot doğrulaması gösteriyor. Başlıklar Bing Haberler'in herkese açık RSS aramasından gelir; bağlantılar doğrudan yayıncının sayfasına gider. Bing tek aramada yalnızca en yeni 12 haberi verdiği için AP bölüm bölüm aranır (16 arama).",
    "feeds": [
     {
      "url": "https://www.bing.com/news/search?q=site%3Aapnews.com&format=rss&qft=sortbydate%3d%221%22",
      "label": "Bing Haberler: site:apnews.com"
+    },
+    {
+     "url": "https://www.bing.com/news/search?q=site%3Aapnews.com%20world&format=rss&qft=sortbydate%3d%221%22",
+     "label": "Bing Haberler: site:apnews.com world"
+    },
+    {
+     "url": "https://www.bing.com/news/search?q=site%3Aapnews.com%20politics&format=rss&qft=sortbydate%3d%221%22",
+     "label": "Bing Haberler: site:apnews.com politics"
+    },
+    {
+     "url": "https://www.bing.com/news/search?q=site%3Aapnews.com%20business&format=rss&qft=sortbydate%3d%221%22",
+     "label": "Bing Haberler: site:apnews.com business"
+    },
+    {
+     "url": "https://www.bing.com/news/search?q=site%3Aapnews.com%20sports&format=rss&qft=sortbydate%3d%221%22",
+     "label": "Bing Haberler: site:apnews.com sports"
+    },
+    {
+     "url": "https://www.bing.com/news/search?q=site%3Aapnews.com%20technology&format=rss&qft=sortbydate%3d%221%22",
+     "label": "Bing Haberler: site:apnews.com technology"
+    },
+    {
+     "url": "https://www.bing.com/news/search?q=site%3Aapnews.com%20science&format=rss&qft=sortbydate%3d%221%22",
+     "label": "Bing Haberler: site:apnews.com science"
+    },
+    {
+     "url": "https://www.bing.com/news/search?q=site%3Aapnews.com%20health&format=rss&qft=sortbydate%3d%221%22",
+     "label": "Bing Haberler: site:apnews.com health"
+    },
+    {
+     "url": "https://www.bing.com/news/search?q=site%3Aapnews.com%20entertainment&format=rss&qft=sortbydate%3d%221%22",
+     "label": "Bing Haberler: site:apnews.com entertainment"
+    },
+    {
+     "url": "https://www.bing.com/news/search?q=site%3Aapnews.com%20climate&format=rss&qft=sortbydate%3d%221%22",
+     "label": "Bing Haberler: site:apnews.com climate"
+    },
+    {
+     "url": "https://www.bing.com/news/search?q=site%3Aapnews.com%20Middle%20East&format=rss&qft=sortbydate%3d%221%22",
+     "label": "Bing Haberler: site:apnews.com Middle East"
+    },
+    {
+     "url": "https://www.bing.com/news/search?q=site%3Aapnews.com%20Ukraine&format=rss&qft=sortbydate%3d%221%22",
+     "label": "Bing Haberler: site:apnews.com Ukraine"
+    },
+    {
+     "url": "https://www.bing.com/news/search?q=site%3Aapnews.com%20Europe&format=rss&qft=sortbydate%3d%221%22",
+     "label": "Bing Haberler: site:apnews.com Europe"
+    },
+    {
+     "url": "https://www.bing.com/news/search?q=site%3Aapnews.com%20Asia&format=rss&qft=sortbydate%3d%221%22",
+     "label": "Bing Haberler: site:apnews.com Asia"
+    },
+    {
+     "url": "https://www.bing.com/news/search?q=site%3Aapnews.com%20Africa&format=rss&qft=sortbydate%3d%221%22",
+     "label": "Bing Haberler: site:apnews.com Africa"
+    },
+    {
+     "url": "https://www.bing.com/news/search?q=site%3Aapnews.com%20Latin%20America&format=rss&qft=sortbydate%3d%221%22",
+     "label": "Bing Haberler: site:apnews.com Latin America"
     }
    ]
   },
@@ -539,11 +667,15 @@
    "region": "global",
    "language": "en",
    "paywalled": false,
-   "note": "AFP'nin herkese açık haber RSS'i yok. Başlıklar Bing Haberler'in herkese açık RSS aramasından (site:afp.com) gelir; bağlantılar doğrudan AFP sayfasına gider.",
+   "note": "AFP'nin herkese açık haber RSS'i yok; ajans haberleri müşteri sitelerinde yayımlanır. İkinci arama, AFP kaynaklı haberleri yayımlayan sitelerden gelir (bağlantı o siteye gider).",
    "feeds": [
     {
      "url": "https://www.bing.com/news/search?q=site%3Aafp.com&format=rss&qft=sortbydate%3d%221%22",
      "label": "Bing Haberler: site:afp.com"
+    },
+    {
+     "url": "https://www.bing.com/news/search?q=AFP&format=rss&qft=sortbydate%3d%221%22",
+     "label": "Bing Haberler: AFP (müşteri sitelerindeki AFP haberleri)"
     }
    ]
   },

@@ -17,6 +17,12 @@ DEFAULTS: dict[str, Any] = {
     "update.auto_download": True,
     # The feed's filters as the user last left them (remembered between sessions).
     "feed.filters": {"regions": [], "groups": [], "langs": [], "sources": [], "categories": [], "turkey": False},
+    # "My country" (country.py): "" = Windows' region. related/topics None = the country's defaults
+    # (for Türkiye: the Turkic states and the six topics; elsewhere none). keywords: extra words that name it.
+    "home.country": "",
+    "home.related": None,
+    "home.topics": None,
+    "home.keywords": [],
     "ai.enabled": True,
     "ai.url": "http://localhost:11434",
     "ai.model": "gemma4-26b-a4b:latest",  # chosen by the project owner on 2026-09-27 after tools/benchmark_models.py

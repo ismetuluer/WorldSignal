@@ -105,10 +105,13 @@ tests/                   Arka uç + uçtan uca testler
   - Düzeltmeden sonra hâlâ gelecekteyse ya da tarih yoksa: ilk görülme zamanı.
 - `articles_fts`: arama indeksi.
 - `settings`: anahtar/JSON değer.
-- `article_ai` (şema v2): haber başına YZ kuyruğu + sonucu (Türkçe başlık/özet, kategori, Türkiye bağlantısı, uyarılar).
+- `article_ai` (şema v2): haber başına YZ kuyruğu + sonucu (Türkçe başlık/özet, kategori, bulunan ülkeler ve konular,
+  `mentions_turkey`, uyarılar). Eski `turkey_relevance/turkey_links` sütunları 0.9'dan beri okunmaz.
+- `articles.home_relevance / home_links` (şema v8): haberin **kullanıcının ülkesiyle** bağlantısı (aşağıda "Ülkem").
 - `article_ai_fts`: Türkçe YZ metinleri için arama indeksi.
 - `article_embeddings` (şema v3): haber başına gömme vektörü (float32 blob) ve hangi modelle üretildiği.
-- `stories`: hikâye (olay). Skor, skor parçaları + gerekçe etiketleri (JSON), Türkiye bağlantısı, kategori, temsilci
+- `stories`: hikâye (olay). Skor, skor parçaları + gerekçe etiketleri (JSON), ülke bağlantısı (sütun adı tarihsel
+  olarak `turkey_relevance`), kategori, temsilci
   haber, hikâye YZ özeti ve kuyruk durumu.
 - `story_articles`: haber → hikâye (her haber tek hikâyede). `assigned_by` = `auto` | `user`; kullanıcının yerleştirdiği
   haberi program bir daha taşımaz.
@@ -141,12 +144,21 @@ articles ──(son 24 sa, otomatik)──► article_ai [pending] ──► AiW
 - `ai/ollama.py`: istemci. Hatalar koda çevrilir: `unreachable`, `model_missing`, `timeout`, `bad_response`, `http_<n>`.
 - `ai/enrich.py`: istem (İngilizce talimat, Türkçe çıktı), JSON şeması, `PROMPT_VERSION`, doğrulama.
   - Kategoriler sabit listeden (`CATEGORIES`); arayüz çevirir.
-  - **Türkiye bağlantısını model değil kod belirler.** Model yalnızca metinde olanı çıkarır: ülkeler (ISO kodu), Türkiye
-    geçiyor mu, açıkça geçen konular (Karadeniz, Doğu Akdeniz, NATO, AB genişlemesi, göç, Türk devletleri).
-    `turkey_relevance()` sabit kurallarla karar verir: Türkiye geçiyorsa (ya da çok dilli anahtar kelime yedeği eşleşirse)
-    `direct`; sınır komşusu/Kıbrıs, Türk devleti ya da listedeki konu varsa `indirect`; yoksa `none`. Gerekçe kodları
-    (`neighbour:GR`, `topic:nato`) saklanır ve arayüzde cümleye çevrilir; skor kara kutu değildir.
+  - **Ülke bağlantısını model değil kod belirler** ("Ülkem", `country.py`). Model yalnızca metinde olanı çıkarır:
+    ülkeler (ISO kodu), Türkiye geçiyor mu, açıkça geçen konular (Karadeniz, Doğu Akdeniz, NATO, AB genişlemesi, göç,
+    Türk devletleri). `HomeProfile.relevance()` sabit kurallarla karar verir: kullanıcının ülkesi listede ya da adı
+    metinde geçiyorsa (Türkiye için eski çok dilli kelime listesi ve modelin "Türkiye geçiyor" cevabı) `direct`;
+    listede kara komşusu, kullanıcının seçtiği yakın ülke ya da seçtiği konu varsa `indirect`; yoksa `none`. Gerekçe
+    kodları (`home_mentioned`, `neighbour:GR`, `related:KZ`, `topic:nato`) saklanır ve arayüzde cümleye çevrilir.
     Neden: karşılaştırmada modeller Afganistan, İsrail ve Rusya'yı "komşu" saydı; istemde olumsuz liste vermek durumu kötüleştirdi.
+  - **Ülkem** (0.9): ülke ayarı `home.country` ("" = Windows'un bölgesi, `GetUserDefaultGeoName`), `home.related`,
+    `home.topics` (null = ülkenin varsayılanı; Türkiye için Türk devletleri ve altı konu, diğerleri için boş),
+    `home.keywords`. Ülke adları (18 dil, Wikidata CC0) ve kara komşuları (GeoNames CC BY 4.0; Türkiye'ye Kıbrıs eklenir)
+    `catalog/countries.json`'dadır; `tools/make_countries.py` üretir. Değerlendirme YZ sonucu kaydedilirken yapılır
+    (`repo/articles.py: rate_home`) ve `articles.home_relevance`'a yazılır. Ayar değişince `home_sync.py` YZ'nin
+    okuduğu tüm haberleri saklı bulgulardan yeniden değerlendirir (model yeniden çalışmaz) ve son 7 günün hikâyelerini
+    yeniden puanlar; ne zaman gerektiğini `home.applied` anahtarı (`RULES_VERSION` dahil) belirler. Arayüz metinleri
+    `{home}` yer tutucusuyla ülke adını alır.
   - **Uydurma denetimi** (`fidelity_issues`): çıktıdaki her sayı kaynak metinde de olmalı. Olmayan sayı çıktıyı reddetmez
     ama işaretler; arayüz kartta uyarı gösterir. (Model karşılaştırmasında qwen3:14b'nin uydurduğu tarihleri yakaladı.)
     Bilinen sınır: kaynakta yazıyla geçen sayı ("altı") çıktıda rakamla yazılırsa yanlış alarm verir.
@@ -192,10 +204,13 @@ articles ─► StoryWorker: gömme (Ollama /api/embed, işlemcide) ─► artic
 - **Skor** (`stories/score.py`) = 100 × dört bileşenin ağırlıklı ortalaması (ağırlıklar ayarlardan):
   1. *Bağımsız kaynak*: aynı medya grubunun kaynakları tek sayılır; güvenilirlikle ağırlıklı, logaritmik (12 kaynak = tam).
   2. *Tazelik ve yayılma*: son haberin yaşı (yarı ömür 8 sa) + son 3 saatteki bağımsız kaynak sayısı.
-  3. *Türkiye*: doğrudan 1, dolaylı 0,5 (Faz 2'nin kural tabanlı kararı).
+  3. *Ülke* (tarihsel adıyla `turkey`): doğrudan 1, dolaylı 0,5 (kural tabanlı karar, bkz. "Ülkem").
   4. *İlgi profili*: anahtar kelime (Türkçe harf duyarsız), kategori, bölge eşleşmeleri.
   Her bileşen bir gerekçe etiketi üretir ("5 kaynak", "3 saatte 4 kaynak", "Türkiye bağlantısı", "İlgi alanınız: enerji");
   ayrıntı penceresi bileşen × ağırlık dökümünü gösterir. Skorlar her 5 dakikada ve ayar değişince yeniden hesaplanır.
+- **Rozetler** (`flags.py`, 0.9): *Özel* = başlığın başında yayıncının "Exclusive/Özel/Эксклюзив…" işareti;
+  *Son dakika* = 60 dakikada en az 3 bağımsız sahipten haber ya da başlıkta "Son dakika/Breaking" işareti ve haber
+  2 saatten yeni. İstek anında hesaplanır, saklanmaz.
 - **Hikâye özeti** (`ai/story.py`): en az 2 bağımsız kaynaklı hikâyeler için, her kaynaktan bir haber (en çok 8) modele
   verilir; Türkçe başlık, 3–5 cümle özet, kategori ve "neden toplantıda" cümlesi üretilir. Aynı uydurma denetimi uygulanır.
   Hikâye işleri haber işlerinin önündedir (skor sırasıyla); hikâye %50 ve en az 2 haber büyüyünce özet yenilenir.
@@ -287,7 +302,12 @@ araması kullanılır (`https://www.bing.com/news/search?q=site:<alan>&format=rs
 adresini saklar, böylece bağlantı, yinelenen haber ayıklama ve tam metin doğrudan yayıncıda çalışır. Google News
 (0.7.2'ye kadar) terk edildi: Google News makale bağlantıları yayıncı adresini içermez, çözmek Google'ın iç uç noktasını
 ister ve şirket ağından bu istek robot doğrulamasına düşüyor (bağlantılar tarayıcıda "geçersiz adres" hatası veriyordu).
-Önceden toplanmış Google bağlantıları arayüzde başlık aramasına çevrilerek açılır (`frontend/src/lib/links.ts`).
+Önceden toplanmış Google bağlantıları arayüzde başlık aramasına çevrilerek açılır (`frontend/src/lib/links.ts`);
+tam metin onları hiç açmaz (`aggregator_link`).
+
+Bing'in `pubDate`'i ABD Pasifik yerel saatidir ama "GMT" diye yazılır; `bing_time_to_utc` yaz/kış saatiyle (+7/+8 sa)
+düzeltir. Bing tek aramada ~12 haber verdiği için büyük ajanslar (Reuters 18, AP 16 arama) bölüm bölüm aranır;
+aynı haber birkaç aramada çıkarsa yayıncı adresine göre tek kayıt olur.
 
 ## Güvenlik
 

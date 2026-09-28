@@ -102,7 +102,7 @@ class HistoryRepository:
         rows = self.db.conn.execute(
             """SELECT sa.story_id, a.id, a.sort_at, a.title, s.region, s.reliability,
                       COALESCE(NULLIF(s.owner, ''), s.slug) AS owner_key,
-                      x.title_tr, x.category, x.turkey_relevance
+                      x.title_tr, x.category, a.home_relevance AS turkey_relevance
                FROM story_articles sa
                JOIN articles a ON a.id = sa.article_id
                JOIN sources s ON s.id = a.source_id AND s.enabled = 1
@@ -167,7 +167,7 @@ class HistoryRepository:
         first Turkish-language source, latest report."""
         rows = self.db.conn.execute(
             """SELECT a.id, a.sort_at, s.name AS source_name, COALESCE(NULLIF(s.owner, ''), s.slug) AS owner_key,
-                      COALESCE(a.language, s.language) AS language, x.turkey_relevance
+                      COALESCE(a.language, s.language) AS language, a.home_relevance AS turkey_relevance
                FROM story_articles sa
                JOIN articles a ON a.id = sa.article_id
                JOIN sources s ON s.id = a.source_id AND s.enabled = 1

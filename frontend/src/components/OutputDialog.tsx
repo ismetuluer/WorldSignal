@@ -80,7 +80,7 @@ export function OutputDialog({
   const frame = useRef<HTMLIFrameElement>(null);
   const [busy, setBusy] = useState(false);
   const [lang, setLang] = useState<AiLang>(i18n.lang);
-  const outI18n = useMemo(() => (lang === i18n.lang ? i18n : createI18n(lang)), [lang, i18n]);
+  const outI18n = useMemo(() => (lang === i18n.lang ? i18n : createI18n(lang, undefined, i18n.home)), [lang, i18n]);
   const doc = useMemo(() => (build && !error && !empty ? build(lang, outI18n) : null), [build, error, empty, lang, outI18n]);
 
   const page = doc ? printDocument(doc, outI18n.t("output.generated", { date: outI18n.dateTime(new Date().toISOString()) }), lang) : "";

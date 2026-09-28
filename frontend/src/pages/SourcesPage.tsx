@@ -64,19 +64,22 @@ export function SourcesPage() {
     }
   };
 
-  const { verifiedGroups, unverified, counts, visibleCount } = useMemo(() => {
+  const { verifiedGroups, paid, unverified, counts, visibleCount } = useMemo(() => {
     const all = sources ?? [];
     const q = search.trim().toLocaleLowerCase(i18n.locale);
     const matches = (s: Source) =>
       (!q || s.name.toLocaleLowerCase(i18n.locale).includes(q) || (s.owner ?? "").toLocaleLowerCase(i18n.locale).includes(q)) &&
       (view === "all" || (view === "errors" ? s.status === "error" || s.status === "partial" : !s.enabled));
     const visible = all.filter(matches);
+    const working = (s: Source) => s.verified || s.origin === "user";
+    // Subscription sources get their own section: their full text needs the user's own subscription.
     const groups = GROUP_ORDER.map((g) => ({
       group: g,
-      items: visible.filter((s) => s.catalog_group === g && (s.verified || s.origin === "user")),
+      items: visible.filter((s) => s.catalog_group === g && working(s) && !s.paywalled),
     })).filter((g) => g.items.length > 0);
     return {
       verifiedGroups: groups,
+      paid: visible.filter((s) => working(s) && s.paywalled),
       unverified: visible.filter((s) => !s.verified && s.origin === "catalog"),
       visibleCount: visible.length,
       counts: {
@@ -127,6 +130,19 @@ export function SourcesPage() {
             </div>
           </section>
         ))}
+        {paid.length > 0 ? (
+          <section className="section">
+            <h2 className="section-title">
+              <Icon name="lock" size={15} /> {t("sources.paid.title")} <span className="count">{paid.length}</span>
+            </h2>
+            <p className="section-note">{t("sources.paid.body")}</p>
+            <div className="group-card">
+              {paid.map((s) => (
+                <SourceRow key={s.id} source={s} onToggle={toggle} onOpen={() => setEditingId(s.id)} showGroup />
+              ))}
+            </div>
+          </section>
+        ) : null}
         {unverified.length > 0 ? (
           <section className="section">
             <h2 className="section-title">
@@ -208,10 +224,13 @@ function SourceRow({
   source: s,
   onToggle,
   onOpen,
+  showGroup = false,
 }: {
   source: Source;
   onToggle: (s: Source, enabled: boolean) => void;
   onOpen: () => void;
+  /** In the subscription section the source's usual group is named in the second line. */
+  showGroup?: boolean;
 }) {
   const i18n = useI18n();
   const { t } = i18n;
@@ -243,6 +262,7 @@ function SourceRow({
           {s.origin === "user" ? <span className="badge badge-accent">{t("sources.badge.user")}</span> : null}
         </div>
         <div className="source-sub">
+          {showGroup ? `${t(`group.${s.catalog_group}`)} · ` : ""}
           {t(`region.${s.region}`)} · {i18n.languageName(s.language)}
           {s.owner && s.owner !== s.name ? ` · ${s.owner}` : ""}
           {failing ? (

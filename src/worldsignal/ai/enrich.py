@@ -1,4 +1,4 @@
-"""Article enrichment: Turkish and English title and summary, category and Türkiye relevance.
+"""Article enrichment: Turkish and English title and summary, category, and the facts for "my country" relevance.
 
 The model only sees the text we have (title + feed summary; full text from
 phase 5 on). The prompt forbids adding facts, and :func:`fidelity_issues`
@@ -6,12 +6,12 @@ checks the output mechanically: every number the model writes must appear in
 the source. Output that fails the check is stored but flagged, and the UI
 always keeps the original one click away.
 
-Türkiye relevance is *not* judged by the model. Language models proved
+Relevance to the user's country is *not* judged by the model. Language models proved
 unreliable at geography (benchmark 2026-09-27: Afghanistan, Israel and Russia
 were called "neighbours of Türkiye", and listing non-neighbours in the prompt
 made it worse). The model therefore only extracts facts that are in the text —
 which countries appear, whether Türkiye is mentioned, which topics appear — and
-:func:`turkey_relevance` decides with fixed, explainable rules.
+country.py decides with fixed, explainable rules (repo/articles.py stores the result).
 """
 
 from __future__ import annotations
@@ -19,6 +19,8 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass, field
 from typing import Any
+
+from ..country import TOPICS
 
 PROMPT_VERSION = 5  # 5: English next to Turkish
 
@@ -39,12 +41,6 @@ CATEGORIES = (
     "other",
 )
 
-# Topics that make a story relevant to Türkiye even when it is not mentioned.
-TURKEY_TOPICS = ("black_sea", "eastern_mediterranean", "nato", "eu_enlargement", "migration", "turkic_states")
-
-# ISO 3166-1 alpha-2 codes.
-NEIGHBOURS = frozenset({"GR", "BG", "GE", "AM", "AZ", "IR", "IQ", "SY", "CY"})
-TURKIC_STATES = frozenset({"AZ", "KZ", "UZ", "KG", "TM"})
 
 MAX_SOURCE_CHARS = 6000
 MAX_COUNTRIES = 8
@@ -59,7 +55,7 @@ SCHEMA: dict[str, Any] = {
         "category": {"type": "string", "enum": list(CATEGORIES)},
         "countries": {"type": "array", "items": {"type": "string"}},
         "mentions_turkey": {"type": "boolean"},
-        "topics": {"type": "array", "items": {"type": "string", "enum": list(TURKEY_TOPICS)}},
+        "topics": {"type": "array", "items": {"type": "string", "enum": list(TOPICS)}},
     },
     "required": ["title_tr", "summary_tr", "title_en", "summary_en", "category", "countries", "mentions_turkey", "topics"],
 }
@@ -83,12 +79,6 @@ Fields:
 - countries: ISO 3166-1 alpha-2 codes (e.g. "US", "IR", "GR") of the countries the text is about or explicitly names. Cities and regions count for their country. Empty list if none.
 - mentions_turkey: true only if the text explicitly mentions Türkiye/Turkey, Turkish people, a Turkish city, company, institution, team or official.
 - topics: those of black_sea, eastern_mediterranean, nato, eu_enlargement, migration, turkic_states that the text explicitly talks about. Usually an empty list."""
-
-# Mechanical backstop: explicit Türkiye words in the source (several languages).
-_TURKEY_WORDS = re.compile(
-    r"Türkiye|Turkiye|\bTurkey\b|\bTurkish|\bTürk|\bAnkara\b|Erdoğan|Erdogan|İstanbul|\bIstanbul|"
-    r"Türkei|Turquie|Turquía|Turchia|Турци|Турецк|تركيا|التركي",
-)
 
 
 @dataclass
@@ -118,8 +108,8 @@ class EnrichResult:
     summary_en: str
     category: str
     countries: list[str]
-    turkey_relevance: str  # none | indirect | direct
-    turkey_links: list[str]  # why: "turkey_mentioned", "neighbour:GR", "turkic:KZ", "topic:nato"
+    topics: list[str]  # of country.TOPICS that the text talks about
+    mentions_turkey: bool
     issues: list[str] = field(default_factory=list)
 
 
@@ -135,18 +125,6 @@ def fidelity_issues(source: str, output: str) -> list[str]:
     """Mechanical fabrication check: numbers in the output must exist in the source."""
     invented = sorted(_numbers(output) - _numbers(source))
     return [f"number_not_in_source:{n}" for n in invented]
-
-
-def turkey_relevance(
-    countries: list[str], mentions_turkey: bool, topics: list[str], source_text: str
-) -> tuple[str, list[str]]:
-    """Decide Türkiye relevance with fixed rules. Returns (level, links explaining why)."""
-    if mentions_turkey or "TR" in countries or _TURKEY_WORDS.search(source_text):
-        return "direct", ["turkey_mentioned"]
-    links = [f"neighbour:{c}" for c in countries if c in NEIGHBOURS]
-    links += [f"turkic:{c}" for c in countries if c in TURKIC_STATES and c not in NEIGHBOURS]
-    links += [f"topic:{t}" for t in topics]
-    return ("indirect", links) if links else ("none", [])
 
 
 def validate(data: dict[str, Any], inp: EnrichInput) -> EnrichResult:
@@ -166,10 +144,10 @@ def validate(data: dict[str, Any], inp: EnrichInput) -> EnrichResult:
         if re.fullmatch(r"[A-Z]{2}", code) and code not in countries:
             countries.append(code)
     countries = countries[:MAX_COUNTRIES]
-    topics = [t for t in dict.fromkeys(data.get("topics") or []) if t in TURKEY_TOPICS]
-    level, links = turkey_relevance(countries, bool(data.get("mentions_turkey")), topics, inp.source_text)
+    topics = [t for t in dict.fromkeys(data.get("topics") or []) if t in TOPICS]
     issues = fidelity_issues(inp.source_text, f"{title}\n{summary}\n{title_en}\n{summary_en}")
-    return EnrichResult(title, summary, title_en, summary_en, category, countries, level, links, issues)
+    return EnrichResult(title, summary, title_en, summary_en, category, countries, topics,
+                        bool(data.get("mentions_turkey")), issues)
 
 
 def clean_title(value: Any) -> str:

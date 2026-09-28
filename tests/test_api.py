@@ -20,6 +20,7 @@ from worldsignal.notify import Notifier
 from worldsignal.repo.notebook import NotebookRepository
 from worldsignal.repo.stories import StoryRepository
 from worldsignal.stories.worker import StoryWorker
+from worldsignal.home_sync import HomeSync
 
 TOKEN = "test-token"
 H = {"X-WorldSignal-Token": TOKEN}
@@ -27,7 +28,7 @@ TODAY = "2026-09-27"
 
 
 @pytest.fixture
-def ctx(db, data_paths, settings, sources, articles, tmp_path):
+def ctx(db, data_paths, settings, sources, articles, home, tmp_path):
     sources.seed_from_catalog(MINI_CATALOG)
     ui = tmp_path / "ui"
     (ui / "assets").mkdir(parents=True)
@@ -43,6 +44,7 @@ def ctx(db, data_paths, settings, sources, articles, tmp_path):
         fulltext_worker=FullTextWorker(FullTextRepository(db), settings, data_paths.browser_profile),
         history=HistoryRepository(db, StoryRepository(db)), maintenance=Maintenance(HistoryRepository(db, StoryRepository(db)), settings),
         backups=BackupManager(db, data_paths.backups, data_paths.root), notifier=Notifier(db, settings),
+        home=home, home_sync=HomeSync(home, articles, StoryRepository(db), settings),
         ui_dir=ui, run_collector=False,
     )
 
@@ -91,6 +93,37 @@ def test_settings_patch_validates(client):
     assert client.patch("/api/settings", headers=H, json={"ui.theme": "pink"}).status_code == 422
     assert client.patch("/api/settings", headers=H, json={"nope": 1}).status_code == 422
     assert client.patch("/api/settings", headers=H, json={"feed.window_hours": 0}).status_code == 422
+
+
+def test_home_country_can_be_changed(client, ctx):
+    add_articles(ctx)
+    related = lambda: client.get("/api/articles?turkey=true", headers=H).json()["total"]  # noqa: E731
+    assert related() == 0  # rated only once the AI has read them
+    with ctx.db.transaction() as c:  # the AI found Iraq (a neighbour of Türkiye) in every report
+        c.execute("""INSERT INTO article_ai (article_id, status, countries, queued_at)
+                     SELECT id, 'done', '["IQ"]', first_seen_at FROM articles""")
+    assert ctx.home_sync.sync() == 5 and related() == 5
+    info = client.get("/api/home", headers=H).json()
+    assert info["code"] == "TR" and "GR" in info["neighbours"] and "KZ" in info["related"] and "nato" in info["topics"]
+    assert "ZA" in info["countries"] and not info["syncing"]
+    meta = client.get("/api/meta", headers=H).json()
+    assert meta["home_country"] == "TR" and meta["system_country"] == "TR"
+
+    for bad in ({"home.country": "XX"}, {"home.country": "tr"}, {"home.country": "ZA", "home.related": ["QQ"]},
+                {"home.topics": ["weather"]}, {"home.keywords": ["x"]}):
+        assert client.patch("/api/settings", headers=H, json=bad).status_code == 422, bad
+    client.patch("/api/settings", headers=H, json={"home.topics": ["nato"], "home.keywords": [" Kapadokya ", "Kapadokya"]})
+    assert client.get("/api/settings", headers=H).json()["home.keywords"] == ["Kapadokya"]
+    # A new country starts from its own defaults: no related countries, no topics.
+    client.patch("/api/settings", headers=H, json={"home.country": "ZA"})
+    info = client.get("/api/home", headers=H).json()
+    assert info["code"] == "ZA" and info["related"] == [] and info["topics"] == [] and "MZ" in info["neighbours"]
+    assert client.get("/api/meta", headers=H).json()["home_country"] == "ZA"
+    assert ctx.home_sync.sync() == 5 and related() == 0
+    assert ctx.home_sync.sync() is None  # nothing changed since
+    client.patch("/api/settings", headers=H, json={"home.country": ""})  # back to Windows' region
+    assert ctx.home_sync.sync() == 5 and related() == 5
+    assert "home.applied" not in client.get("/api/settings", headers=H).json()
 
 
 def test_feed_filters_are_remembered(client):

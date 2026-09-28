@@ -43,7 +43,7 @@ const SETTINGS: Settings = {
   "ui.language": "tr",
   "ui.theme": "light",
   "feed.window_hours": 24,
-  "feed.view": "stories", "feed.filters": { regions: [], groups: [], langs: [], sources: [], categories: [], turkey: false }, "update.auto_check": true, "update.auto_download": true,
+  "feed.view": "stories", "feed.filters": { regions: [], groups: [], langs: [], sources: [], categories: [], turkey: false }, "update.auto_check": true, "update.auto_download": true, "home.country": "", "home.related": null, "home.topics": null, "home.keywords": [],
   "ai.enabled": true,
   "ai.url": "http://localhost:11434",
   "ai.model": "qwen3:14b",
@@ -56,7 +56,7 @@ const META: Meta = {
   groups: ["turkey", "western"],
   languages: ["en", "tr"],
   categories: ["politics", "diplomacy"],
-  ui_languages: ["tr", "en"],
+  ui_languages: ["tr", "en"], home_country: "TR", system_country: "TR",
   data_dir: "C:\\data",
   version: "0.3.0",
 };
@@ -77,7 +77,7 @@ const NOW = new Date().toISOString();
 function member(id: number, source: string, extra: Partial<StoryMember> = {}): StoryMember {
   return {
     id, url: `https://x.example/${id}`, title: `Report ${id}`, summary: "", sort_at: NOW, language: "en",
-    source_id: id, source_name: source, paywalled: false, region: "europe", similarity: 0.8, assigned_by: "auto",
+    source_id: id, source_name: source, paywalled: false, exclusive: false, region: "europe", similarity: 0.8, assigned_by: "auto",
     title_tr: null, summary_tr: null, title_en: null, summary_en: null, ...NO_FULLTEXT, ...extra,
   };
 }
@@ -85,7 +85,7 @@ function member(id: number, source: string, extra: Partial<StoryMember> = {}): S
 function story(id: number, extra: Partial<Story> = {}): Story {
   const members = extra.members ?? [member(id * 10, "Reuters"), member(id * 10 + 1, "BBC")];
   return {
-    id, first_seen_at: NOW, last_seen_at: NOW, article_count: members.length, source_count: members.length, score: 64.2,
+    id, breaking: false, exclusive: false, first_seen_at: NOW, last_seen_at: NOW, article_count: members.length, source_count: members.length, score: 64.2,
     score_parts: {
       components: { sources: 0.5, freshness: 0.9, turkey: 1, interest: 0 },
       tags: [{ kind: "sources", count: 5 }, { kind: "age", hours: 0.5 }, { kind: "spreading", count: 4, hours: 3 }, { kind: "turkey", level: "direct" }],
@@ -132,6 +132,18 @@ describe("Stories view", () => {
     expect(screen.getByText("Report 20")).toBeInTheDocument();
     expect(mocked.stories).toHaveBeenCalledWith(expect.objectContaining({ hours: 24, sort: "score", min_sources: 1, offset: 0 }));
     expect(mocked.articles).not.toHaveBeenCalled();
+  });
+
+  it("marks breaking and exclusive stories", async () => {
+    mocked.stories.mockResolvedValue({ items: [story(1, { breaking: true, exclusive: true }), story(2)], total: 2 });
+    wrap(<FeedPage />);
+    const first = (await screen.findByText("Hikâye 1")).closest("li")!;
+    const breaking = within(first).getByText("Son dakika");
+    expect(breaking.querySelector(".signal-pulse")).not.toBeNull();  // the pulsing signal
+    expect(within(first).getByText("Özel haber")).toBeInTheDocument();
+    const second = screen.getByText("Hikâye 2").closest("li")!;
+    expect(within(second).queryByText("Son dakika")).not.toBeInTheDocument();
+    expect(within(second).queryByText("Özel haber")).not.toBeInTheDocument();
   });
 
   it("switches between stories and articles and remembers the choice", async () => {

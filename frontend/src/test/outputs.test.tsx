@@ -20,7 +20,7 @@ function item(id: number, extra: Partial<MeetingItem> = {}): MeetingItem {
 function member(id: number, source: string, extra: Partial<StoryMember> = {}): StoryMember {
   return {
     id, url: `https://x.example/${id}`, title: `Original ${id}`, summary: "Publisher's own text", sort_at: `2026-09-27T0${id}:00:00Z`,
-    language: "en", source_id: id, source_name: source, paywalled: true, region: "europe", similarity: 1, assigned_by: "auto",
+    language: "en", source_id: id, source_name: source, paywalled: true, exclusive: false, region: "europe", similarity: 1, assigned_by: "auto",
     title_tr: null, summary_tr: null, title_en: null, summary_en: null, ...NO_FULLTEXT, ...extra,
   };
 }
@@ -28,7 +28,7 @@ function member(id: number, source: string, extra: Partial<StoryMember> = {}): S
 function story(id: number, extra: Partial<Story> = {}): Story {
   const members = [member(1, "Reuters"), member(2, "FT")];
   return {
-    id, first_seen_at: DAY, last_seen_at: DAY, article_count: 2, source_count: 2, score: 50, score_parts: {},
+    id, breaking: false, exclusive: false, first_seen_at: DAY, last_seen_at: DAY, article_count: 2, source_count: 2, score: 50, score_parts: {},
     turkey_relevance: "none", category: "economy", representative_id: 1, representative: members[0]!, ai_status: "done",
     ai_title_tr: `Hikâye ${id}`, ai_summary_tr: "Türkçe özet.", ai_why: "Neden önemli.", ai_title_en: null, ai_summary_en: null, ai_why_en: null, ai_issues: [], ai_article_count: 2,
     ai_model: "m", sources: ["FT", "Reuters"], members, timeline: [], ...extra,

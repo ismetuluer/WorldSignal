@@ -159,5 +159,25 @@ def test_bing_news_links_point_to_the_publisher():
                                                 "https://www.reuters.com/world/second/"]
     assert feed.entries[0].dedupe_key == "https://www.reuters.com/business/china-us-2026-09-28/"
     assert feed.entries[0].summary == "China said on Monday..."
+    assert feed.entries[0].published_at == datetime(2026, 9, 28, 7, 45, tzinfo=UTC)  # Bing sends Pacific time
     # A wrapper without a usable address stays as it is (still a valid http link).
     assert feed.entries[2].url.startswith("http://www.bing.com/news/apiclick.aspx")
+
+
+def test_bing_times_are_read_as_us_pacific_time():
+    from worldsignal.collector.rss import bing_time_to_utc
+
+    now = datetime(2027, 6, 1, tzinfo=UTC)
+    # Summer (PDT, UTC-7): measured against the publishers' own feeds on 2026-09-28.
+    assert bing_time_to_utc(datetime(2026, 9, 28, 0, 45, tzinfo=UTC), now) == datetime(2026, 9, 28, 7, 45, tzinfo=UTC)
+    # Winter (PST, UTC-8).
+    assert bing_time_to_utc(datetime(2026, 12, 1, 10, 0, tzinfo=UTC), now) == datetime(2026, 12, 1, 18, 0, tzinfo=UTC)
+    # Daylight saving time starts on the second Sunday of March (2026-03-08) and ends on the first Sunday of
+    # November (2026-11-01), at 02:00 local time.
+    assert bing_time_to_utc(datetime(2026, 3, 8, 1, 59, tzinfo=UTC), now).hour == 9
+    assert bing_time_to_utc(datetime(2026, 3, 8, 3, 0, tzinfo=UTC), now).hour == 10
+    assert bing_time_to_utc(datetime(2026, 11, 1, 1, 0, tzinfo=UTC), now).hour == 8
+    assert bing_time_to_utc(datetime(2026, 11, 1, 3, 0, tzinfo=UTC), now).hour == 11
+    # If Bing ever sends real UTC, the correction would put the article in the future: keep the value.
+    fresh = datetime(2027, 6, 1, 0, 0, tzinfo=UTC)
+    assert bing_time_to_utc(fresh, now) == fresh

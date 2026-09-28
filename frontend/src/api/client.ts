@@ -14,6 +14,7 @@ import type {
   FeedTestResult,
   MeetingItem,
   MeetingList,
+  HomeInfo,
   Meta,
   NotebookDay,
   NotebookMonth,
@@ -112,6 +113,7 @@ function query(params: Record<string, unknown>): string {
 export const api = {
   status: () => request<Status>("GET", "/status"),
   meta: () => request<Meta>("GET", "/meta"),
+  home: () => request<HomeInfo>("GET", "/home"),
   settings: () => request<Settings>("GET", "/settings"),
   updateSettings: (patch: Partial<Settings>) => request<Settings>("PATCH", "/settings", patch),
 

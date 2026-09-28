@@ -11,6 +11,7 @@ import { BackgroundSettings } from "./BackgroundSettings";
 import { BackupSettings } from "./BackupSettings";
 import { UpdateSettings } from "../components/Update";
 import { HistorySettings } from "./HistorySettings";
+import { HomeSettings } from "./HomeSettings";
 import { StorySettings } from "./StorySettings";
 
 const LANGUAGE_LABELS: Record<UiLanguage, string> = { tr: "Türkçe", en: "English" };
@@ -66,6 +67,7 @@ export function SettingsPage() {
         </div>
       </section>
 
+      <HomeSettings />
       <AiSettings />
       <StorySettings />
       <FullTextSettings />

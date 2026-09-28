@@ -15,6 +15,7 @@ from collections.abc import Callable
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlsplit
 
 from ..db import utc_now_iso
 from ..repo.fulltext import FullTextJob, FullTextRepository
@@ -24,6 +25,9 @@ from .extract import extract
 from .fetch import BrowserInfo, BrowserSession, FetchFailed, Page, browser_for, fetch_http, profile_in_use
 
 log = logging.getLogger(__name__)
+
+# Links that lead to a news aggregator's redirect page, not to the publisher: never opened.
+AGGREGATOR_HOSTS = {"news.google.com"}
 
 IDLE_SECONDS = 30
 PAUSED_SECONDS = 60
@@ -187,6 +191,9 @@ class FullTextWorker:
         return random.uniform(low, high)
 
     async def _fetch(self, job: FullTextJob, prefs: dict[str, Any], browser: BrowserInfo | None) -> Page:
+        if urlsplit(job.url).hostname in AGGREGATOR_HOSTS:
+            # Reports collected before 0.7.3 link to Google News, which shows a robot check instead of the report.
+            raise FetchFailed("aggregator_link", job.url)
         if job.mode == "http":
             return await self.http_fetch(job.url)
         assert browser is not None

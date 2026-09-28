@@ -13,6 +13,7 @@ from typing import Any
 import numpy as np
 
 from ..db import Database, utc_now_iso
+from ..flags import is_breaking, is_exclusive
 from ..stories.score import Interest, Member, score_story
 from ..textnorm import build_fts_query
 
@@ -192,7 +193,7 @@ class StoryRepository:
         return self.db.conn.execute(
             """SELECT a.id, a.sort_at, a.title, s.id AS source_id, s.region, s.reliability,
                       COALESCE(NULLIF(s.owner, ''), s.slug) AS owner_key,
-                      x.title_tr, x.category, x.turkey_relevance, e.vector
+                      x.title_tr, x.category, a.home_relevance AS turkey_relevance, e.vector
                FROM story_articles sa
                JOIN articles a ON a.id = sa.article_id
                JOIN sources s ON s.id = a.source_id
@@ -349,6 +350,7 @@ class StoryRepository:
         members = self.db.conn.execute(
             """SELECT a.id, a.url, a.title, a.summary, a.sort_at, COALESCE(a.language, s.language) AS language,
                       s.id AS source_id, s.name AS source_name, s.paywalled, s.region,
+                      COALESCE(NULLIF(s.owner, ''), s.slug) AS owner_key,
                       sa.similarity, sa.assigned_by,
                       CASE WHEN x.status = 'done' THEN x.title_tr END AS title_tr,
                       CASE WHEN x.status = 'done' THEN x.summary_tr END AS summary_tr,
@@ -368,6 +370,12 @@ class StoryRepository:
         items = [dict(m) for m in members]
         for m in items:
             m["paywalled"] = bool(m["paywalled"])
+            m["exclusive"] = is_exclusive(m["title"])
+        story["exclusive"] = any(m["exclusive"] for m in items)
+        story["breaking"] = is_breaking(((m["owner_key"], parse_iso(m["sort_at"]), m["title"]) for m in items),
+                                        datetime.now(UTC))
+        for m in items:
+            del m["owner_key"]
         story["sources"] = sorted({m["source_name"] for m in items})
         story["members"] = items if member_limit is None else items[:member_limit]
         rep = next((m for m in items if m["id"] == story["representative_id"]), items[-1] if items else None)

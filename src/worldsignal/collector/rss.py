@@ -10,7 +10,7 @@ from __future__ import annotations
 import calendar
 import logging
 from dataclasses import dataclass, field
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 import feedparser
@@ -92,6 +92,23 @@ def unwrap_aggregator_link(url: str) -> str:
     return url
 
 
+def bing_time_to_utc(stamp: datetime, now: datetime | None = None) -> datetime:
+    """Bing News feeds label US Pacific wall-clock time as "GMT" (measured 2026-09-28: every Bing time was
+    exactly 7 h behind the publisher's own feed). Read the value as Pacific time: UTC-7 in daylight
+    saving time (second Sunday of March to first Sunday of November, 02:00), UTC-8 otherwise. If Bing ever
+    fixes its feed, the corrected time would lie in the future; then the value is kept as it is."""
+    wall = stamp.replace(tzinfo=None)
+    march = datetime(wall.year, 3, 8)
+    november = datetime(wall.year, 11, 1)
+    dst_start = march + timedelta(days=(6 - march.weekday()) % 7, hours=2)
+    dst_end = november + timedelta(days=(6 - november.weekday()) % 7, hours=2)
+    offset = 7 if dst_start <= wall < dst_end else 8
+    corrected = (wall + timedelta(hours=offset)).replace(tzinfo=UTC)
+    if corrected > (now or datetime.now(UTC)) + timedelta(minutes=10):
+        return stamp
+    return corrected
+
+
 def _entry_time(entry: feedparser.FeedParserDict) -> datetime | None:
     for key in ("published_parsed", "updated_parsed", "created_parsed"):
         value = entry.get(key)
@@ -135,7 +152,9 @@ def parse_feed(content: bytes, base_url: str = "") -> ParsedFeed:
     seen: set[str] = set()
     for e in parsed.entries:
         title = _strip_source_suffix(strip_html(e.get("title")), e)
-        link = unwrap_aggregator_link((e.get("link") or "").strip())
+        raw_link = (e.get("link") or "").strip()
+        link = unwrap_aggregator_link(raw_link)
+        from_bing = link != raw_link
         guid = (e.get("id") or "").strip()
         if not title or not (link or guid):
             continue
@@ -155,7 +174,7 @@ def parse_feed(content: bytes, base_url: str = "") -> ParsedFeed:
                 title=title,
                 summary=_entry_summary(e),
                 author=strip_html(e.get("author")) or None,
-                published_at=_entry_time(e),
+                published_at=bing_time_to_utc(t) if from_bing and (t := _entry_time(e)) else _entry_time(e),
             )
         )
 

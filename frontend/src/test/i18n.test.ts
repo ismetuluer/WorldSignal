@@ -65,12 +65,24 @@ describe("createI18n", () => {
 describe("turkeyLink", () => {
   it("explains relevance codes with localized country and topic names", () => {
     const trI = createI18n("tr");
-    expect(trI.turkeyLink("turkey_mentioned")).toBe("Metinde Türkiye geçiyor");
+    expect(trI.turkeyLink("home_mentioned")).toBe("Metinde Türkiye geçiyor");
     expect(trI.turkeyLink("neighbour:GR")).toBe("Komşu ülke: Yunanistan");
-    expect(trI.turkeyLink("turkic:KZ")).toBe("Türk devleti: Kazakistan");
+    expect(trI.turkeyLink("related:KZ")).toBe("Yakın ülke: Kazakistan");
     expect(trI.turkeyLink("topic:black_sea")).toBe("Konu: Karadeniz");
     expect(createI18n("en").turkeyLink("neighbour:IR")).toBe("Neighbouring country: Iran");
     expect(trI.turkeyLink("unknown")).toBe("unknown");
+  });
+});
+
+describe("home country", () => {
+  it("fills {home} with the user's country in every text", () => {
+    const za = createI18n("en", undefined, "ZA");
+    expect(za.t("filter.turkey")).toBe("Related to South Africa");
+    expect(za.turkeyLink("home_mentioned")).toBe("South Africa is mentioned in the text");
+    expect(createI18n("tr", undefined, "ZA").t("ai.turkey.indirect")).toBe("Güney Afrika (dolaylı)");
+    expect(createI18n("tr").t("filter.turkey")).toBe("Türkiye bağlantılı");
+    // An explicit parameter still wins.
+    expect(za.t("ai.link.neighbour", { country: "X", home: "Y" })).toBe("Neighbouring country: X");
   });
 });
 

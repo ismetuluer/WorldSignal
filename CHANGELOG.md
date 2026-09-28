@@ -2,6 +2,40 @@
 
 Sürüm numaraları [Anlamsal Sürümleme](https://semver.org/lang/tr/) izler. 1.0'a kadar her faz bir ara sürümdür.
 
+## [0.9.0] — 2026-09-28 — Ülkem, ajanslar, rozetler
+
+### Eklendi
+- **Ülkem.** "Türkiye bağlantılı" artık programa sabit değil: Ayarlar → **Ülkem**'den ülke seçilir ("Sistem" =
+  Windows'un bölge ayarı). Filtre, kart etiketleri, skor payı ve zaman çizelgesi seçilen ülkenin adıyla çıkar
+  ("Güney Afrika bağlantılı"). Yöntem değişmedi: yapay zekâ haberi okuduktan sonra, bulduğu ülke ve konulara göre
+  karar verilir. Doğrudan = ülkeniz listede ya da adı metinde; dolaylı = komşu ülke, sizin seçtiğiniz yakın ülkeler
+  ya da konular. Yakın ülkeler, konular ve ek kelimeler ayarlanabilir. Türkiye için varsayılanlar eskisiyle
+  birebir aynıdır. Ülke değişince kayıtlı haberler arka planda yeniden değerlendirilir.
+  Ülke adları Wikidata'dan (CC0), kara komşuları GeoNames'ten (CC BY 4.0) alınır (`tools/make_countries.py`).
+- **"Özel" ve "Son dakika" rozetleri.** Yayıncının "Exclusive / Özel / Эксклюзив…" diye işaretlediği haberler
+  **Özel** rozeti taşır. **Son dakika**: 60 dakikada en az 3 bağımsız kaynağa yayılan hikâye ya da başlığında
+  "Son dakika / Breaking" işareti olan yeni haber; rozette küçük bir sinyal animasyonu vardır (hareket azaltma
+  ayarına uyar).
+- Kaynaklar ekranında **Ücretli kaynaklar** ayrı bölümde.
+
+### Değişti
+- **Reuters, AP ve AFP'den çok daha fazla haber.** Bing tek aramada yalnızca en yeni ~12 haberi verdiği için
+  Reuters 18, AP 16 bölüm aramasıyla izleniyor (bir ölçümde son 24 saatte Reuters'tan ~100 ayrı haber). Ajansların
+  kendi siteleri otomatik okuyuculara kapalı (Reuters robots.txt, AP Cloudflare), bu yüzden doğrudan kullanılmıyor.
+- Tema seçeneği "Windows'a uy" yerine **Sistem**.
+
+### Düzeltildi
+- **Bing Haberler'den gelen haberlerin saati 7 saat eskiydi.** Bing, ABD Pasifik saatini "GMT" diye yazıyor; artık
+  yaz/kış saati dahil düzeltiliyor.
+- 0.7.3'ten önce toplanmış eski Google News bağlantıları için tam metin artık hiç denenmiyor; "sayfada haber metni
+  bulunamadı" yerine nedeni yazıyor.
+
+### Doğrulandı
+- Katalog yeniden doğrulandı: 139 kaynaktan 138'i çalışıyor; Reuters'ın 18, AP'nin 16, AFP'nin 2 akışı dahil.
+- Abonelik siteleri (28 Eylül denemeleri): NYT, Washington Post, FT, Le Monde, Le Figaro, Spiegel, FAZ, El País,
+  Corriere, Haaretz, Foreign Policy, SCMP, Nikkei Asia, Straits Times, The Hindu, EUobserver, The Athletic tam metin
+  verdi. Economist, WSJ ve Japan Times otomatik okumayı reddediyor (403/401); bu engeller aşılmaz.
+
 ## [0.8.0] — 2026-09-28 — GitHub'dan güncelleme, e-posta
 
 ### Eklendi

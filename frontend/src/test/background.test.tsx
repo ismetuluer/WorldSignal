@@ -33,11 +33,11 @@ import { FULLTEXT_WORKER, MAINTENANCE, NOTIFY, STORY_SETTINGS, STORY_WORKER } fr
 const mocked = vi.mocked(api, true);
 
 const SETTINGS: Settings = {
-  "ui.language": "tr", "ui.theme": "light", "feed.window_hours": 24, "feed.view": "stories", "feed.filters": { regions: [], groups: [], langs: [], sources: [], categories: [], turkey: false }, "update.auto_check": true, "update.auto_download": true, "ai.enabled": true,
+  "ui.language": "tr", "ui.theme": "light", "feed.window_hours": 24, "feed.view": "stories", "feed.filters": { regions: [], groups: [], langs: [], sources: [], categories: [], turkey: false }, "update.auto_check": true, "update.auto_download": true, "home.country": "", "home.related": null, "home.topics": null, "home.keywords": [], "ai.enabled": true,
   "ai.url": "http://localhost:11434", "ai.model": "m", "ai.max_age_hours": 24, "ai.yield_gpu": true, ...STORY_SETTINGS,
 };
 const META: Meta = {
-  regions: ["turkey"], groups: ["turkey"], languages: ["tr"], categories: ["politics"], ui_languages: ["tr", "en"],
+  regions: ["turkey"], groups: ["turkey"], languages: ["tr"], categories: ["politics"], ui_languages: ["tr", "en"], home_country: "TR", system_country: "TR",
   data_dir: "C:\\data", version: "0.7.0",
 };
 const AI: AiStatus = {

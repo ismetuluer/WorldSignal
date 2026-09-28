@@ -1,5 +1,5 @@
 import type {
-  UpdateStatus, FullTextWorkerStatus, MaintenanceStatus, NotifyStatus, Settings, StoryWorkerStatus } from "../api/types";
+  HomeInfo, UpdateStatus, FullTextWorkerStatus, MaintenanceStatus, NotifyStatus, Settings, StoryWorkerStatus } from "../api/types";
 
 /** Settings keys added since Phase 3 (stories, score, full text); spread into each test's settings. */
 export const STORY_SETTINGS = {
@@ -54,6 +54,14 @@ export const MAINTENANCE: MaintenanceStatus = {
 };
 
 export const NOTIFY: NotifyStatus = { available: true, last_sent_at: null, last_story_id: null, sent: 0 };
+
+/** GET /api/home for a user in Türkiye with the default rules. */
+export const HOME: HomeInfo = {
+  code: "TR", system_country: "TR", neighbours: ["AM", "AZ", "BG", "CY", "GE", "GR", "IQ", "IR", "SY"],
+  related: ["AZ", "KZ", "UZ", "KG", "TM"], topics: ["black_sea", "nato"], keywords: [],
+  countries: ["TR", "ZA", "GR", "KZ", "AZ", "UZ", "KG", "TM", "AM", "BG", "CY", "GE", "IQ", "IR", "SY"],
+  all_topics: ["black_sea", "eastern_mediterranean", "nato", "eu_enlargement", "migration", "turkic_states"], syncing: false,
+};
 
 export const UPDATE_IDLE: UpdateStatus = {
   state: "up_to_date", current: "0.8.0", latest: null, progress: null, error: null, checked_at: null, unsupported: null,

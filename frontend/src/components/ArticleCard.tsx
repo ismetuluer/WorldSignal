@@ -6,6 +6,7 @@ import { textDirection } from "../lib/hooks";
 import { Icon } from "./Icon";
 import { LangToggle } from "./StoryCard";
 import { openableUrl } from "../lib/links";
+import { BreakingBadge, ExclusiveBadge } from "./Badges";
 
 /** One article in the feed. AI output is labelled and the original is always one click away. */
 export function ArticleCard({
@@ -48,6 +49,8 @@ export function ArticleCard({
         <time dateTime={a.sort_at} title={i18n.dateTime(a.sort_at)}>
           {i18n.relative(a.sort_at)}
         </time>
+        {a.breaking ? <BreakingBadge /> : null}
+        {a.exclusive ? <ExclusiveBadge source={a.source_name} /> : null}
         {a.language !== i18n.lang ? <span className="badge">{i18n.languageName(a.language)}</span> : null}
         {a.paywalled ? (
           <span className="badge badge-warning" title={t("feed.paywalled")}>

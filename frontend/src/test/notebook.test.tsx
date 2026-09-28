@@ -44,12 +44,12 @@ const mocked = vi.mocked(api, true);
 const TODAY = localDay();
 
 const SETTINGS: Settings = {
-  "ui.language": "tr", "ui.theme": "light", "feed.window_hours": 24, "feed.view": "stories", "feed.filters": { regions: [], groups: [], langs: [], sources: [], categories: [], turkey: false }, "update.auto_check": true, "update.auto_download": true,
+  "ui.language": "tr", "ui.theme": "light", "feed.window_hours": 24, "feed.view": "stories", "feed.filters": { regions: [], groups: [], langs: [], sources: [], categories: [], turkey: false }, "update.auto_check": true, "update.auto_download": true, "home.country": "", "home.related": null, "home.topics": null, "home.keywords": [],
   "ai.enabled": true, "ai.url": "http://localhost:11434", "ai.model": "m", "ai.max_age_hours": 24, "ai.yield_gpu": true,
   ...STORY_SETTINGS,
 };
 const META: Meta = {
-  regions: ["turkey"], groups: ["turkey"], languages: ["tr"], categories: ["politics"], ui_languages: ["tr", "en"],
+  regions: ["turkey"], groups: ["turkey"], languages: ["tr"], categories: ["politics"], ui_languages: ["tr", "en"], home_country: "TR", system_country: "TR",
   data_dir: "C:\\data", version: "0.4.0",
 };
 const AI: AiStatus = {
@@ -71,11 +71,11 @@ function item(id: number, extra: Partial<MeetingItem> = {}): MeetingItem {
 function story(id: number): Story {
   const m = {
     id: id * 100, url: "https://x.example/1", title: "Orig", summary: "", sort_at: "2026-09-27T08:00:00Z", language: "tr",
-    source_id: 1, source_name: "AA", paywalled: false, region: "turkey" as const, similarity: 1, assigned_by: "auto" as const,
+    source_id: 1, source_name: "AA", paywalled: false, exclusive: false, region: "turkey" as const, similarity: 1, assigned_by: "auto" as const,
     title_tr: null, summary_tr: null, title_en: null, summary_en: null, ...NO_FULLTEXT,
   };
   return {
-    id, first_seen_at: m.sort_at, last_seen_at: m.sort_at, article_count: 1, source_count: 1, score: 40, score_parts: { tags: [] },
+    id, breaking: false, exclusive: false, first_seen_at: m.sort_at, last_seen_at: m.sort_at, article_count: 1, source_count: 1, score: 40, score_parts: { tags: [] },
     turkey_relevance: "none", category: "politics", representative_id: m.id, representative: m, ai_status: "done",
     ai_title_tr: `Hikâye ${id}`, ai_summary_tr: "Özet.", ai_why: null, ai_title_en: null, ai_summary_en: null, ai_why_en: null, ai_issues: [], ai_article_count: 1, ai_model: "m",
     sources: ["AA"], members: [m], timeline: [],

@@ -21,6 +21,7 @@ vi.mock("../api/client", async (importOriginal) => {
       browsers: vi.fn(),
       backups: vi.fn(),
       fulltextSites: vi.fn(),
+      home: vi.fn(),
     },
   };
 });
@@ -31,7 +32,7 @@ import { I18nProvider } from "../i18n";
 import { FeedPage } from "../pages/FeedPage";
 import { SettingsPage } from "../pages/SettingsPage";
 import { AppStateProvider } from "../state";
-import { FULLTEXT_WORKER, MAINTENANCE, NOTIFY, STORY_SETTINGS, STORY_WORKER, UPDATE_IDLE } from "./fixtures";
+import { FULLTEXT_WORKER, HOME, MAINTENANCE, NOTIFY, STORY_SETTINGS, STORY_WORKER, UPDATE_IDLE } from "./fixtures";
 
 const mocked = vi.mocked(api, true);
 
@@ -44,7 +45,7 @@ const SETTINGS: Settings = {
   "ai.model": "qwen3:14b",
   "ai.max_age_hours": 24,
   "ai.yield_gpu": true,
-  "feed.view": "articles", "feed.filters": { regions: [], groups: [], langs: [], sources: [], categories: [], turkey: false }, "update.auto_check": true, "update.auto_download": true,
+  "feed.view": "articles", "feed.filters": { regions: [], groups: [], langs: [], sources: [], categories: [], turkey: false }, "update.auto_check": true, "update.auto_download": true, "home.country": "", "home.related": null, "home.topics": null, "home.keywords": [],
   ...STORY_SETTINGS,
 };
 const META: Meta = {
@@ -52,7 +53,7 @@ const META: Meta = {
   groups: ["turkey", "western"],
   languages: ["en", "tr"],
   categories: ["politics", "economy", "diplomacy"],
-  ui_languages: ["tr", "en"],
+  ui_languages: ["tr", "en"], home_country: "TR", system_country: "TR",
   data_dir: "C:\\data",
   version: "0.2.0",
 };
@@ -73,7 +74,7 @@ function article(id: number, title: string, extra: Partial<Article> = {}): Artic
   return {
     id, title, url: `https://x.example/${id}`, summary: `${title} summary`, author: null,
     published_at: now, first_seen_at: now, sort_at: now, language: "en", source_id: 1, source_name: "Alpha",
-    region: "europe", catalog_group: "western", paywalled: false, ai_status: null, title_tr: null, summary_tr: null, title_en: null, summary_en: null,
+    region: "europe", catalog_group: "western", paywalled: false, exclusive: false, breaking: false, ai_status: null, title_tr: null, summary_tr: null, title_en: null, summary_en: null,
     category: null, countries: [], turkey_relevance: null, turkey_links: [], ai_issues: [], ai_model: null, ai_error: null,
     ...extra,
   };
@@ -112,6 +113,7 @@ beforeEach(() => {
   mocked.backups.mockResolvedValue({ backups: [], pending_restore: null, last_restore: null, can_restart: true });
   mocked.browsers.mockResolvedValue({ browsers: [], chosen: null, own_profile: "C:\ws\browser-profile", main_profile_in_use: false });
   mocked.updateSettings.mockImplementation(async (p) => ({ ...SETTINGS, ...p }));
+  mocked.home.mockResolvedValue(HOME);
 });
 
 describe("AI in the feed", () => {
@@ -225,6 +227,48 @@ describe("AI settings", () => {
     wrap(<SettingsPage />);
     expect(await screen.findByText("Bağlantı kurulamadı: Ollama'ya ulaşılamıyor")).toBeInTheDocument();
     expect(screen.getByRole("option", { name: "qwen3:14b (yüklü değil)" })).toBeInTheDocument();
+  });
+});
+
+describe("My country", () => {
+  it("shows the country the rules use and saves another one", async () => {
+    mocked.testOllama.mockResolvedValue({ ok: false, error_code: "unreachable", version: null, models: [] });
+    wrap(<SettingsPage />);
+    const select = await screen.findByRole("combobox", { name: "Ülke" });
+    await waitFor(() => expect(select).toBeEnabled());
+    expect(within(select).getByRole("option", { name: "Sistem (Türkiye)" })).toHaveValue("");
+    expect(screen.getByText("Azerbaycan, Bulgaristan, Ermenistan, Gürcistan, Irak, İran, Kıbrıs, Suriye, Yunanistan")).toBeInTheDocument();
+    await userEvent.selectOptions(select, "ZA");
+    expect(mocked.updateSettings).toHaveBeenCalledWith({ "home.country": "ZA" });
+    await waitFor(() => expect(mocked.home).toHaveBeenCalledTimes(2));
+  });
+
+  it("edits topics and extra words and can return to the defaults", async () => {
+    mocked.testOllama.mockResolvedValue({ ok: false, error_code: "unreachable", version: null, models: [] });
+    wrap(<SettingsPage />);
+    const nato = await screen.findByRole("checkbox", { name: "NATO" });
+    expect(nato).toBeChecked();
+    expect(screen.getByRole("checkbox", { name: "Göç" })).not.toBeChecked();
+    await userEvent.click(nato);
+    expect(mocked.updateSettings).toHaveBeenCalledWith({ "home.topics": ["black_sea"] });
+    await userEvent.click(screen.getByRole("checkbox", { name: "Göç" }));
+    // Topics are saved in the server's order, whatever order they were ticked in.
+    expect(mocked.updateSettings).toHaveBeenLastCalledWith({ "home.topics": ["black_sea", "nato", "migration"] });
+    const words = screen.getByRole("textbox", { name: "Ek kelimeler" });
+    await userEvent.type(words, "İzmir, TBMM ,izmir");
+    await userEvent.tab();
+    expect(mocked.updateSettings).toHaveBeenLastCalledWith({ "home.keywords": ["İzmir", "TBMM"] });
+    await userEvent.click(await screen.findByRole("button", { name: "Varsayılana dön" }));
+    expect(mocked.updateSettings).toHaveBeenLastCalledWith({ "home.related": null, "home.topics": null });
+  });
+
+  it("names the user's country on cards", async () => {
+    mocked.articles.mockResolvedValue({
+      items: [enriched(1, { turkey_relevance: "direct", turkey_links: ["home_mentioned"] })], next: null, total: 1,
+    });
+    wrap(<FeedPage />);
+    const badge = await screen.findByTitle("Metinde Türkiye geçiyor");
+    expect(badge).toHaveTextContent("Türkiye");
   });
 });
 

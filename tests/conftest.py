@@ -6,6 +6,7 @@ from pathlib import Path
 import httpx
 import pytest
 
+from worldsignal.country import HomeState
 from worldsignal.db import Database
 from worldsignal.paths import DataPaths
 from worldsignal.repo.articles import ArticleRepository
@@ -49,6 +50,12 @@ def settings(db: Database) -> SettingsRepository:
 @pytest.fixture
 def sources(db: Database, settings: SettingsRepository) -> SourceRepository:
     return SourceRepository(db, settings)
+
+
+@pytest.fixture
+def home(settings: SettingsRepository) -> HomeState:
+    """The user's country as the app sees it; Windows' region is Türkiye here unless a test says otherwise."""
+    return HomeState(settings.get_preferences, "TR")
 
 
 @pytest.fixture

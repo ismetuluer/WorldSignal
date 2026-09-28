@@ -35,7 +35,7 @@ defteri, geçmiş günler ve yazdırılabilir çıktılar da içindedir.
 |---|---|
 | **Haber toplama** | 140'a yakın kaynak hazır gelir (Batı basını, ajanslar, Orta Doğu, Rusya/Ukrayna, Asya, Avrupa, Türk basını, spor). Her kaynağın akışı çalışıp çalışmadığı denenerek kataloğa girer. Kendi RSS adreslerinizi de ekleyebilirsiniz. |
 | **Hikâyeler** | Aynı olayı anlatan haberler, farklı dillerde olsalar da tek kartta birleşir. Yanlış birleşeni ayırabilir, ayrı kalanları birleştirebilirsiniz. |
-| **Önem sırası** | Bağımsız kaynak sayısı, tazelik, Türkiye bağlantısı ve sizin ilgi alanlarınıza göre. Her kartta skorun **neden** yüksek olduğu yazar. |
+| **Önem sırası** | Bağımsız kaynak sayısı, tazelik, **ülkenizle bağlantısı** ve sizin ilgi alanlarınıza göre. Her kartta skorun **neden** yüksek olduğu yazar; yayıncının "Özel" dediği haberler ve hızla yayılan **Son dakika** hikâyeleri rozetle işaretlenir. |
 | **Türkçe özet** | Bilgisayarınızda Ollama varsa: Türkçe ve İngilizce başlık, 3–5 cümlelik özet, kategori, "neden önemli". Yalnızca kaynak metne dayanır; orijinal başlık ve bağlantı her zaman bir tık uzakta. |
 | **Toplantı ve notlar** | Tek tuşla toplantı listesine ekleme, sürükleyerek sıralama, hikâyeye not, günlere göre not defteri. |
 | **Çıktılar** | Toplantı listesi, haber detayı, sabah bülteni ve notlar: biçimli kopyala (Word/Outlook), düz metin (WhatsApp), yazdır/PDF, **e-postayla gönder**. |
@@ -119,6 +119,9 @@ bir sayı varsa "Dikkat" uyarısı gösterilir.
   etiketler nedenini söyler ("5 kaynak", "3 saatte 4 kaynak", "Türkiye bağlantısı"). *Haberler* görünümü tek tek en
   yeni haberlerdir. Üstte arama, zaman aralığı ve filtreler var (bölge, kaynak grubu, dil, kategori, kaynak,
   "Türkiye bağlantılı"). **Seçtiğiniz filtreler hatırlanır.**
+- **Ülkem** — "Türkiye bağlantılı" filtresi ve etiketleri Ayarlar → **Ülkem**'de seçtiğiniz ülkeye göre çalışır
+  (varsayılan: Windows'un bölge ayarı). Haber, yapay zekâ onu okuduktan sonra değerlendirilir: ülkeniz haberde
+  geçiyorsa *doğrudan*, bir komşunuz, seçtiğiniz yakın ülkeler ya da konular geçiyorsa *dolaylı* bağlantılıdır.
 - **Hikâye ayrıntısı** — Türkçe özet, skorun dökümü, günlere göre gelişim, tüm haberler ve bağlantıları, notlarınız.
   Yanlış gruplanmış haberi **Bu hikâyeden ayır**, aynı olayı anlatan iki hikâyeyi **Başka hikâyeyle birleştir**.
 - **Toplantı** — bugünün öneri listesi. Hikâyeyi **Toplantıya ekle** (ya da `T`), sürükleyerek sırala, her öneriye kısa
@@ -138,8 +141,9 @@ bir sayı varsa "Dikkat" uyarısı gösterilir.
 - **Kaynaklar** — kaynakları açıp kapatın, güvenilirlik ağırlığı ve medya grubu verin (aynı gruptan kaynaklar tek
   kaynak sayılır), **Kaynak ekle** ile kendi RSS adresinizi deneyip ekleyin. Çalışmayan akışlar kırmızıyla ve nedeniyle
   görünür.
-- **Ayarlar** — tema (Windows'a uy / açık / koyu), arayüz dili, yapay zekâ, hikâye ve skor ayarları, ilgi profiliniz
-  (anahtar kelime, kategori, bölge), tam metin, saklama süresi, bildirimler ve sessiz saatler, yedekler, güncellemeler.
+- **Ayarlar** — tema (sistem / açık / koyu), arayüz dili, yapay zekâ, hikâye ve skor ayarları, ilgi profiliniz
+  (anahtar kelime, kategori, bölge), ülkem, tam metin, saklama süresi, bildirimler ve sessiz saatler, yedekler,
+  güncellemeler.
 
 **Klavye kısayolları:** `J` / `K` sonraki / önceki, `Enter` ya da `O` aç, `T` toplantıya ekle, `/` arama.
 
@@ -148,7 +152,8 @@ bir sayı varsa "Dikkat" uyarısı gösterilir.
 World Signal kimsenin içeriğini yeniden yayımlamaz; yalnızca **sizin** ekranınızda gösterir.
 
 - Haberler yayıncıların herkese açık RSS akışlarından gelir: başlık, kısa özet ve bağlantı. RSS vermeyen birkaç kaynak
-  için Bing Haberler'in herkese açık RSS araması kullanılır; bağlantılar doğrudan yayıncıya gider.
+  için Bing Haberler'in herkese açık RSS araması kullanılır; bağlantılar doğrudan yayıncıya gider. Reuters ve AP'nin
+  kendi siteleri otomatik okuyuculara kapalı olduğu için bu ajanslar bölüm bölüm Bing aramasıyla izlenir.
 - **Ücretli siteler:** Bir makalenin tamamını ancak **sizin** o sitede aboneliğiniz varsa okuyabilirsiniz. Bunun için
   **Ayarlar → Tam metin → Abonelik siteleri**'nden siteyi açıp kendi hesabınızla bir kez giriş yaparsınız; oturum
   yalnızca bu bilgisayarda, World Signal'e ait ayrı bir tarayıcı profilinde saklanır. Aboneliğiniz yoksa o sitenin
@@ -178,6 +183,7 @@ tarayıcı profili ve oturum çerezleri yalnızca `%LOCALAPPDATA%\WorldSignal` a
 |---|---|
 | Program açılmıyor | Bir uyarı penceresi nedenini ve günlük dosyasının yerini gösterir: `%LOCALAPPDATA%\WorldSignal\logs\worldsignal.log`. |
 | İkinci kez çift tıklayınca bir şey olmuyor | Program zaten açık (tepside); var olan pencere öne gelir. Tamamen kapatmak için tepsi simgesine sağ tıklayın → **Çıkış**. |
+| Başlıklar ve özetler Türkçe değil | Arayüz dili Türkçedir, ama haberlerin Türkçe başlık ve özetleri bilgisayarınızdaki yapay zekâ (Ollama) ile üretilir. Ollama yoksa haberler orijinal dillerinde görünür (bkz. [Yapay zekâ](#yapay-zekâ-isteğe-bağlı)). |
 | "Özetler hazırlanamıyor: Ollama'ya ulaşılamıyor" | Ollama kapalı ya da kurulu değil. Açın ya da Ayarlar → Yapay zekâ'dan özetlemeyi kapatın. |
 | Özetler çok yavaş, ekran kartı ısınıyor | Daha küçük bir model seçin (bkz. [tablo](#yapay-zekâ-isteğe-bağlı)). |
 | Bir kaynak kırmızı görünüyor | Kaynaklar ekranında nedeni yazar (site kapalı, adres değişmiş, otomatik okuyuculara kapalı…). |
@@ -190,6 +196,9 @@ tarayıcı profili ve oturum çerezleri yalnızca `%LOCALAPPDATA%\WorldSignal` a
 Yığın: Python 3.12 (FastAPI, SQLite + FTS5, feedparser, trafilatura, patchright) · React 19 + TypeScript + Vite ·
 pywebview/WebView2 · PyInstaller. Mimari ayrıntılar: [ARCHITECTURE.md](ARCHITECTURE.md); sürüm geçmişi:
 [CHANGELOG.md](CHANGELOG.md); kaynak doğrulama raporu: [docs/KAYNAK_DOGRULAMA.md](docs/KAYNAK_DOGRULAMA.md).
+
+Ülke verisi (`src/worldsignal/catalog/countries.json`): ülke adları [Wikidata](https://www.wikidata.org)'dan (CC0),
+kara komşulukları [GeoNames](https://www.geonames.org)'ten (CC BY 4.0) alınmıştır.
 
 ```
 uv sync --python 3.12                        # Python ortamı

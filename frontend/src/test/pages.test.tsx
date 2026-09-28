@@ -47,7 +47,7 @@ const SETTINGS: Settings = {
   "ai.model": "qwen3:14b",
   "ai.max_age_hours": 24,
   "ai.yield_gpu": true,
-  "feed.view": "articles", "feed.filters": { regions: [], groups: [], langs: [], sources: [], categories: [], turkey: false }, "update.auto_check": true, "update.auto_download": true,
+  "feed.view": "articles", "feed.filters": { regions: [], groups: [], langs: [], sources: [], categories: [], turkey: false }, "update.auto_check": true, "update.auto_download": true, "home.country": "", "home.related": null, "home.topics": null, "home.keywords": [],
   ...STORY_SETTINGS,
 };
 const META: Meta = {
@@ -55,7 +55,7 @@ const META: Meta = {
   groups: ["turkey", "western"],
   languages: ["en", "tr"],
   categories: ["politics", "economy"],
-  ui_languages: ["tr", "en"],
+  ui_languages: ["tr", "en"], home_country: "TR", system_country: "TR",
   data_dir: "D:\\Veri\\WorldSignal",
   version: "0.1.0",
 };
@@ -75,7 +75,7 @@ function article(id: number, title: string, extra: Partial<Article> = {}): Artic
   return {
     id, title, url: `https://x.example/${id}`, summary: `${title} özeti`, author: null,
     published_at: new Date().toISOString(), first_seen_at: new Date().toISOString(), sort_at: new Date().toISOString(),
-    language: "tr", source_id: 1, source_name: "Beta Haber", region: "turkey", catalog_group: "turkey", paywalled: false,
+    language: "tr", source_id: 1, source_name: "Beta Haber", region: "turkey", catalog_group: "turkey", paywalled: false, exclusive: false, breaking: false,
     ai_status: null, title_tr: null, summary_tr: null, title_en: null, summary_en: null, category: null, countries: [], turkey_relevance: null, turkey_links: [],
     ai_issues: [], ai_model: null, ai_error: null,
     ...extra,
@@ -217,6 +217,19 @@ describe("FeedPage", () => {
 });
 
 describe("SourcesPage", () => {
+  it("puts subscription sources in their own section, naming their usual group", async () => {
+    mocked.sources.mockResolvedValue([
+      source(1, "Beta Haber"),
+      source(2, "Paid Times", { catalog_group: "western", region: "europe", language: "en", paywalled: true }),
+    ]);
+    wrap(<SourcesPage />);
+    const paid = (await screen.findByText("Ücretli kaynaklar")).closest("section")!;
+    expect(within(paid).getByText("Paid Times")).toBeInTheDocument();
+    expect(within(paid).getByText(/Batı gazeteleri ve yayıncıları · Avrupa/)).toBeInTheDocument();
+    expect(within(paid).queryByText("Beta Haber")).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: /Batı gazeteleri/ })).not.toBeInTheDocument();  // its only source moved
+  });
+
   it("groups sources, separates unverified ones and shows errors", async () => {
     mocked.sources.mockResolvedValue([
       source(1, "Beta Haber"),

@@ -7,11 +7,13 @@ import math
 import sqlite3
 from collections.abc import Sequence
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from ..collector.rss import ParsedEntry
+from ..country import HomeProfile
 from ..db import Database, utc_now_iso
+from ..flags import MARKER_WINDOW, has_breaking_marker, is_exclusive
 from ..textnorm import build_fts_query, fold_for_search
 
 # Small clock differences between servers are ignored.
@@ -48,7 +50,7 @@ class ArticleFilter:
     groups: Sequence[str] = field(default_factory=tuple)
     languages: Sequence[str] = field(default_factory=tuple)
     categories: Sequence[str] = field(default_factory=tuple)
-    turkey_only: bool = False  # only articles the AI marked as directly/indirectly related to Türkiye
+    turkey_only: bool = False  # only articles related (directly or indirectly) to the user's country
     query: str | None = None
     before: tuple[str, int] | None = None  # pagination cursor (sort_at, id)
     limit: int = 100
@@ -137,7 +139,7 @@ class ArticleRepository:
                 where.append(f"{column} IN ({','.join('?' * len(values))})")
                 params.extend(values)
         if f.turkey_only:
-            where.append("x.turkey_relevance IN ('direct', 'indirect')")
+            where.append("a.home_relevance IN ('direct', 'indirect')")
         if paginate and f.before:
             where.append("(a.sort_at < ? OR (a.sort_at = ? AND a.id < ?))")
             params.extend([f.before[0], f.before[0], f.before[1]])
@@ -153,8 +155,8 @@ class ArticleRepository:
             SELECT a.id, a.url, a.title, a.summary, a.author, a.published_at, a.first_seen_at, a.sort_at,
                    COALESCE(a.language, s.language) AS language,
                    s.id AS source_id, s.name AS source_name, s.region, s.catalog_group, s.paywalled,
-                   x.status AS ai_status, x.title_tr, x.summary_tr, x.title_en, x.summary_en, x.category, x.countries, x.turkey_relevance,
-                   x.turkey_links, x.issues AS ai_issues, x.model AS ai_model, x.error_code AS ai_error
+                   x.status AS ai_status, x.title_tr, x.summary_tr, x.title_en, x.summary_en, x.category, x.countries,
+                   a.home_relevance AS turkey_relevance, a.home_links AS turkey_links, x.issues AS ai_issues, x.model AS ai_model, x.error_code AS ai_error
             FROM articles a
             JOIN sources s ON s.id = a.source_id
             LEFT JOIN article_ai x ON x.article_id = a.id
@@ -163,15 +165,47 @@ class ArticleRepository:
             LIMIT ?"""
         rows = self.db.conn.execute(sql, [*params, max(1, min(f.limit, 500))]).fetchall()
         items = [dict(r) for r in rows]
+        now = datetime.now(UTC)
         for item in items:
             item["paywalled"] = bool(item["paywalled"])
+            item["exclusive"] = is_exclusive(item["title"])
+            at = datetime.fromisoformat(item["sort_at"].replace("Z", "+00:00"))
+            item["breaking"] = has_breaking_marker(item["title"]) and now - at <= MARKER_WINDOW
             for key in ("ai_issues", "countries", "turkey_links"):
                 item[key] = json.loads(item[key]) if item[key] else []
             if item["ai_status"] != "done":
                 # Only finished AI output is exposed; partial rows are queue bookkeeping.
-                for key in ("title_tr", "summary_tr", "title_en", "summary_en", "category", "turkey_relevance", "ai_model"):
+                for key in ("title_tr", "summary_tr", "title_en", "summary_en", "category", "ai_model", "turkey_relevance"):
                     item[key] = None
+                item["turkey_links"] = []
         return items
+
+    def recompute_home(self, home: HomeProfile, batch: int = 2000) -> int:
+        """Rate every report the AI has read again (the user changed their country or what counts as related).
+        Returns the number of reports whose rating changed."""
+        changed = 0
+        last = 0
+        while True:
+            rows = self.db.conn.execute(
+                """SELECT a.id, a.title, a.summary, a.home_relevance, a.home_links,
+                          x.countries, x.topics, x.mentions_turkey
+                   FROM articles a JOIN article_ai x ON x.article_id = a.id AND x.status = 'done'
+                   WHERE a.id > ? ORDER BY a.id LIMIT ?""",
+                (last, batch),
+            ).fetchall()
+            if not rows:
+                return changed
+            updates = []
+            for r in rows:
+                level, links = _rate(home, r)
+                links_json = json.dumps(links)
+                if level != r["home_relevance"] or links_json != r["home_links"]:
+                    updates.append((level, links_json, r["id"]))
+            if updates:
+                with self.db.transaction() as c:
+                    c.executemany("UPDATE articles SET home_relevance = ?, home_links = ? WHERE id = ?", updates)
+                changed += len(updates)
+            last = rows[-1]["id"]
 
     def count(self, f: ArticleFilter) -> int:
         """Number of articles matching the filter (ignores the pagination cursor)."""
@@ -199,3 +233,28 @@ class ArticleRepository:
                FROM articles a JOIN sources s ON s.id = a.source_id ORDER BY lang"""
         ).fetchall()
         return [r["lang"] for r in rows if r["lang"]]
+
+
+def _rate(home: HomeProfile, row: sqlite3.Row) -> tuple[str, list[str]]:
+    """The country rules need the AI's findings; a report it has not read is not rated."""
+    if row["countries"] is None:
+        return "none", []
+    countries = json.loads(row["countries"]) if row["countries"] else []
+    topics = json.loads(row["topics"]) if row["topics"] else []
+    # The AI's "Türkiye is mentioned" answer only helps when the user's country is Türkiye.
+    mentions = bool(row["mentions_turkey"]) and home.code == "TR"
+    return home.relevance(f"{row['title']}\n{row['summary']}", countries, topics, mentions)
+
+
+def rate_home(c: sqlite3.Connection, article_id: int, home: HomeProfile) -> None:
+    """Rate one report against the user's country, once the AI has read it."""
+    row = c.execute(
+        """SELECT a.title, a.summary, x.countries, x.topics, x.mentions_turkey
+           FROM articles a LEFT JOIN article_ai x ON x.article_id = a.id AND x.status = 'done'
+           WHERE a.id = ?""",
+        (article_id,),
+    ).fetchone()
+    if row is not None:
+        level, links = _rate(home, row)
+        c.execute("UPDATE articles SET home_relevance = ?, home_links = ? WHERE id = ?",
+                  (level, json.dumps(links), article_id))

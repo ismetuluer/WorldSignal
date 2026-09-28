@@ -388,3 +388,30 @@ def test_story_summaries_without_english_are_redone(db, sources, articles, setti
     run(AiWorker(AiRepository(db), settings, client_factory=FakeChat().client, stories=repo).step())
     story = repo.get(sid)
     assert story["ai_title_en"] == "Iran seizes US drone in Hormuz" and story["ai_why_en"].startswith("The event")
+
+
+def test_exclusive_and_breaking_badges(db, sources, articles, settings):
+    from worldsignal.repo.articles import ArticleFilter
+
+    ids = seed_articles(db, sources, articles, [
+        ("alpha", "e1", "Exclusive: Hormuz drone seized", 50),
+        ("beta", "e2", "hormuz drone seized", 40),
+        ("gamma-live", "e3", "Hormuz drone incident", 30),
+        ("alpha", "o1", "Swiss neutrality vote", 200),
+        ("beta", "o2", "swiss neutrality result", 190),
+        ("gamma-live", "m1", "BREAKING: Madrid eviction", 10),
+    ])
+    run(make_worker(db, settings, FakeEmbedOllama()).step())
+    repo = StoryRepository(db)
+    hormuz = repo.get(repo.story_of(ids["e1"]))
+    # Three independent sources within the hour, one of them marked exclusive by its publisher.
+    assert hormuz["breaking"] and hormuz["exclusive"]
+    assert {m["id"]: m["exclusive"] for m in hormuz["members"]} == {ids["e1"]: True, ids["e2"]: False, ids["e3"]: False}
+    assert "owner_key" not in hormuz["members"][0]
+    swiss = repo.get(repo.story_of(ids["o1"]))
+    assert not swiss["breaking"] and not swiss["exclusive"]  # three hours old, two sources
+    madrid = repo.get(repo.story_of(ids["m1"]))
+    assert madrid["breaking"]  # a single source, but its publisher marks it breaking
+    by_id = {a["id"]: a for a in articles.list(ArticleFilter(limit=50))}
+    assert by_id[ids["e1"]]["exclusive"] and not by_id[ids["e1"]]["breaking"]
+    assert by_id[ids["m1"]]["breaking"] and not by_id[ids["o1"]]["breaking"]

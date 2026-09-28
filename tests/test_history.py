@@ -130,8 +130,7 @@ def test_milestones_mark_the_turning_points(db, sources, articles):
     ]
     ids, (sid,), stories = build(db, sources, articles, specs, [["a1", "g1", "s1", "b1"]])
     with db.transaction() as c:
-        c.execute("INSERT INTO article_ai (article_id, status, turkey_relevance, queued_at) VALUES (?, 'done', 'direct', ?)",
-                  (ids["b1"], iso(NOW)))
+        c.execute("UPDATE articles SET home_relevance = 'direct' WHERE id = ?", (ids["b1"],))
     ms = HistoryRepository(db, stories).milestones(sid)
     kinds = [(m["kind"], m.get("count"), m["source"]) for m in ms]
     assert kinds == [

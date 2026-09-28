@@ -9,6 +9,7 @@ from conftest import MINI_CATALOG
 from worldsignal.ai.enrich import SCHEMA, EnrichInput, fidelity_issues, validate
 from worldsignal.ai.ollama import OllamaClient, OllamaError
 from worldsignal.ai.worker import AiWorker
+from worldsignal.country import HomeState
 from worldsignal.collector.rss import ParsedEntry
 from worldsignal.repo.ai import AiRepository
 from worldsignal.repo.articles import ArticleFilter
@@ -125,7 +126,7 @@ def test_validate_normalises_output():
     r = validate({**GOOD, "category": "nonsense", "title_tr": '  "Başlık"  '}, inp)
     assert r.category == "other" and r.title_tr == "Başlık" and r.issues == []
     r = validate({**GOOD, "countries": ["iq", "IQ", "Iraq", "usa", 5], "topics": ["nato", "bogus", "nato"]}, inp)
-    assert r.countries == ["IQ"] and r.turkey_links == ["neighbour:IQ", "topic:nato"]
+    assert r.countries == ["IQ"] and r.topics == ["nato"]
     with pytest.raises(ValueError):
         validate({**GOOD, "title_tr": "  "}, inp)
 
@@ -179,7 +180,8 @@ def test_failures_retry_then_fail_and_can_be_requeued(db, sources, articles):
 # -- worker ----------------------------------------------------------------------------------
 def make_worker(db, settings, fake, **prefs):
     settings.set_many({"ai.model": "qwen3:14b", **prefs})
-    return AiWorker(AiRepository(db), settings, client_factory=fake.client)
+    home = HomeState(settings.get_preferences, "TR")
+    return AiWorker(AiRepository(db, home=home.profile), settings, client_factory=fake.client)
 
 
 def test_worker_processes_queue_and_results_are_searchable(db, sources, articles, settings):
@@ -268,28 +270,6 @@ def test_worker_can_be_told_not_to_yield(db, sources, articles, settings):
     worker = make_worker(db, settings, FakeOllama(loaded=["other:7b"]), **{"ai.yield_gpu": False})
     assert run(worker.step()) == 0
     assert worker.status()["done"] == 1
-
-
-@pytest.mark.parametrize(
-    ("countries", "mentions", "topics", "text", "level", "links"),
-    [
-        (["GR"], False, [], "Greek coast guard rescues migrants off Lesbos", "indirect", ["neighbour:GR"]),
-        (["AF", "PK"], False, [], "Pakistan rejects Afghan claims", "none", []),  # the benchmark's mistake
-        (["IL"], False, [], "Visitors at Temple Mount", "none", []),
-        (["RU", "UA"], False, [], "Russian strikes kill 2 in Ukraine", "none", []),
-        (["RU", "UA"], False, ["black_sea"], "Drone attack on Black Sea fleet", "indirect", ["topic:black_sea"]),
-        (["KZ"], False, [], "Kazakhstan elections", "indirect", ["turkic:KZ"]),
-        ([], True, [], "Parliament recycling saves trees", "direct", ["turkey_mentioned"]),
-        (["TR"], False, [], "Mardin'de kavga", "direct", ["turkey_mentioned"]),
-        ([], False, [], "Deputy chair of Turkey's AK Party resigns", "direct", ["turkey_mentioned"]),  # keyword backstop
-        ([], False, [], "Эрдоган: Турция готова", "direct", ["turkey_mentioned"]),
-        ([], False, [], "US and China agree to meet again", "none", []),
-    ],
-)
-def test_turkey_relevance_rules(countries, mentions, topics, text, level, links):
-    from worldsignal.ai.enrich import turkey_relevance
-
-    assert turkey_relevance(countries, mentions, topics, text) == (level, links)
 
 
 # -- English next to Turkish (prompt v5) -----------------------------------------------------

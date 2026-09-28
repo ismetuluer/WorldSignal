@@ -8,13 +8,16 @@ once per article and never recomputed automatically (cache).
 from __future__ import annotations
 
 import json
+from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from ..ai.enrich import EnrichResult
+from ..country import HomeProfile
 from ..db import Database, utc_now_iso
 from ..textnorm import fold_for_search
+from .articles import rate_home
 
 USER_REQUEST_BOOST = 1e11  # far above any timestamp priority
 MAX_ATTEMPTS = 3
@@ -33,8 +36,10 @@ class Job:
 
 
 class AiRepository:
-    def __init__(self, db: Database) -> None:
+    def __init__(self, db: Database, home: Callable[[], HomeProfile] | None = None) -> None:
         self.db = db
+        # The AI's facts (countries, topics) sharpen the report's rating against the user's country.
+        self.home = home
 
     # -- queue ------------------------------------------------------------------
     def enqueue_recent(self, since_iso: str) -> int:
@@ -123,14 +128,16 @@ class AiRepository:
         with self.db.transaction() as c:
             c.execute(
                 """UPDATE article_ai SET status = 'done', model = ?, prompt_version = ?, title_tr = ?, summary_tr = ?,
-                       title_en = ?, summary_en = ?, category = ?, countries = ?, turkey_relevance = ?, turkey_links = ?, issues = ?,
+                       title_en = ?, summary_en = ?, category = ?, countries = ?, topics = ?, mentions_turkey = ?, issues = ?,
                        error_code = NULL, duration_ms = ?, completed_at = ?, attempts = attempts + 1
                    WHERE article_id = ?""",
                 (model, prompt_version, result.title_tr, result.summary_tr, result.title_en, result.summary_en,
                  result.category,
-                 json.dumps(result.countries), result.turkey_relevance, json.dumps(result.turkey_links),
+                 json.dumps(result.countries), json.dumps(result.topics), int(result.mentions_turkey),
                  json.dumps(result.issues), duration_ms, utc_now_iso(), article_id),
             )
+            if self.home is not None:
+                rate_home(c, article_id, self.home())
             c.execute("DELETE FROM article_ai_fts WHERE rowid = ?", (article_id,))
             c.execute(
                 "INSERT INTO article_ai_fts (rowid, title_tr, summary_tr) VALUES (?, ?, ?)",

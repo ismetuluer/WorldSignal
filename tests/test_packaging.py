@@ -20,6 +20,7 @@ GOOD = {
     f"{TOP}/version.txt": "0.8.0",
     f"{TOP}/_internal/worldsignal/ui/index.html": "<html>",
     f"{TOP}/_internal/worldsignal/catalog/sources.json": "{}",
+    f"{TOP}/_internal/worldsignal/catalog/countries.json": "{}",
     f"{TOP}/_internal/worldsignal/db/migrations/0001_initial.sql": "--",
     f"{TOP}/_internal/patchright/driver/node.exe": "x",
 }

@@ -28,6 +28,9 @@ sys.path.insert(0, str(ROOT / "src"))
 
 from worldsignal.ai.enrich import SCHEMA, SYSTEM_PROMPT, EnrichInput, validate  # noqa: E402
 from worldsignal.ai.ollama import OllamaClient, OllamaError  # noqa: E402
+from worldsignal.country import profile  # noqa: E402
+
+HOME = profile({"home.country": "TR"})  # the report rates relevance to Türkiye, as the benchmark did
 
 DEFAULT_MODELS = [
     "qwen3:14b",
@@ -185,7 +188,9 @@ def write_report(sample: list[dict], results: list[dict]) -> None:
                 lines.append(f"| {r['model']} | ❌ {item.get('error', '')[:80]} | | | | |")
                 continue
             cell = lambda s: s.replace("|", "／").replace("\n", " ")  # noqa: E731
-            tr = item["turkey_relevance"] + (f" ({', '.join(item['turkey_links'])})" if item["turkey_links"] else "")
+            level, links = HOME.relevance(f"{art['title']}\n{art.get('summary', '')}", item["countries"],
+                                          item["topics"], item["mentions_turkey"])
+            tr = level + (f" ({', '.join(links)})" if links else "")
             if item["countries"]:
                 tr += f" · ülkeler: {', '.join(item['countries'])}"
             lines.append(

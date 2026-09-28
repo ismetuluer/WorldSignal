@@ -1684,6 +1684,22 @@ a.member-title svg {
   text-align: right;
 }
 
+/* "My country" settings: topic check boxes. */
+.check-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 8px 16px;
+}
+
+.check-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text-2);
+  cursor: pointer;
+}
+
 /* ---------- Notebook, meeting list, outputs (phase 4) --------------------------- */
 .header-actions-stack {
   flex-direction: column;
@@ -2254,4 +2270,37 @@ a.member-title svg {
   line-height: 1.55;
   max-height: 60vh;
   overflow: auto;
+}
+
+/* "Breaking" and "Exclusive" badges. The breaking signal's arcs light up one after another, like a wave. */
+.badge-breaking {
+  background: var(--danger);
+  color: #fff;
+  font-weight: 600;
+}
+.badge-exclusive {
+  background: rgba(175, 82, 222, 0.12);
+  color: #8944ab;
+  font-weight: 600;
+}
+:root[data-theme="dark"] .badge-exclusive {
+  color: #da8fff;
+}
+.signal-pulse .arc {
+  animation: signal-wave 1.6s ease-in-out infinite;
+}
+.signal-pulse .arc-2 {
+  animation-delay: 0.2s;
+}
+.signal-pulse .arc-3 {
+  animation-delay: 0.4s;
+}
+@keyframes signal-wave {
+  0%, 100% { opacity: 0.25; }
+  35% { opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .signal-pulse .arc {
+    animation: none;
+  }
 }

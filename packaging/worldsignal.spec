@@ -10,6 +10,7 @@ SRC = ROOT / "src" / "worldsignal"
 datas = [
     (str(ROOT / "frontend" / "dist"), "worldsignal/ui"),
     (str(SRC / "catalog" / "sources.json"), "worldsignal/catalog"),
+    (str(SRC / "catalog" / "countries.json"), "worldsignal/catalog"),
     (str(SRC / "db" / "migrations"), "worldsignal/db/migrations"),
     (str(SRC / "assets" / "worldsignal.ico"), "worldsignal/assets"),
 ]

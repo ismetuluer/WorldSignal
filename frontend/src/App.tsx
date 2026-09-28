@@ -81,9 +81,9 @@ function BootScreen({ error, onRetry }: { error: string | null; onRetry?: () => 
 }
 
 function LocalizedShell() {
-  const { settings } = useAppState();
+  const { settings, meta } = useAppState();
   return (
-    <I18nProvider lang={settings["ui.language"]}>
+    <I18nProvider lang={settings["ui.language"]} home={settings["home.country"] || meta.system_country}>
       <ToastProvider>
         <MeetingProvider>
           <Shell />

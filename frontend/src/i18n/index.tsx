@@ -37,12 +37,14 @@ export interface I18n {
   dayLabel: (iso: string) => string;
   languageName: (code: string) => string;
   countryName: (code: string) => string;
-  /** Human sentence for one Türkiye relevance link code. */
+  /** The user's country (ISO code); its name fills "{home}" in every text. */
+  home: string;
+  /** Human sentence for one "related to my country" link code. */
   turkeyLink: (link: string) => string;
   number: (n: number) => string;
 }
 
-export function createI18n(lang: UiLanguage, now: () => Date = () => new Date()): I18n {
+export function createI18n(lang: UiLanguage, now: () => Date = () => new Date(), home = "TR"): I18n {
   const dict = DICTIONARIES[lang];
   const locale = LOCALES[lang];
   const pluralRules = new Intl.PluralRules(locale);
@@ -67,7 +69,8 @@ export function createI18n(lang: UiLanguage, now: () => Date = () => new Date())
     }
   };
 
-  const t = (key: MessageKey, params?: Params) => interpolate(dict[key] ?? key, params, locale);
+  const homeName = countryName(home);
+  const t = (key: MessageKey, params?: Params) => interpolate(dict[key] ?? key, { home: homeName, ...params }, locale);
 
   const i18n: I18n = {
     lang,
@@ -79,7 +82,7 @@ export function createI18n(lang: UiLanguage, now: () => Date = () => new Date())
     },
     tryT: (key, params) => {
       const template = (dict as Record<string, string>)[key];
-      return template === undefined ? null : interpolate(template, params, locale);
+      return template === undefined ? null : interpolate(template, { home: homeName, ...params }, locale);
     },
     relative: (iso) => {
       if (!iso) return "";
@@ -113,11 +116,12 @@ export function createI18n(lang: UiLanguage, now: () => Date = () => new Date())
     },
     number: (n) => n.toLocaleString(locale),
     countryName,
+    home,
     turkeyLink: (link) => {
       const [kind, value = ""] = link.split(":");
-      if (kind === "turkey_mentioned") return t("ai.link.turkey_mentioned");
+      if (kind === "home_mentioned") return t("ai.link.home_mentioned");
       if (kind === "neighbour") return t("ai.link.neighbour", { country: countryName(value) });
-      if (kind === "turkic") return t("ai.link.turkic", { country: countryName(value) });
+      if (kind === "related") return t("ai.link.related", { country: countryName(value) });
       if (kind === "topic") {
         const label = (dict as Record<string, string>)[`topic.${value}`] ?? value;
         return t("ai.link.topic", { topic: label });
@@ -130,8 +134,8 @@ export function createI18n(lang: UiLanguage, now: () => Date = () => new Date())
 
 const I18nContext = createContext<I18n>(createI18n("tr"));
 
-export function I18nProvider({ lang, children }: { lang: UiLanguage; children: ReactNode }) {
-  const value = useMemo(() => createI18n(lang), [lang]);
+export function I18nProvider({ lang, home, children }: { lang: UiLanguage; home?: string; children: ReactNode }) {
+  const value = useMemo(() => createI18n(lang, undefined, home), [lang, home]);
   return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>;
 }
 

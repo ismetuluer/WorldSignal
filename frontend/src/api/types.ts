@@ -41,6 +41,11 @@ export interface Settings {
   "feed.filters": FeedFilters;
   "update.auto_check": boolean;
   "update.auto_download": boolean;
+  /** "My country" (ISO code); "" = Windows' region. related/topics null = the country's own defaults. */
+  "home.country": string;
+  "home.related": string[] | null;
+  "home.topics": string[] | null;
+  "home.keywords": string[];
   "ai.enabled": boolean;
   "ai.url": string;
   "ai.model": string;
@@ -111,6 +116,8 @@ export interface Article {
   region: Region;
   catalog_group: CatalogGroup;
   paywalled: boolean;
+  exclusive: boolean;
+  breaking: boolean;
   /** AI enrichment; the text fields are only set when ai_status is "done". */
   ai_status: AiItemStatus | null;
   title_tr: string | null;
@@ -121,7 +128,7 @@ export interface Article {
   /** ISO 3166-1 alpha-2 codes the AI found in the text. */
   countries: string[];
   turkey_relevance: TurkeyRelevance | null;
-  /** Why the article is related: "turkey_mentioned", "neighbour:GR", "turkic:KZ", "topic:nato". */
+  /** Relevance to the user's country and why: "home_mentioned", "neighbour:GR", "related:KZ", "topic:nato". */
   turkey_links: string[];
   ai_issues: string[];
   ai_model: string | null;
@@ -268,6 +275,7 @@ export interface StoryMember {
   source_id: number;
   source_name: string;
   paywalled: boolean;
+  exclusive: boolean;
   region: Region;
   similarity: number | null;
   assigned_by: "auto" | "user";
@@ -342,6 +350,10 @@ export interface Story {
   source_count: number;
   score: number;
   score_parts: ScoreParts;
+  /** Spreading right now (3+ independent sources within the hour) or marked breaking by its publisher. */
+  breaking: boolean;
+  /** A report is marked exclusive by its publisher. */
+  exclusive: boolean;
   turkey_relevance: TurkeyRelevance;
   category: Category | null;
   representative_id: number | null;
@@ -464,6 +476,22 @@ export interface Meta {
   ui_languages: UiLanguage[];
   data_dir: string;
   version: string;
+  /** The country the relevance rules use now, and the one "" (Windows' region) stands for. */
+  home_country: string;
+  system_country: string;
+}
+
+/** GET /api/home: the user's country as the rules see it. */
+export interface HomeInfo {
+  code: string;
+  system_country: string | null;
+  neighbours: string[];
+  related: string[];
+  topics: string[];
+  keywords: string[];
+  countries: string[];
+  all_topics: string[];
+  syncing: boolean;
 }
 
 export interface FeedTestResult {

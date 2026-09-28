@@ -36,6 +36,8 @@ from worldsignal.repo.notebook import NotebookRepository
 from worldsignal.repo.stories import StoryRepository
 from worldsignal.stories.worker import StoryWorker
 from worldsignal.paths import ui_dist_dir
+from worldsignal.updater import Updater
+from worldsignal.home_sync import HomeSync
 
 pytestmark = pytest.mark.e2e
 
@@ -77,7 +79,7 @@ def embed_handler(request: httpx.Request) -> httpx.Response:
 
 
 @pytest.fixture
-def server(db, data_paths, settings, sources, articles) -> Iterator[str]:
+def server(db, data_paths, settings, sources, articles, home) -> Iterator[str]:
     if not (UI_DIR / "index.html").exists():
         pytest.skip("frontend/dist yok; önce 'npm run build' çalıştırın")
     sources.seed_from_catalog(MINI_CATALOG)
@@ -85,6 +87,7 @@ def server(db, data_paths, settings, sources, articles) -> Iterator[str]:
     settings.set("ai.url", "http://127.0.0.1:9")
     settings.set("feed.window_hours", 72)  # fixture reports are dated yesterday
     settings.set("fulltext.enabled", False)  # hermetic: no page downloads, no browser
+    settings.set("update.auto_check", False)  # hermetic: never asks GitHub
     collector = Collector(db, sources, articles, client_factory=mock_client_factory(feed_handler))
     ctx = AppContext(
         db=db, paths=data_paths, token=TOKEN, settings=settings, sources=sources, articles=articles,
@@ -100,6 +103,8 @@ def server(db, data_paths, settings, sources, articles) -> Iterator[str]:
                                        find_browser=lambda path: None),
         history=HistoryRepository(db, StoryRepository(db)), maintenance=Maintenance(HistoryRepository(db, StoryRepository(db)), settings),
         backups=BackupManager(db, data_paths.backups, data_paths.root), notifier=Notifier(db, settings),
+        updater=Updater(settings, data_paths.root), home=home,
+        home_sync=HomeSync(home, articles, StoryRepository(db), settings),
         ui_dir=UI_DIR, run_collector=True,
     )
     sock = socket.socket()

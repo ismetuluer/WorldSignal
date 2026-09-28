@@ -5,6 +5,7 @@ import { otherLang, storySummaryText, storyTitle, storyWhy, type AiLang, type Sh
 import { textDirection } from "../lib/hooks";
 import { Icon } from "./Icon";
 import { useMeeting } from "./meeting";
+import { BreakingBadge, ExclusiveBadge } from "./Badges";
 
 const MAX_SOURCE_NAMES = 4;
 
@@ -59,6 +60,8 @@ export function ScoreTags({ story: s, i18n }: { story: Story; i18n: I18n }) {
   const tags: ScoreTag[] = s.score_parts.tags ?? [];
   return (
     <div className="story-tags" dir="ltr">
+      {s.breaking ? <BreakingBadge /> : null}
+      {s.exclusive ? <ExclusiveBadge /> : null}
       {tags.map((tag) => {
         switch (tag.kind) {
           case "sources":

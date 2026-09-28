@@ -25,6 +25,8 @@ from .repo.sources import SourceRepository
 from .repo.stories import StoryRepository
 from .stories.worker import StoryWorker
 from .updater import Updater
+from .country import HomeState, windows_country
+from .home_sync import HomeSync
 
 log = logging.getLogger(__name__)
 
@@ -36,9 +38,10 @@ def build_context(paths: DataPaths, token: str, ui_dir: Path | None, run_collect
     settings = SettingsRepository(db)
     sources = SourceRepository(db, settings)
     sources.seed_from_catalog(load_catalog())
+    home = HomeState(settings.get_preferences, windows_country())
     articles = ArticleRepository(db)
     collector = Collector(db, sources, articles)
-    ai = AiRepository(db)
+    ai = AiRepository(db, home=home.profile)
     stories = StoryRepository(db)
     fulltext = FullTextRepository(db)
     history = HistoryRepository(db, stories)
@@ -51,5 +54,6 @@ def build_context(paths: DataPaths, token: str, ui_dir: Path | None, run_collect
         history=history, maintenance=Maintenance(history, settings, backups, fulltext), backups=backups,
         notifier=Notifier(db, settings),
         updater=Updater(settings, paths.root),
+        home=home, home_sync=HomeSync(home, articles, stories, settings),
         ui_dir=ui_dir, run_collector=run_collector,
     )

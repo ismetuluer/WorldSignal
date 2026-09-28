@@ -44,7 +44,7 @@ const SETTINGS: Settings = {
   "ui.language": "tr",
   "ui.theme": "light",
   "feed.window_hours": 24,
-  "feed.view": "stories", "feed.filters": { regions: [], groups: [], langs: [], sources: [], categories: [], turkey: false }, "update.auto_check": true, "update.auto_download": true,
+  "feed.view": "stories", "feed.filters": { regions: [], groups: [], langs: [], sources: [], categories: [], turkey: false }, "update.auto_check": true, "update.auto_download": true, "home.country": "", "home.related": null, "home.topics": null, "home.keywords": [],
   "ai.enabled": true,
   "ai.url": "http://localhost:11434",
   "ai.model": "gemma4-26b-a4b",
@@ -57,7 +57,7 @@ const META: Meta = {
   groups: ["turkey", "western"],
   languages: ["en", "tr"],
   categories: ["politics", "diplomacy"],
-  ui_languages: ["tr", "en"],
+  ui_languages: ["tr", "en"], home_country: "TR", system_country: "TR",
   data_dir: "C:\\data",
   version: "0.5.0",
 };
@@ -95,14 +95,14 @@ function source(id: number, name: string, extra: Partial<Source> = {}): Source {
 function member(id: number, name: string, extra: Partial<StoryMember> = {}): StoryMember {
   return {
     id, url: `https://x.example/${id}`, title: `Report ${id}`, summary: "", sort_at: NOW, language: "en",
-    source_id: id, source_name: name, paywalled: false, region: "europe", similarity: 0.8, assigned_by: "auto",
+    source_id: id, source_name: name, paywalled: false, exclusive: false, region: "europe", similarity: 0.8, assigned_by: "auto",
     title_tr: null, summary_tr: null, title_en: null, summary_en: null, ...NO_FULLTEXT, ...extra,
   };
 }
 
 function story(members: StoryMember[]): Story {
   return {
-    id: 1, first_seen_at: NOW, last_seen_at: NOW, article_count: members.length, source_count: members.length, score: 70,
+    id: 1, breaking: false, exclusive: false, first_seen_at: NOW, last_seen_at: NOW, article_count: members.length, source_count: members.length, score: 70,
     score_parts: {}, turkey_relevance: "none", category: "diplomacy", representative_id: members[0]!.id, representative: members[0]!,
     ai_status: "done", ai_title_tr: "Hikâye", ai_summary_tr: "Özet.", ai_why: null, ai_title_en: null, ai_summary_en: null, ai_why_en: null,
     ai_issues: [], ai_article_count: members.length, ai_model: "gemma4-26b-a4b",

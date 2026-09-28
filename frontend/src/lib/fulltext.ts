@@ -1,7 +1,7 @@
 import type { MessageKey } from "../i18n";
 
 const KNOWN_ERRORS = [
-  "bot_check", "paywall", "not_article", "timeout", "network", "profile_in_use", "browser_failed", "no_browser",
+  "bot_check", "paywall", "not_article", "aggregator_link", "timeout", "network", "profile_in_use", "browser_failed", "no_browser",
 ] as const;
 
 /** i18n key for a full-text error code (http_NNN codes share one text). */

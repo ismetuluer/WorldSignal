@@ -52,6 +52,8 @@ from ..repo.stories import StoryFilter, StoryRepository
 from ..stories.embedding import recommended_settings
 from ..stories.worker import StoryWorker, interest_from, weights_from
 from ..updater import UpdateError, Updater
+from ..country import TOPICS, HomeState, countries as country_data, profile as country_profile
+from ..home_sync import HomeSync
 from .. import mailer
 
 log = logging.getLogger(__name__)
@@ -88,6 +90,8 @@ class AppContext:
     # Set by the desktop window: close without starting again (an update starts the new program).
     quit: Callable[[], None] | None = None
     updater: Updater | None = None
+    home: HomeState | None = None
+    home_sync: HomeSync | None = None
     extra: dict[str, Any] = field(default_factory=dict)
 
 
@@ -120,6 +124,12 @@ class SettingsPatch(BaseModel):
     feed_view: Literal["stories", "articles"] | None = Field(None, alias="feed.view")
     feed_filters: FeedFilters | None = Field(None, alias="feed.filters")
     update_auto_check: bool | None = Field(None, alias="update.auto_check")
+    home_country: Annotated[str, Field(pattern=r"^([A-Z]{2})?$")] | None = Field(None, alias="home.country")
+    home_related: list[Annotated[str, Field(pattern=r"^[A-Z]{2}$")]] | None = Field(None, alias="home.related", max_length=50)
+    home_topics: list[Literal[TOPICS]] | None = Field(None, alias="home.topics")  # type: ignore[valid-type]
+    home_keywords: list[Annotated[str, Field(min_length=2, max_length=60)]] | None = Field(
+        None, alias="home.keywords", max_length=50
+    )
     update_auto_download: bool | None = Field(None, alias="update.auto_download")
     ai_enabled: bool | None = Field(None, alias="ai.enabled")
     ai_url: HttpUrl | None = Field(None, alias="ai.url")
@@ -268,6 +278,8 @@ def create_app(ctx: AppContext) -> FastAPI:
             tasks.append(asyncio.create_task(ctx.notifier.run_forever(), name="notifier"))
             if ctx.updater is not None:
                 tasks.append(asyncio.create_task(ctx.updater.run_forever(), name="updater"))
+            if ctx.home_sync is not None:
+                tasks.append(asyncio.create_task(ctx.home_sync.run_forever(), name="home-sync"))
         try:
             yield
         finally:
@@ -314,7 +326,29 @@ def create_app(ctx: AppContext) -> FastAPI:
             "categories": list(CATEGORIES),
             "ui_languages": list(SUPPORTED_LANGUAGES),
             "data_dir": str(ctx.paths.root),
+            # The user's country: settings "home.country", or this when it is "" (Windows' region).
+            "home_country": ctx.home.profile().code if ctx.home is not None else "TR",
+            "system_country": country_profile({}, ctx.home.system_country).code if ctx.home is not None else "TR",
             "version": __version__,
+        }
+
+    # -- my country ------------------------------------------------------------------
+    @api.get("/home")
+    def home_country() -> dict[str, Any]:
+        """The user's country as the rules see it now (settings may say "" = Windows' region)."""
+        if ctx.home is None:
+            raise api_error(409, "home_unavailable")
+        p = ctx.home.profile()
+        return {
+            "code": p.code,
+            "system_country": ctx.home.system_country,
+            "neighbours": list(p.neighbours),
+            "related": list(p.related),
+            "topics": list(p.topics),
+            "keywords": list(p.keywords),
+            "countries": sorted(country_data()),
+            "all_topics": list(TOPICS),
+            "syncing": bool(ctx.home_sync and ctx.home_sync.status()["running"]),
         }
 
     # -- settings ----------------------------------------------------------------
@@ -338,7 +372,18 @@ def create_app(ctx: AppContext) -> FastAPI:
                 values.setdefault(key, value)  # a value sent in the same change wins
         if "interest.keywords" in values:
             values["interest.keywords"] = list(dict.fromkeys(k.strip() for k in values["interest.keywords"] if k.strip()))
+        if "home.country" in values:
+            unknown_codes = {c for c in [values["home.country"], *values.get("home.related", [])] if c} - set(country_data())
+            if unknown_codes:
+                raise api_error(422, "unknown_country", ", ".join(sorted(unknown_codes)))
+            # A new country starts with its own defaults for related countries and topics.
+            values.setdefault("home.related", None)
+            values.setdefault("home.topics", None)
+        if "home.keywords" in values:
+            values["home.keywords"] = list(dict.fromkeys(k.strip() for k in values["home.keywords"] if k.strip()))
         ctx.settings.set_many(values)
+        if any(k.startswith("home.") for k in values) and ctx.home_sync is not None:
+            ctx.home_sync.wake()
         if any(k.startswith("ai.") for k in values):
             ctx.ai_worker.wake()
         if any(k.split(".")[0] in ("stories", "score", "interest") for k in values):
