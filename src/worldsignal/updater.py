@@ -276,7 +276,9 @@ class Updater:
         flags = getattr(subprocess, "DETACHED_PROCESS", 0) | getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0)
         cmd = [str(self._staged), f"--apply-update={self.install_dir}", f"--after-pid={os.getpid()}"]
         log.info("Applying update: %s", cmd)
-        subprocess.Popen(cmd, close_fds=True, creationflags=flags)  # noqa: S603 - our own verified program
+        # Started outside the program folder: a process's current directory cannot be renamed on Windows.
+        subprocess.Popen(cmd, close_fds=True, creationflags=flags,  # noqa: S603 - our own verified program
+                         cwd=self._staged.parent)
         self._state["state"] = "applying"
         quit_app()
 
@@ -336,7 +338,7 @@ class Updater:
 
 
 # -- runs in the new program, before anything else ----------------------------------------------------------
-def _retry(action: Callable[[], Any], attempts: int = 40) -> Any:
+def _retry(action: Callable[[], Any], attempts: int = 120) -> Any:
     for i in range(attempts):
         try:
             return action()
@@ -349,6 +351,10 @@ def _retry(action: Callable[[], Any], attempts: int = 40) -> Any:
 
 def apply_update(install_dir: Path, source_dir: Path, data_root: Path, wait: Callable[[], None]) -> bool:
     """Replace ``install_dir`` with ``source_dir``. True on success; on failure the old folder is back."""
+    # Explorer starts a program with its own folder as the current directory and child processes inherit it;
+    # Windows cannot rename a folder that is some process's current directory.
+    data_root.mkdir(parents=True, exist_ok=True)
+    os.chdir(data_root)
     wait()
     old = install_dir.with_name(f"{install_dir.name}.old")
     result: dict[str, Any] = {"at": utc_now_iso(), "to": _version_of(source_dir), "from": _version_of(install_dir)}

@@ -246,7 +246,7 @@ into backups.
 Stack: Python 3.12 (FastAPI, SQLite + FTS5, feedparser, trafilatura, patchright) · React 19 + TypeScript + Vite ·
 pywebview/WebView2 · PyInstaller. The project documents are in Turkish:
 - architecture: [ARCHITECTURE.md](ARCHITECTURE.md);
-- version history: [CHANGELOG.md](CHANGELOG.md);
+- version history: [CHANGELOG.en.md](CHANGELOG.en.md) (English from 0.10.0) and [CHANGELOG.md](CHANGELOG.md);
 - source verification report: [docs/KAYNAK_DOGRULAMA.md](docs/KAYNAK_DOGRULAMA.md).
 
 Country data (`src/worldsignal/catalog/countries.json`): country names from [Wikidata](https://www.wikidata.org) (CC0),
@@ -267,7 +267,9 @@ writes `src/worldsignal/catalog/sources.json`; do not edit that file by hand.
 **Publishing a release** (project owner):
 
 1. Raise the version number (`pyproject.toml`, `src/worldsignal/__init__.py`, `frontend/package.json`) and write that
-   version's section in `CHANGELOG.md`. This text becomes the release note on GitHub.
+   version's section in both `CHANGELOG.md` (Turkish) and `CHANGELOG.en.md` (English). Together they become the
+   release notes on GitHub; "What's new" in the app shows the part in its interface language. Without both, no package
+   is made.
 2. Run `scripts\clean-build-release.bat`. It cleans up, runs all tests, backs up the source, builds the app, and
    prepares and checks the zip, `.sha256` and notes under `release\<version>\`. It stops if a part is missing or user
    data slipped in.

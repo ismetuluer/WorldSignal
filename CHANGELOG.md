@@ -1,6 +1,18 @@
 # Değişiklik günlüğü
 
 Sürüm numaraları [Anlamsal Sürümleme](https://semver.org/lang/tr/) izler. 1.0'a kadar her faz bir ara sürümdür.
+İngilizcesi (0.10.0'dan itibaren): [CHANGELOG.en.md](CHANGELOG.en.md).
+
+## [0.11.1] — 2026-09-28 — Güncelleme düzeltmesi
+
+### Düzeltildi
+- **Program içinden güncelleme "program klasörü kullanımda" hatasıyla başarısız oluyordu.** World Signal Dosya
+  Gezgini'nden açıldığında program klasörü onun çalışma klasörü oluyor, güncelleyicinin başlattığı yeni program da
+  bunu devralıyordu. Windows, çalışan bir programın çalışma klasörü olan bir klasörün adını değiştirmeye izin vermediği
+  için güncelleme programı değiştiremiyor ve eski sürümü geri koyuyordu. Yeni program artık önce bu klasörden çıkıyor;
+  çalışan program ve tarayıcı pencereleri de klasörü tutmuyor. Güncelleyici eski programın pencerelerinin kapanmasını
+  20 saniye yerine bir dakikaya kadar bekliyor.
+- Sürüm notları Türkçe ve İngilizce yayımlanıyor; "Yenilikler" arayüz dilindeki kısmı gösteriyor.
 
 ## [0.11.0] — 2026-09-28 — Özet dilleri ve bulut yapay zekâ
 

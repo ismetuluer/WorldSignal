@@ -22,7 +22,7 @@ vi.mock("../api/client", async (importOriginal) => {
 
 import { api, ApiError } from "../api/client";
 import { ToastProvider } from "../components/Toasts";
-import { UpdateBanner, UpdateSettings } from "../components/Update";
+import { notesIn, UpdateBanner, UpdateSettings } from "../components/Update";
 import { I18nProvider } from "../i18n";
 import { AppStateProvider } from "../state";
 import { UPDATE_IDLE } from "./fixtures";
@@ -132,5 +132,18 @@ describe("Update settings", () => {
     expect(mocked.updateSettings).toHaveBeenCalledWith({ "update.auto_download": false });
     await userEvent.click(screen.getByRole("button", { name: "Şimdi denetle" }));
     expect(mocked.checkUpdate).toHaveBeenCalled();
+  });
+});
+
+describe("release notes", () => {
+  const BOTH = "## Türkçe\n\n### Düzeltildi\n- Güncelleme\n\n## English\n\n### Fixed\n- Update\n";
+
+  it("shows the part in the interface language", () => {
+    expect(notesIn(BOTH, "tr")).toBe("### Düzeltildi\n- Güncelleme");
+    expect(notesIn(BOTH, "en")).toBe("### Fixed\n- Update");
+  });
+
+  it("shows older one-language notes as they are", () => {
+    expect(notesIn("### Eklendi\n- Spor", "en")).toBe("### Eklendi\n- Spor");
   });
 });

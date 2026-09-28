@@ -4,6 +4,8 @@ import hashlib
 import io
 import json
 import os
+import subprocess
+import sys
 import zipfile
 from pathlib import Path
 
@@ -56,6 +58,12 @@ class FakeGitHub:
         if request.url.path.endswith(".sha256"):
             return httpx.Response(200, text=f"{self.checksum}  WorldSignal-{self.version}-windows.zip\n")
         return httpx.Response(200, content=self.package)
+
+
+@pytest.fixture(autouse=True)
+def keep_directory(monkeypatch, tmp_path):
+    """apply_update changes the current directory; give it back after each test."""
+    monkeypatch.chdir(tmp_path)
 
 
 @pytest.fixture
@@ -247,6 +255,35 @@ def test_folder_in_use_is_left_alone(tmp_path, install, monkeypatch):
     monkeypatch.undo()
     assert (install / "WorldSignal.exe").read_text() == "program 0.8.0"
     assert json.loads((tmp_path / "data" / "update-result.json").read_text())["error"] == "in_use"
+
+
+def test_update_works_when_started_from_the_program_folder(tmp_path, install):
+    """Explorer starts a program with its own folder as the current directory, and the new program inherits it.
+
+    A process's current directory cannot be renamed on Windows, so the replacement must first step out of it
+    (seen in 0.11.0: "the program folder is in use", WinError 32).
+    """
+    src = staged(tmp_path)
+    code = ("import sys; from pathlib import Path; from worldsignal.updater import apply_update; "
+            "sys.exit(0 if apply_update(Path(sys.argv[1]), Path(sys.argv[2]), Path(sys.argv[3]), wait=lambda: None) else 1)")
+    # The base interpreter: a venv's python.exe is a launcher whose own process would keep the folder in use.
+    python = getattr(sys, "_base_executable", sys.executable)
+    env = {**os.environ, "PYTHONPATH": os.pathsep.join(p for p in sys.path if p)}
+    done = subprocess.run([python, "-c", code, str(install), str(src), str(tmp_path / "data")],
+                          cwd=install, env=env, capture_output=True, text=True, timeout=120)
+    assert done.returncode == 0, done.stderr
+    assert (install / "WorldSignal.exe").read_text() == "program 0.9.0"
+
+
+def test_the_new_program_is_not_started_inside_the_old_folder(settings, tmp_path, install, monkeypatch):
+    started = []
+    monkeypatch.setattr(upd.subprocess, "Popen", lambda cmd, **kw: started.append(kw))
+    u = make(settings, tmp_path, install, FakeGitHub("0.9.0"))
+    u.check()
+    u.download()
+    u.apply(lambda: None)
+    cwd = Path(started[0]["cwd"]).resolve()
+    assert install.resolve() not in (cwd, *cwd.parents)
 
 
 def test_apply_refuses_nonsense(tmp_path, install):

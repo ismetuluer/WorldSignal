@@ -32,10 +32,24 @@ function errorText(t: (k: MessageKey) => string, code: string | null): string {
   return t(`update.error.${code && known.includes(code) ? code : "other"}` as MessageKey);
 }
 
+// The headings tools/release.py puts between the Turkish and the English release notes.
+const NOTES_TR = /^## Türkçe[ \t]*$/m;
+const NOTES_EN = /^## English[ \t]*$/m;
+
+/** The part of the release notes in the interface language (Turkish or English; the whole text otherwise). */
+export function notesIn(notes: string, lang: string): string {
+  const tr = notes.search(NOTES_TR);
+  const en = notes.search(NOTES_EN);
+  if (tr < 0 || en < tr) return notes;
+  const part = lang === "tr" ? notes.slice(tr, en) : notes.slice(en);
+  return part.replace(/^## .*\r?\n/, "").trim();
+}
+
 function NotesDialog({ title, notes, onClose }: { title: string; notes: string; onClose: () => void }) {
+  const { lang } = useI18n();
   return (
     <Dialog title={title} onClose={onClose}>
-      <div className="release-notes">{notes}</div>
+      <div className="release-notes">{notesIn(notes, lang)}</div>
     </Dialog>
   );
 }

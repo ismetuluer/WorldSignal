@@ -6,7 +6,8 @@
 release\\<version>\\
     WorldSignal-<version>-windows.zip          the program folder (top folder "WorldSignal")
     WorldSignal-<version>-windows.zip.sha256   checked by the updater before it unpacks anything
-    NOTES.md                                    this version's CHANGELOG section (the GitHub release text)
+    NOTES.md                                    this version's CHANGELOG sections, Turkish and English (the GitHub
+                                                release text; the app shows the part in its interface language)
 The two newest release folders are kept. tools\\publish.py puts one on GitHub.
 """
 
@@ -46,13 +47,25 @@ def zip_name(version: str) -> str:
     return f"WorldSignal-{version}-windows.zip"
 
 
-def release_notes(version: str, changelog: Path = ROOT / "CHANGELOG.md") -> str:
-    """The CHANGELOG section of ``version`` without its heading."""
-    text = changelog.read_text(encoding="utf-8")
+# Headings that separate the two languages in the release notes; frontend/src/components/Update.tsx splits on them.
+NOTES_TR, NOTES_EN = "## Türkçe", "## English"
+
+
+def changelog_section(version: str, changelog: Path) -> str:
+    """The section of ``version`` in one changelog, without its heading."""
+    text = changelog.read_text(encoding="utf-8") if changelog.is_file() else ""
     m = re.search(rf"^## \[{re.escape(version)}\][^\n]*\n(.*?)(?=^## \[|\Z)", text, re.MULTILINE | re.DOTALL)
     if not m or not m.group(1).strip():
-        fail(f"CHANGELOG.md içinde {version} bölümü yok; önce değişiklikleri yazın")
-    return m.group(1).strip() + "\n"
+        fail(f"{changelog.name} içinde {version} bölümü yok; önce değişiklikleri yazın")
+    return m.group(1).strip()
+
+
+def release_notes(version: str, changelog: Path = ROOT / "CHANGELOG.md",
+                  changelog_en: Path = ROOT / "CHANGELOG.en.md") -> str:
+    """The release notes of ``version``: its Turkish and its English changelog section."""
+    tr = changelog_section(version, changelog)
+    en = changelog_section(version, changelog_en)
+    return f"{NOTES_TR}\n\n{tr}\n\n{NOTES_EN}\n\n{en}\n"
 
 
 def verify(package: Path, version: str) -> None:

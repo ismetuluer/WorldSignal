@@ -29,6 +29,8 @@ from .single_instance import InstanceLock, activate_running_instance
 log = logging.getLogger("worldsignal")
 
 WINDOW_TITLE = "World Signal"
+# Where the program was started; main() moves to the data folder (see there).
+START_DIR = os.getcwd()
 
 
 def parse_args(argv: list[str] | None) -> argparse.Namespace:
@@ -59,7 +61,8 @@ def run_apply_update(args: argparse.Namespace, paths: DataPaths) -> int:
                        f"Ayrıntılar günlük dosyasında: {paths.logs / 'worldsignal.log'}")
     exe = install_dir / "WorldSignal.exe"
     flags = getattr(subprocess, "DETACHED_PROCESS", 0) | getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0)
-    subprocess.Popen([str(exe), f"--after-pid={os.getpid()}"], close_fds=True, creationflags=flags)  # noqa: S603
+    subprocess.Popen([str(exe), f"--data-dir={paths.root}", f"--after-pid={os.getpid()}"],  # noqa: S603
+                     close_fds=True, creationflags=flags, cwd=paths.root)
     return 0 if ok else 1
 
 
@@ -105,6 +108,9 @@ def main(argv: list[str] | None = None) -> int:
     paths = DataPaths((args.data_dir or default_data_dir()).resolve()).ensure()
     setup_logging(paths.logs, logging.DEBUG if args.debug else logging.INFO, console=args.server_only)
     log.info("World Signal %s starting (data: %s)", __version__, paths.root)
+    # Leave the program folder (Explorer makes it the current directory): otherwise this process and its browser
+    # child processes keep it in use and the next update cannot replace it. All paths are absolute.
+    os.chdir(paths.root)
 
     if args.apply_update:
         return run_apply_update(args, paths)
@@ -190,7 +196,8 @@ def start_again() -> None:
         cmd = [sys.executable, "-m", "worldsignal", *args]
     log.info("Restarting: %s", cmd)
     flags = getattr(subprocess, "DETACHED_PROCESS", 0) | getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0)
-    subprocess.Popen(cmd, close_fds=True, creationflags=flags)  # noqa: S603 - our own executable
+    # The arguments may hold paths relative to the directory this program was started in.
+    subprocess.Popen(cmd, close_fds=True, creationflags=flags, cwd=START_DIR)  # noqa: S603 - our own executable
 
 
 if __name__ == "__main__":

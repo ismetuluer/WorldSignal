@@ -66,13 +66,16 @@ def test_wrong_version_or_checksum_is_refused(tmp_path):
         release.verify(package, "0.8.0")
 
 
-def test_release_notes_come_from_the_changelog(tmp_path):
+def test_release_notes_come_from_both_changelogs(tmp_path):
     log = tmp_path / "CHANGELOG.md"
     log.write_text("# Log\n\n## [0.9.0] — 2026 — B\n\n- yeni\n\n## [0.8.0] — 2026 — A\n\n- eski\n", encoding="utf-8")
-    assert release.release_notes("0.9.0", log) == "- yeni\n"
-    assert release.release_notes("0.8.0", log) == "- eski\n"
+    log_en = tmp_path / "CHANGELOG.en.md"
+    log_en.write_text("# Log\n\n## [0.9.0] — 2026 — B\n\n- new\n", encoding="utf-8")
+    assert release.release_notes("0.9.0", log, log_en) == "## Türkçe\n\n- yeni\n\n## English\n\n- new\n"
     with pytest.raises(SystemExit):
-        release.release_notes("1.0.0", log)
+        release.release_notes("0.8.0", log, log_en)  # no English section: no release
+    with pytest.raises(SystemExit):
+        release.release_notes("1.0.0", log, log_en)
 
 
 def test_the_real_changelog_has_this_versions_notes():

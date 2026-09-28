@@ -259,8 +259,9 @@ Kaynak kataloğu `tools/catalog_candidates.json`'da düzenlenir; `tools/verify_c
 
 **Sürüm yayınlamak** (proje sahibi):
 
-1. Sürüm numarasını artırın (`pyproject.toml`, `src/worldsignal/__init__.py`, `frontend/package.json`) ve
-   `CHANGELOG.md`'ye o sürümün bölümünü yazın; bu metin GitHub'daki sürüm notu olur.
+1. Sürüm numarasını artırın (`pyproject.toml`, `src/worldsignal/__init__.py`, `frontend/package.json`) ve o
+   sürümün bölümünü hem `CHANGELOG.md`'ye (Türkçe) hem `CHANGELOG.en.md`'ye (İngilizce) yazın; ikisi birlikte
+   GitHub'daki sürüm notu olur (program "Yenilikler"de arayüz dilindekini gösterir). Biri eksikse paket hazırlanmaz.
 2. `scripts\clean-build-release.bat`: temizler, bütün testleri çalıştırır, kaynak yedeği alır, programı derler ve
    `release\<sürüm>\` altında zip + `.sha256` + notları hazırlayıp denetler (eksik parça ya da kullanıcı verisi varsa
    durur).
