@@ -1,0 +1,18 @@
+{
+  "_comment": "Hand-checked same-event groups from the user's database (article ids, 2026-09-27). Used by tools/benchmark_embeddings.py. Texts are snapshotted to .devdata/benchmark/embed_gold_texts.json on first run.",
+  "events": {
+    "hormuz_drone": [7795, 7676, 7566, 7440, 7277, 7281, 7423],
+    "hormuz_plan_rejected": [7823, 7635, 7728, 7455],
+    "sayan_kaya": [7398, 6694, 7667, 7671, 7607, 7739, 6786, 6090, 6129, 6878],
+    "ozata_resignation": [7155, 7225],
+    "afghan_pakistan_clash": [7770, 7636, 7371, 7718, 7760, 7590],
+    "madrid_maricarmen": [7463, 6880, 892, 3879, 4253, 4214, 1477, 1479, 852, 7077, 1988, 6510, 7221],
+    "s400_lavrov": [3000, 4511, 6338, 7655],
+    "greenland_bases": [3579, 2643, 3588, 2744, 4567, 3889, 4006],
+    "noreaster_storm": [231, 857, 214, 2359, 1598, 1733, 4131, 6491, 5988, 5712],
+    "swiss_neutrality": [7885, 7862, 7673, 7793, 7819, 7592, 7465, 7433, 7335, 7309, 7226, 7184, 7407],
+    "taiz_saudi_strike": [7648, 7593, 7711, 7587],
+    "taiz_government_bombing": [5719, 4869]
+  },
+  "singletons": [7096, 7536, 7298, 7537, 3867, 2024, 1374, 6001, 7241, 2313, 7533, 4155, 2154]
+}

@@ -1,0 +1,96 @@
+"""User settings stored as JSON values in the ``settings`` table."""
+
+from __future__ import annotations
+
+import json
+from typing import Any
+
+from ..db import Database, utc_now_iso
+
+DEFAULTS: dict[str, Any] = {
+    "ui.language": "tr",
+    "ui.theme": "system",  # system | light | dark
+    "feed.window_hours": 24,
+    "feed.view": "stories",
+    # Program updates from GitHub releases (updater.py).
+    "update.auto_check": True,
+    "update.auto_download": True,
+    # The feed's filters as the user last left them (remembered between sessions).
+    "feed.filters": {"regions": [], "groups": [], "langs": [], "sources": [], "categories": [], "turkey": False},
+    "ai.enabled": True,
+    "ai.url": "http://localhost:11434",
+    "ai.model": "gemma4-26b-a4b:latest",  # chosen by the project owner on 2026-09-27 after tools/benchmark_models.py
+    "ai.max_age_hours": 24,  # newer articles are queued automatically; older ones on request
+    "ai.yield_gpu": True,  # wait while another model is loaded in Ollama instead of evicting it
+    # Stories (phase 3). Embedding model and threshold come from tools/benchmark_embeddings.py.
+    "stories.embed_model": "bge-m3:latest",
+    # Measured in docs/GOMME_KARSILASTIRMA.md: titles alone separate distinct events better.
+    "stories.embed_summary": False,
+    "stories.threshold": 0.55,
+    "stories.cohesion": 0.5,  # docs/BIRLESTIRME_KARSILASTIRMA.md: stops chaining
+    "stories.min_sources_for_ai": 2,
+    "score.w_sources": 0.45,
+    "score.w_freshness": 0.25,
+    "score.w_turkey": 0.20,
+    "score.w_interest": 0.10,
+    "interest.keywords": [],
+    "interest.categories": [],
+    "interest.regions": [],
+    # Full text (phase 5). Browser mode uses patchright with a Chromium browser on this computer.
+    "fulltext.enabled": True,
+    "fulltext.browser_path": "",  # empty: the first of Brave, Chrome, Edge that is installed
+    "fulltext.profile": "own",  # own: World Signal's profile | main: the browser's everyday profile
+    "fulltext.visible": False,  # show the browser window while it reads pages
+    "fulltext.per_site_hour": 4,  # human pace: pages per site per hour
+    "fulltext.auto_min_score": 60,  # stories at least this important get full texts automatically
+    "fulltext.auto_per_story": 2,  # at most this many reports per story
+    # History and retention (phase 6).
+    "history.morning_hour": 9,  # the "morning" view of a past day shows the feed as it was at this hour
+    "retention.fulltext_days": 30,  # full texts (and translations) are removed after this; 0 keeps them
+    # Background and delivery (phase 7).
+    "backup.keep_daily": 14,  # daily database copies kept
+    "app.close_to_tray": True,  # closing the window keeps World Signal collecting in the system tray
+    "notify.enabled": True,
+    "notify.min_score": 60,  # only important stories ...
+    "notify.min_sources": 5,  # ... reported by this many independent sources within three hours
+    "notify.quiet": True,
+    "notify.quiet_start": 23,  # quiet hours, local time
+    "notify.quiet_end": 7,
+}
+
+# Internal bookkeeping keys that are not user preferences.
+CATALOG_REMOVED = "catalog.removed_slugs"
+
+
+class SettingsRepository:
+    def __init__(self, db: Database) -> None:
+        self.db = db
+
+    def get(self, key: str, default: Any = None) -> Any:
+        row = self.db.conn.execute("SELECT value FROM settings WHERE key = ?", (key,)).fetchone()
+        if row is None:
+            return DEFAULTS.get(key, default)
+        return json.loads(row["value"])
+
+    def get_preferences(self) -> dict[str, Any]:
+        values = dict(DEFAULTS)
+        rows = self.db.conn.execute(
+            "SELECT key, value FROM settings WHERE key IN (%s)" % ",".join("?" * len(DEFAULTS)),
+            tuple(DEFAULTS),
+        ).fetchall()
+        for row in rows:
+            values[row["key"]] = json.loads(row["value"])
+        return values
+
+    def set(self, key: str, value: Any) -> None:
+        with self.db.transaction() as c:
+            c.execute(
+                "INSERT INTO settings (key, value, updated_at) VALUES (?, ?, ?) "
+                "ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at",
+                (key, json.dumps(value, ensure_ascii=False), utc_now_iso()),
+            )
+
+    def set_many(self, values: dict[str, Any]) -> None:
+        with self.db.transaction():
+            for key, value in values.items():
+                self.set(key, value)

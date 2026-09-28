@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+<channel>
+  <title>Beta Haber - Dünya</title>
+  <language>tr-TR</language>
+  <item>
+    <title>IRAK'ta seçim sonuçları açıklandı</title>
+    <link>https://beta.example/haber/irak-secim?utm_source=rss&amp;utm_medium=feed&amp;id=7#yorumlar</link>
+    <guid>beta-1</guid>
+    <description><![CDATA[<p>Irak'ta yapılan <b>genel seçimlerin</b> sonuçları &amp; katılım oranı açıklandı.</p><img src="x.jpg">]]></description>
+    <pubDate>Sat, 27 Sep 2026 06:00:00 GMT</pubDate>
+  </item>
+  <item>
+    <title>İstanbul'da şiddetli yağış</title>
+    <link>https://beta.example/haber/istanbul-yagis</link>
+    <description>Şişli ve Çağlayan'da su baskınları yaşandı.</description>
+    <pubDate>Sat, 27 Sep 2026 05:30:00 +0300</pubDate>
+  </item>
+  <item>
+    <title>Tarihsiz haber</title>
+    <link>https://beta.example/haber/tarihsiz</link>
+    <description>Bu haberin tarihi yok.</description>
+  </item>
+  <item>
+    <title>IRAK'ta seçim sonuçları açıklandı (kopya)</title>
+    <link>https://beta.example/haber/irak-secim?id=7&amp;utm_campaign=x</link>
+  </item>
+  <item>
+    <title></title>
+    <link>https://beta.example/haber/basliksiz</link>
+  </item>
+  <item>
+    <title>Bağlantısız haber</title>
+  </item>
+  <item>
+    <title>Geleceğe tarihli haber (saat dilimi hatası)</title>
+    <link>https://beta.example/haber/gelecek</link>
+    <pubDate>Sat, 27 Sep 2026 12:00:00 GMT</pubDate>
+  </item>
+</channel>
+</rss>

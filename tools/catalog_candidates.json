@@ -1,0 +1,2385 @@
+{
+ "_comment": "Candidate sources. tools/verify_catalog.py fetches every feed and writes src/worldsignal/catalog/sources.json. Never edit sources.json by hand.",
+ "sources": [
+  {
+   "slug": "nytimes",
+   "name": "The New York Times",
+   "homepage": "https://www.nytimes.com",
+   "group": "western",
+   "owner": "New York Times Co.",
+   "region": "north_america",
+   "language": "en",
+   "paywalled": true,
+   "feeds": [
+    {
+     "url": "https://rss.nytimes.com/services/xml/rss/nyt/World.xml",
+     "label": "World"
+    },
+    {
+     "url": "https://rss.nytimes.com/services/xml/rss/nyt/HomePage.xml",
+     "label": "Home"
+    }
+   ]
+  },
+  {
+   "slug": "wsj",
+   "name": "The Wall Street Journal",
+   "homepage": "https://www.wsj.com",
+   "group": "western",
+   "owner": "News Corp",
+   "region": "north_america",
+   "language": "en",
+   "paywalled": true,
+   "feeds": [
+    {
+     "url": "https://feeds.content.dowjones.io/public/rss/RSSWorldNews",
+     "label": "World"
+    }
+   ]
+  },
+  {
+   "slug": "ft",
+   "name": "Financial Times",
+   "homepage": "https://www.ft.com",
+   "group": "western",
+   "owner": "Nikkei",
+   "region": "europe",
+   "language": "en",
+   "paywalled": true,
+   "feeds": [
+    {
+     "url": "https://www.ft.com/world?format=rss",
+     "label": "World"
+    },
+    {
+     "url": "https://www.ft.com/rss/home",
+     "label": "Home"
+    }
+   ]
+  },
+  {
+   "slug": "guardian",
+   "name": "The Guardian",
+   "homepage": "https://www.theguardian.com",
+   "group": "western",
+   "owner": "Guardian Media Group",
+   "region": "europe",
+   "language": "en",
+   "paywalled": false,
+   "feeds": [
+    {
+     "url": "https://www.theguardian.com/world/rss",
+     "label": "World"
+    }
+   ]
+  },
+  {
+   "slug": "washingtonpost",
+   "name": "The Washington Post",
+   "homepage": "https://www.washingtonpost.com",
+   "group": "western",
+   "owner": "Nash Holdings",
+   "region": "north_america",
+   "language": "en",
+   "paywalled": true,
+   "feeds": [
+    {
+     "url": "https://feeds.washingtonpost.com/rss/world",
+     "label": "World"
+    }
+   ]
+  },
+  {
+   "slug": "bbc",
+   "name": "BBC News",
+   "homepage": "https://www.bbc.com/news",
+   "group": "western",
+   "owner": "BBC",
+   "region": "europe",
+   "language": "en",
+   "paywalled": false,
+   "feeds": [
+    {
+     "url": "https://feeds.bbci.co.uk/news/world/rss.xml",
+     "label": "World"
+    }
+   ]
+  },
+  {
+   "slug": "economist",
+   "name": "The Economist",
+   "homepage": "https://www.economist.com",
+   "group": "western",
+   "owner": "The Economist Group",
+   "region": "europe",
+   "language": "en",
+   "paywalled": true,
+   "feeds": [
+    {
+     "url": "https://www.economist.com/international/rss.xml",
+     "label": "International"
+    },
+    {
+     "url": "https://www.economist.com/the-world-this-week/rss.xml",
+     "label": "The world this week"
+    }
+   ]
+  },
+  {
+   "slug": "lemonde",
+   "name": "Le Monde",
+   "homepage": "https://www.lemonde.fr",
+   "group": "western",
+   "owner": "Groupe Le Monde",
+   "region": "europe",
+   "language": "fr",
+   "paywalled": true,
+   "feeds": [
+    {
+     "url": "https://www.lemonde.fr/international/rss_full.xml",
+     "label": "International"
+    }
+   ]
+  },
+  {
+   "slug": "lemonde-en",
+   "name": "Le Monde (English)",
+   "homepage": "https://www.lemonde.fr/en/",
+   "group": "western",
+   "owner": "Groupe Le Monde",
+   "region": "europe",
+   "language": "en",
+   "paywalled": true,
+   "feeds": [
+    {
+     "url": "https://www.lemonde.fr/en/international/rss_full.xml",
+     "label": "International"
+    }
+   ]
+  },
+  {
+   "slug": "spiegel",
+   "name": "Der Spiegel",
+   "homepage": "https://www.spiegel.de",
+   "group": "western",
+   "owner": "Spiegel-Verlag",
+   "region": "europe",
+   "language": "de",
+   "paywalled": true,
+   "feeds": [
+    {
+     "url": "https://www.spiegel.de/ausland/index.rss",
+     "label": "Ausland"
+    }
+   ]
+  },
+  {
+   "slug": "spiegel-intl",
+   "name": "Der Spiegel International",
+   "homepage": "https://www.spiegel.de/international/",
+   "group": "western",
+   "owner": "Spiegel-Verlag",
+   "region": "europe",
+   "language": "en",
+   "paywalled": true,
+   "feeds": [
+    {
+     "url": "https://www.spiegel.de/international/index.rss",
+     "label": "International"
+    }
+   ]
+  },
+  {
+   "slug": "faz",
+   "name": "Frankfurter Allgemeine",
+   "homepage": "https://www.faz.net",
+   "group": "western",
+   "owner": "FAZ",
+   "region": "europe",
+   "language": "de",
+   "paywalled": true,
+   "feeds": [
+    {
+     "url": "https://www.faz.net/rss/aktuell/politik/ausland/",
+     "label": "Ausland"
+    }
+   ]
+  },
+  {
+   "slug": "lefigaro",
+   "name": "Le Figaro",
+   "homepage": "https://www.lefigaro.fr",
+   "group": "western",
+   "owner": "Groupe Dassault",
+   "region": "europe",
+   "language": "fr",
+   "paywalled": true,
+   "feeds": [
+    {
+     "url": "https://www.lefigaro.fr/rss/figaro_international.xml",
+     "label": "International"
+    }
+   ]
+  },
+  {
+   "slug": "elpais",
+   "name": "El País",
+   "homepage": "https://elpais.com",
+   "group": "western",
+   "owner": "PRISA",
+   "region": "europe",
+   "language": "es",
+   "paywalled": true,
+   "feeds": [
+    {
+     "url": "https://feeds.elpais.com/mrss-s/pages/ep/site/elpais.com/section/internacional/portada",
+     "label": "Internacional"
+    }
+   ]
+  },
+  {
+   "slug": "corriere",
+   "name": "Corriere della Sera",
+   "homepage": "https://www.corriere.it",
+   "group": "western",
+   "owner": "RCS MediaGroup",
+   "region": "europe",
+   "language": "it",
+   "paywalled": true,
+   "feeds": [
+    {
+     "url": "https://www.bing.com/news/search?q=site%3Acorriere.it&format=rss&qft=sortbydate%3d%221%22",
+     "label": "Bing Haberler: site:corriere.it"
+    }
+   ],
+   "note": "Başlıklar Bing Haberler'in herkese açık RSS aramasından (site:corriere.it) gelir; bağlantılar doğrudan Corriere della Sera sayfasına gider."
+  },
+  {
+   "slug": "telegraph",
+   "name": "The Telegraph",
+   "homepage": "https://www.telegraph.co.uk",
+   "group": "western",
+   "owner": "Telegraph Media Group",
+   "region": "europe",
+   "language": "en",
+   "paywalled": true,
+   "feeds": [
+    {
+     "url": "https://www.bing.com/news/search?q=site%3Atelegraph.co.uk&format=rss&qft=sortbydate%3d%221%22",
+     "label": "Bing Haberler: site:telegraph.co.uk"
+    }
+   ],
+   "note": "Sitenin kendi RSS adresi otomatik okuyuculara erişim izni vermiyor (HTTP 403). Engeli aşmaya çalışmıyoruz. Başlıklar Bing Haberler'in herkese açık RSS aramasından (site:telegraph.co.uk) gelir; bağlantılar doğrudan The Telegraph sayfasına gider."
+  },
+  {
+   "slug": "independent",
+   "name": "The Independent",
+   "homepage": "https://www.independent.co.uk",
+   "group": "western",
+   "owner": "Independent",
+   "region": "europe",
+   "language": "en",
+   "paywalled": false,
+   "feeds": [
+    {
+     "url": "https://www.independent.co.uk/news/world/rss",
+     "label": "World"
+    }
+   ]
+  },
+  {
+   "slug": "cnn",
+   "name": "CNN",
+   "homepage": "https://edition.cnn.com",
+   "group": "western",
+   "owner": "Warner Bros. Discovery",
+   "region": "north_america",
+   "language": "en",
+   "paywalled": false,
+   "feeds": [
+    {
+     "url": "https://www.bing.com/news/search?q=site%3Acnn.com&format=rss&qft=sortbydate%3d%221%22",
+     "label": "Bing Haberler: site:cnn.com"
+    }
+   ],
+   "note": "CNN'in RSS yayınları 2023'ten beri güncellenmiyor. Başlıklar Bing Haberler'in herkese açık RSS aramasından (site:cnn.com) gelir; bağlantılar doğrudan CNN sayfasına gider."
+  },
+  {
+   "slug": "npr",
+   "name": "NPR",
+   "homepage": "https://www.npr.org",
+   "group": "western",
+   "owner": "NPR",
+   "region": "north_america",
+   "language": "en",
+   "paywalled": false,
+   "feeds": [
+    {
+     "url": "https://feeds.npr.org/1004/rss.xml",
+     "label": "World"
+    }
+   ]
+  },
+  {
+   "slug": "foxnews",
+   "name": "Fox News",
+   "homepage": "https://www.foxnews.com",
+   "group": "western",
+   "owner": "Fox Corporation",
+   "region": "north_america",
+   "language": "en",
+   "paywalled": false,
+   "feeds": [
+    {
+     "url": "https://moxie.foxnews.com/google-publisher/world.xml",
+     "label": "World"
+    }
+   ]
+  },
+  {
+   "slug": "nbcnews",
+   "name": "NBC News",
+   "homepage": "https://www.nbcnews.com",
+   "group": "western",
+   "owner": "Comcast",
+   "region": "north_america",
+   "language": "en",
+   "paywalled": false,
+   "feeds": [
+    {
+     "url": "https://feeds.nbcnews.com/nbcnews/public/world",
+     "label": "World"
+    }
+   ]
+  },
+  {
+   "slug": "cbsnews",
+   "name": "CBS News",
+   "homepage": "https://www.cbsnews.com",
+   "group": "western",
+   "owner": "Paramount",
+   "region": "north_america",
+   "language": "en",
+   "paywalled": false,
+   "feeds": [
+    {
+     "url": "https://www.cbsnews.com/latest/rss/world",
+     "label": "World"
+    }
+   ]
+  },
+  {
+   "slug": "abcnews",
+   "name": "ABC News",
+   "homepage": "https://abcnews.go.com",
+   "group": "western",
+   "owner": "Disney",
+   "region": "north_america",
+   "language": "en",
+   "paywalled": false,
+   "feeds": [
+    {
+     "url": "https://abcnews.go.com/abcnews/internationalheadlines",
+     "label": "International"
+    }
+   ]
+  },
+  {
+   "slug": "skynews",
+   "name": "Sky News",
+   "homepage": "https://news.sky.com",
+   "group": "western",
+   "owner": "Comcast",
+   "region": "europe",
+   "language": "en",
+   "paywalled": false,
+   "feeds": [
+    {
+     "url": "https://feeds.skynews.com/feeds/rss/world.xml",
+     "label": "World"
+    }
+   ]
+  },
+  {
+   "slug": "politico",
+   "name": "Politico",
+   "homepage": "https://www.politico.com",
+   "group": "western",
+   "owner": "Axel Springer",
+   "region": "north_america",
+   "language": "en",
+   "paywalled": false,
+   "feeds": [
+    {
+     "url": "https://rss.politico.com/politics-news.xml",
+     "label": "Politics"
+    }
+   ]
+  },
+  {
+   "slug": "axios",
+   "name": "Axios",
+   "homepage": "https://www.axios.com",
+   "group": "western",
+   "owner": "Cox Enterprises",
+   "region": "north_america",
+   "language": "en",
+   "paywalled": false,
+   "feeds": [
+    {
+     "url": "https://api.axios.com/feed/",
+     "label": "All"
+    }
+   ]
+  },
+  {
+   "slug": "foreignpolicy",
+   "name": "Foreign Policy",
+   "homepage": "https://foreignpolicy.com",
+   "group": "western",
+   "owner": "Graham Holdings",
+   "region": "north_america",
+   "language": "en",
+   "paywalled": true,
+   "feeds": [
+    {
+     "url": "https://foreignpolicy.com/feed/",
+     "label": "All"
+    }
+   ]
+  },
+  {
+   "slug": "cnbc",
+   "name": "CNBC",
+   "homepage": "https://www.cnbc.com",
+   "group": "western",
+   "owner": "Comcast",
+   "region": "north_america",
+   "language": "en",
+   "paywalled": false,
+   "feeds": [
+    {
+     "url": "https://www.cnbc.com/id/100727362/device/rss/rss.html",
+     "label": "World"
+    }
+   ]
+  },
+  {
+   "slug": "dw",
+   "name": "Deutsche Welle",
+   "homepage": "https://www.dw.com",
+   "group": "western",
+   "owner": "Deutsche Welle",
+   "region": "europe",
+   "language": "en",
+   "paywalled": false,
+   "feeds": [
+    {
+     "url": "https://rss.dw.com/rdf/rss-en-world",
+     "label": "World"
+    }
+   ]
+  },
+  {
+   "slug": "france24",
+   "name": "France 24",
+   "homepage": "https://www.france24.com/en/",
+   "group": "western",
+   "owner": "France Médias Monde",
+   "region": "europe",
+   "language": "en",
+   "paywalled": false,
+   "feeds": [
+    {
+     "url": "https://www.france24.com/en/rss",
+     "label": "All"
+    }
+   ]
+  },
+  {
+   "slug": "reuters",
+   "name": "Reuters",
+   "homepage": "https://www.reuters.com",
+   "group": "agency",
+   "owner": "Thomson Reuters",
+   "region": "global",
+   "language": "en",
+   "paywalled": false,
+   "note": "Reuters herkese açık RSS yayınını kapattı. Başlıklar Bing Haberler'in herkese açık RSS aramasından (site:reuters.com) gelir; bağlantılar doğrudan Reuters sayfasına gider.",
+   "feeds": [
+    {
+     "url": "https://www.bing.com/news/search?q=site%3Areuters.com&format=rss&qft=sortbydate%3d%221%22",
+     "label": "Bing Haberler: site:reuters.com"
+    }
+   ]
+  },
+  {
+   "slug": "ap",
+   "name": "Associated Press",
+   "homepage": "https://apnews.com",
+   "group": "agency",
+   "owner": "Associated Press",
+   "region": "global",
+   "language": "en",
+   "paywalled": false,
+   "note": "AP'nin resmî RSS yayını yok. Başlıklar Bing Haberler'in herkese açık RSS aramasından (site:apnews.com) gelir; bağlantılar doğrudan Associated Press sayfasına gider.",
+   "feeds": [
+    {
+     "url": "https://www.bing.com/news/search?q=site%3Aapnews.com&format=rss&qft=sortbydate%3d%221%22",
+     "label": "Bing Haberler: site:apnews.com"
+    }
+   ]
+  },
+  {
+   "slug": "afp",
+   "name": "AFP",
+   "homepage": "https://www.afp.com",
+   "group": "agency",
+   "owner": "AFP",
+   "region": "global",
+   "language": "en",
+   "paywalled": false,
+   "note": "AFP'nin herkese açık haber RSS'i yok. Başlıklar Bing Haberler'in herkese açık RSS aramasından (site:afp.com) gelir; bağlantılar doğrudan AFP sayfasına gider.",
+   "feeds": [
+    {
+     "url": "https://www.bing.com/news/search?q=site%3Aafp.com&format=rss&qft=sortbydate%3d%221%22",
+     "label": "Bing Haberler: site:afp.com"
+    }
+   ]
+  },
+  {
+   "slug": "bloomberg",
+   "name": "Bloomberg",
+   "homepage": "https://www.bloomberg.com",
+   "group": "agency",
+   "owner": "Bloomberg L.P.",
+   "region": "global",
+   "language": "en",
+   "paywalled": true,
+   "feeds": [
+    {
+     "url": "https://feeds.bloomberg.com/politics/news.rss",
+     "label": "Politics"
+    },
+    {
+     "url": "https://feeds.bloomberg.com/markets/news.rss",
+     "label": "Markets"
+    }
+   ]
+  },
+  {
+   "slug": "aa-en",
+   "name": "Anadolu Agency (English)",
+   "homepage": "https://www.aa.com.tr/en",
+   "group": "agency",
+   "owner": "Anadolu Ajansı",
+   "region": "turkey",
+   "language": "en",
+   "paywalled": false,
+   "feeds": [
+    {
+     "url": "https://www.aa.com.tr/en/rss/default?cat=world",
+     "label": "World"
+    }
+   ]
+  },
+  {
+   "slug": "xinhua",
+   "name": "Xinhua",
+   "homepage": "https://english.news.cn",
+   "group": "agency",
+   "owner": "Xinhua",
+   "region": "asia",
+   "language": "en",
+   "paywalled": false,
+   "feeds": [
+    {
+     "url": "https://www.bing.com/news/search?q=site%3Aenglish.news.cn&format=rss&qft=sortbydate%3d%221%22",
+     "label": "Bing Haberler: site:english.news.cn"
+    }
+   ],
+   "note": "Başlıklar Bing Haberler'in herkese açık RSS aramasından (site:english.news.cn) gelir; bağlantılar doğrudan Xinhua sayfasına gider."
+  },
+  {
+   "slug": "kyodo",
+   "name": "Kyodo News",
+   "homepage": "https://english.kyodonews.net",
+   "group": "agency",
+   "owner": "Kyodo",
+   "region": "asia",
+   "language": "en",
+   "paywalled": false,
+   "feeds": [
+    {
+     "url": "https://www.bing.com/news/search?q=site%3Aenglish.kyodonews.net&format=rss&qft=sortbydate%3d%221%22",
+     "label": "Bing Haberler: site:english.kyodonews.net"
+    }
+   ],
+   "note": "Başlıklar Bing Haberler'in herkese açık RSS aramasından (site:english.kyodonews.net) gelir; bağlantılar doğrudan Kyodo News sayfasına gider."
+  },
+  {
+   "slug": "yonhap",
+   "name": "Yonhap",
+   "homepage": "https://en.yna.co.kr",
+   "group": "agency",
+   "owner": "Yonhap",
+   "region": "asia",
+   "language": "en",
+   "paywalled": false,
+   "feeds": [
+    {
+     "url": "https://en.yna.co.kr/RSS/news.xml",
+     "label": "All"
+    }
+   ]
+  },
+  {
+   "slug": "ansa",
+   "name": "ANSA",
+   "homepage": "https://www.ansa.it/english/",
+   "group": "agency",
+   "owner": "ANSA",
+   "region": "europe",
+   "language": "en",
+   "paywalled": false,
+   "feeds": [
+    {
+     "url": "https://www.ansa.it/english/news/english_nr_rss.xml",
+     "label": "English"
+    }
+   ]
+  },
+  {
+   "slug": "efe",
+   "name": "EFE",
+   "homepage": "https://efe.com",
+   "group": "agency",
+   "owner": "EFE",
+   "region": "europe",
+   "language": "es",
+   "paywalled": false,
+   "feeds": [
+    {
+     "url": "https://www.bing.com/news/search?q=site%3Aefe.com&format=rss&qft=sortbydate%3d%221%22",
+     "label": "Bing Haberler: site:efe.com"
+    }
+   ],
+   "note": "Başlıklar Bing Haberler'in herkese açık RSS aramasından (site:efe.com) gelir; bağlantılar doğrudan EFE sayfasına gider."
+  },
+  {
+   "slug": "aljazeera",
+   "name": "Al Jazeera English",
+   "homepage": "https://www.aljazeera.com",
+   "group": "middle_east",
+   "owner": "Al Jazeera Media Network",
+   "region": "middle_east",
+   "language": "en",
+   "paywalled": false,
+   "feeds": [
+    {
+     "url": "https://www.aljazeera.com/xml/rss/all.xml",
+     "label": "All"
+    }
+   ]
+  },
+  {
+   "slug": "aljazeera-ar",
+   "name": "الجزيرة (Al Jazeera Arabic)",
+   "homepage": "https://www.aljazeera.net",
+   "group": "middle_east",
+   "owner": "Al Jazeera Media Network",
+   "region": "middle_east",
+   "language": "ar",
+   "paywalled": false,
+   "feeds": [
+    {
+     "url": "https://www.aljazeera.net/aljazeerarss/a7c186be-1baa-4bd4-9d80-a84db769f779/73d0e1b4-532f-45ef-b135-bfdff8b8cab9",
+     "label": "All"
+    }
+   ]
+  },
+  {
+   "slug": "almonitor",
+   "name": "Al-Monitor",
+   "homepage": "https://www.al-monitor.com",
+   "group": "middle_east",
+   "owner": "Al-Monitor",
+   "region": "middle_east",
+   "language": "en",
+   "paywalled": true,
+   "feeds": [
+    {
+     "url": "https://www.bing.com/news/search?q=site%3Aal-monitor.com&format=rss&qft=sortbydate%3d%221%22",
+     "label": "Bing Haberler: site:al-monitor.com"
+    }
+   ],
+   "note": "Sitenin kendi RSS adresi otomatik okuyuculara erişim izni vermiyor (HTTP 403). Engeli aşmaya çalışmıyoruz. Başlıklar Bing Haberler'in herkese açık RSS aramasından (site:al-monitor.com) gelir; bağlantılar doğrudan Al-Monitor sayfasına gider."
+  },
+  {
+   "slug": "timesofisrael",
+   "name": "The Times of Israel",
+   "homepage": "https://www.timesofisrael.com",
+   "group": "middle_east",
+   "owner": "Times of Israel",
+   "region": "middle_east",
+   "language": "en",
+   "paywalled": false,
+   "feeds": [
+    {
+     "url": "https://www.bing.com/news/search?q=site%3Atimesofisrael.com&format=rss&qft=sortbydate%3d%221%22",
+     "label": "Bing Haberler: site:timesofisrael.com"
+    }
+   ],
+   "note": "Sitenin kendi RSS adresi otomatik okuyuculara erişim izni vermiyor (HTTP 403). Engeli aşmaya çalışmıyoruz. Başlıklar Bing Haberler'in herkese açık RSS aramasından (site:timesofisrael.com) gelir; bağlantılar doğrudan The Times of Israel sayfasına gider."
+  },
+  {
+   "slug": "jpost",
+   "name": "The Jerusalem Post",
+   "homepage": "https://www.jpost.com",
+   "group": "middle_east",
+   "owner": "Jerusalem Post Group",
+   "region": "middle_east",
+   "language": "en",
+   "paywalled": false,
+   "feeds": [
+    {
+     "url": "https://www.jpost.com/rss/rssfeedsfrontpage.aspx",
+     "label": "Front page"
+    }
+   ]
+  },
+  {
+   "slug": "haaretz",
+   "name": "Haaretz",
+   "homepage": "https://www.haaretz.com",
+   "group": "middle_east",
+   "owner": "Haaretz Group",
+   "region": "middle_east",
+   "language": "en",
+   "paywalled": true,
+   "feeds": [
+    {
+     "url": "https://www.haaretz.com/srv/haaretz-latest-headlines",
+     "label": "Latest"
+    }
+   ]
+  },
+  {
+   "slug": "arabnews",
+   "name": "Arab News",
+   "homepage": "https://www.arabnews.com",
+   "group": "middle_east",
+   "owner": "SRMG",
+   "region": "middle_east",
+   "language": "en",
+   "paywalled": false,
+   "feeds": [
+    {
+     "url": "https://www.arabnews.com/rss.xml",
+     "label": "All"
+    }
+   ]
+  },
+  {
+   "slug": "aawsat",
+   "name": "Asharq Al-Awsat",
+   "homepage": "https://english.aawsat.com",
+   "group": "middle_east",
+   "owner": "SRMG",
+   "region": "middle_east",
+   "language": "en",
+   "paywalled": false,
+   "feeds": [
+    {
+     "url": "https://english.aawsat.com/feed",
+     "label": "All"
+    }
+   ]
+  },
+  {
+   "slug": "alarabiya",
+   "name": "Al Arabiya English",
+   "homepage": "https://english.alarabiya.net",
+   "group": "middle_east",
+   "owner": "MBC Group",
+   "region": "middle_east",
+   "language": "en",
+   "paywalled": false,
+   "feeds": [
+    {
+     "url": "https://www.bing.com/news/search?q=site%3Aenglish.alarabiya.net&format=rss&qft=sortbydate%3d%221%22",
+     "label": "Bing Haberler: site:english.alarabiya.net"
+    }
+   ],
+   "note": "Sitenin kendi RSS adresi otomatik okuyuculara erişim izni vermiyor (HTTP 403). Engeli aşmaya çalışmıyoruz. Başlıklar Bing Haberler'in herkese açık RSS aramasından (site:english.alarabiya.net) gelir; bağlantılar doğrudan Al Arabiya English sayfasına gider."
+  },
+  {
+   "slug": "thenational",
+   "name": "The National (UAE)",
+   "homepage": "https://www.thenationalnews.com",
+   "group": "middle_east",
+   "owner": "International Media Investments",
+   "region": "middle_east",
+   "language": "en",
+   "paywalled": false,
+   "feeds": [
+    {
+     "url": "https://www.thenationalnews.com/arc/outboundfeeds/rss/?outputType=xml",
+     "label": "All"
+    }
+   ]
+  },
+  {
+   "slug": "middleeasteye",
+   "name": "Middle East Eye",
+   "homepage": "https://www.middleeasteye.net",
+   "group": "middle_east",
+   "owner": "Middle East Eye",
+   "region": "middle_east",
+   "language": "en",
+   "paywalled": false,
+   "feeds": [
+    {
+     "url": "https://www.middleeasteye.net/rss",
+     "label": "All"
+    }
+   ]
+  },
+  {
+   "slug": "memo",
+   "name": "Middle East Monitor",
+   "homepage": "https://www.middleeastmonitor.com",
+   "group": "middle_east",
+   "owner": "MEMO",
+   "region": "middle_east",
+   "language": "en",
+   "paywalled": false,
+   "feeds": [
+    {
+     "url": "https://www.middleeastmonitor.com/rss",
+     "label": "All"
+    },
+    {
+     "url": "https://www.bing.com/news/search?q=site%3Amiddleeastmonitor.com&format=rss&qft=sortbydate%3d%221%22",
+     "label": "Bing Haberler: site:middleeastmonitor.com"
+    }
+   ],
+   "note": "Sitenin kendi akışı ara ara zaman aşımına uğruyor; yedek olarak Bing Haberler aramasından (site:middleeastmonitor.com) da başlık alınır."
+  },
+  {
+   "slug": "tehrantimes",
+   "name": "Tehran Times",
+   "homepage": "https://www.tehrantimes.com",
+   "group": "middle_east",
+   "owner": "Islamic Propagation Organization",
+   "region": "middle_east",
+   "language": "en",
+   "paywalled": false,
+   "feeds": [
+    {
+     "url": "https://www.tehrantimes.com/rss",
+     "label": "All"
+    }
+   ]
+  },
+  {
+   "slug": "irna",
+   "name": "IRNA",
+   "homepage": "https://en.irna.ir",
+   "group": "middle_east",
+   "owner": "IRNA",
+   "region": "middle_east",
+   "language": "en",
+   "paywalled": false,
+   "feeds": [
+    {
+     "url": "https://en.irna.ir/rss",
+     "label": "All"
+    }
+   ]
+  },
+  {
+   "slug": "iranintl",
+   "name": "Iran International",
+   "homepage": "https://www.iranintl.com/en",
+   "group": "middle_east",
+   "owner": "Iran International",
+   "region": "middle_east",
+   "language": "en",
+   "paywalled": false,
+   "feeds": [
+    {
+     "url": "https://www.iranintl.com/en/feed",
+     "label": "All"
+    }
+   ]
+  },
+  {
+   "slug": "rudaw",
+   "name": "Rudaw",
+   "homepage": "https://www.rudaw.net/english",
+   "group": "middle_east",
+   "owner": "Rudaw",
+   "region": "middle_east",
+   "language": "en",
+   "paywalled": false,
+   "feeds": [
+    {
+     "url": "https://www.bing.com/news/search?q=site%3Arudaw.net&format=rss&qft=sortbydate%3d%221%22",
+     "label": "Bing Haberler: site:rudaw.net"
+    }
+   ],
+   "note": "Rudaw'ın RSS dosyası bozuk (okunamıyor). Başlıklar Bing Haberler'in herkese açık RSS aramasından (site:rudaw.net) gelir; bağlantılar doğrudan Rudaw sayfasına gider."
+  },
+  {
+   "slug": "ahram",
+   "name": "Ahram Online",
+   "homepage": "https://english.ahram.org.eg",
+   "group": "middle_east",
+   "owner": "Al-Ahram",
+   "region": "middle_east",
+   "language": "en",
+   "paywalled": false,
+   "feeds": [
+    {
+     "url": "https://www.bing.com/news/search?q=site%3Aenglish.ahram.org.eg&format=rss&qft=sortbydate%3d%221%22",
+     "label": "Bing Haberler: site:english.ahram.org.eg"
+    }
+   ],
+   "note": "Ahram'ın RSS adresi otomatik okuyuculara izin vermiyor (HTTP 403). Başlıklar Bing Haberler'in herkese açık RSS aramasından (site:english.ahram.org.eg) gelir; bağlantılar doğrudan Ahram Online sayfasına gider."
+  },
+  {
+   "slug": "sana",
+   "name": "SANA",
+   "homepage": "https://sana.sy/en/",
+   "group": "middle_east",
+   "owner": "SANA",
+   "region": "middle_east",
+   "language": "en",
+   "paywalled": false,
+   "feeds": [
+    {
+     "url": "https://sana.sy/rss",
+     "label": "All"
+    }
+   ]
+  },
+  {
+   "slug": "tass",
+   "name": "TASS",
+   "homepage": "https://tass.com",
+   "group": "russia_ukraine",
+   "owner": "TASS",
+   "region": "russia_ukraine",
+   "language": "en",
+   "paywalled": false,
+   "feeds": [
+    {
+     "url": "https://tass.com/rss/v2.xml",
+     "label": "English"
+    }
+   ]
+  },
+  {
+   "slug": "ria",
+   "name": "РИА Новости (RIA)",
+   "homepage": "https://ria.ru",
+   "group": "russia_ukraine",
+   "owner": "Rossiya Segodnya",
+   "region": "russia_ukraine",
+   "language": "ru",
+   "paywalled": false,
+   "feeds": [
+    {
+     "url": "https://ria.ru/export/rss2/archive/index.xml",
+     "label": "All"
+    }
+   ]
+  },
+  {
+   "slug": "interfax",
+   "name": "Интерфакс (Interfax)",
+   "homepage": "https://www.interfax.ru",
+   "group": "russia_ukraine",
+   "owner": "Interfax",
+   "region": "russia_ukraine",
+   "language": "ru",
+   "paywalled": false,
+   "feeds": [
+    {
+     "url": "https://www.interfax.ru/rss.asp",
+     "label": "All"
+    }
+   ]
+  },
+  {
+   "slug": "kommersant",
+   "name": "Коммерсантъ (Kommersant)",
+   "homepage": "https://www.kommersant.ru",
+   "group": "russia_ukraine",
+   "owner": "USM",
+   "region": "russia_ukraine",
+   "language": "ru",
+   "paywalled": false,
+   "feeds": [
+    {
+     "url": "https://www.kommersant.ru/RSS/news.xml",
+     "label": "News"
+    }
+   ]
+  },
+  {
+   "slug": "rbc",
+   "name": "РБК (RBC)",
+   "homepage": "https://www.rbc.ru",
+   "group": "russia_ukraine",
+   "owner": "ESN Group",
+   "region": "russia_ukraine",
+   "language": "ru",
+   "paywalled": false,
+   "feeds": [
+    {
+     "url": "https://rssexport.rbc.ru/rbcnews/news/30/full.rss",
+     "label": "News"
+    }
+   ]
+  },
+  {
+   "slug": "rt",
+   "name": "RT",
+   "homepage": "https://www.rt.com",
+   "group": "russia_ukraine",
+   "owner": "TV-Novosti",
+   "region": "russia_ukraine",
+   "language": "en",
+   "paywalled": false,
+   "feeds": [
+    {
+     "url": "https://www.rt.com/rss/news/",
+     "label": "News"
+    }
+   ]
+  },
+  {
+   "slug": "meduza",
+   "name": "Meduza",
+   "homepage": "https://meduza.io/en",
+   "group": "russia_ukraine",
+   "owner": "Meduza",
+   "region": "russia_ukraine",
+   "language": "en",
+   "paywalled": false,
+   "feeds": [
+    {
+     "url": "https://meduza.io/rss/en/all",
+     "label": "English"
+    }
+   ]
+  },
+  {
+   "slug": "moscowtimes",
+   "name": "The Moscow Times",
+   "homepage": "https://www.themoscowtimes.com",
+   "group": "russia_ukraine",
+   "owner": "Moscow Times",
+   "region": "russia_ukraine",
+   "language": "en",
+   "paywalled": false,
+   "feeds": [
+    {
+     "url": "https://www.themoscowtimes.com/rss/news",
+     "label": "News"
+    }
+   ]
+  },
+  {
+   "slug": "kyivindependent",
+   "name": "The Kyiv Independent",
+   "homepage": "https://kyivindependent.com",
+   "group": "russia_ukraine",
+   "owner": "Kyiv Independent",
+   "region": "russia_ukraine",
+   "language": "en",
+   "paywalled": false,
+   "feeds": [
+    {
+     "url": "https://kyivindependent.com/news-archive/rss/",
+     "label": "News"
+    }
+   ]
+  },
+  {
+   "slug": "kyivpost",
+   "name": "Kyiv Post",
+   "homepage": "https://www.kyivpost.com",
+   "group": "russia_ukraine",
+   "owner": "Kyiv Post",
+   "region": "russia_ukraine",
+   "language": "en",
+   "paywalled": false,
+   "feeds": [
+    {
+     "url": "https://www.kyivpost.com/feed",
+     "label": "All"
+    }
+   ]
+  },
+  {
+   "slug": "pravda-ua",
+   "name": "Ukrainska Pravda",
+   "homepage": "https://www.pravda.com.ua/eng/",
+   "group": "russia_ukraine",
+   "owner": "Ukrainska Pravda",
+   "region": "russia_ukraine",
+   "language": "en",
+   "paywalled": false,
+   "feeds": [
+    {
+     "url": "https://www.pravda.com.ua/eng/rss/",
+     "label": "English"
+    }
+   ]
+  },
+  {
+   "slug": "ukrinform",
+   "name": "Ukrinform",
+   "homepage": "https://www.ukrinform.net",
+   "group": "russia_ukraine",
+   "owner": "Ukrinform",
+   "region": "russia_ukraine",
+   "language": "en",
+   "paywalled": false,
+   "feeds": [
+    {
+     "url": "https://www.ukrinform.net/rss/block-lastnews",
+     "label": "Latest"
+    }
+   ]
+  },
+  {
+   "slug": "unian",
+   "name": "UNIAN",
+   "homepage": "https://www.unian.info",
+   "group": "russia_ukraine",
+   "owner": "1+1 Media",
+   "region": "russia_ukraine",
+   "language": "en",
+   "paywalled": false,
+   "feeds": [
+    {
+     "url": "https://www.unian.info/feed/",
+     "label": "All"
+    }
+   ]
+  },
+  {
+   "slug": "rferl",
+   "name": "Radio Free Europe / Radio Liberty",
+   "homepage": "https://www.rferl.org",
+   "group": "russia_ukraine",
+   "owner": "RFE/RL",
+   "region": "russia_ukraine",
+   "language": "en",
+   "paywalled": false,
+   "feeds": [
+    {
+     "url": "https://www.rferl.org/api/epiqq",
+     "label": "All"
+    }
+   ]
+  },
+  {
+   "slug": "scmp",
+   "name": "South China Morning Post",
+   "homepage": "https://www.scmp.com",
+   "group": "asia",
+   "owner": "Alibaba",
+   "region": "asia",
+   "language": "en",
+   "paywalled": true,
+   "feeds": [
+    {
+     "url": "https://www.scmp.com/rss/91/feed",
+     "label": "World"
+    },
+    {
+     "url": "https://www.scmp.com/rss/4/feed",
+     "label": "China"
+    }
+   ]
+  },
+  {
+   "slug": "nikkeiasia",
+   "name": "Nikkei Asia",
+   "homepage": "https://asia.nikkei.com",
+   "group": "asia",
+   "owner": "Nikkei",
+   "region": "asia",
+   "language": "en",
+   "paywalled": true,
+   "feeds": [
+    {
+     "url": "https://asia.nikkei.com/rss/feed/nar",
+     "label": "All"
+    }
+   ]
+  },
+  {
+   "slug": "thehindu",
+   "name": "The Hindu",
+   "homepage": "https://www.thehindu.com",
+   "group": "asia",
+   "owner": "The Hindu Group",
+   "region": "asia",
+   "language": "en",
+   "paywalled": true,
+   "feeds": [
+    {
+     "url": "https://www.thehindu.com/news/international/feeder/default.rss",
+     "label": "International"
+    }
+   ]
+  },
+  {
+   "slug": "timesofindia",
+   "name": "The Times of India",
+   "homepage": "https://timesofindia.indiatimes.com",
+   "group": "asia",
+   "owner": "Times Group",
+   "region": "asia",
+   "language": "en",
+   "paywalled": false,
+   "feeds": [
+    {
+     "url": "https://timesofindia.indiatimes.com/rssfeeds/296589292.cms",
+     "label": "World"
+    }
+   ]
+  },
+  {
+   "slug": "hindustantimes",
+   "name": "Hindustan Times",
+   "homepage": "https://www.hindustantimes.com",
+   "group": "asia",
+   "owner": "HT Media",
+   "region": "asia",
+   "language": "en",
+   "paywalled": false,
+   "feeds": [
+    {
+     "url": "https://www.hindustantimes.com/feeds/rss/world-news/rssfeed.xml",
+     "label": "World"
+    }
+   ]
+  },
+  {
+   "slug": "japantimes",
+   "name": "The Japan Times",
+   "homepage": "https://www.japantimes.co.jp",
+   "group": "asia",
+   "owner": "News2u",
+   "region": "asia",
+   "language": "en",
+   "paywalled": true,
+   "feeds": [
+    {
+     "url": "https://www.japantimes.co.jp/feed/",
+     "label": "All"
+    }
+   ]
+  },
+  {
+   "slug": "straitstimes",
+   "name": "The Straits Times",
+   "homepage": "https://www.straitstimes.com",
+   "group": "asia",
+   "owner": "SPH Media",
+   "region": "asia",
+   "language": "en",
+   "paywalled": true,
+   "feeds": [
+    {
+     "url": "https://www.straitstimes.com/news/world/rss.xml",
+     "label": "World"
+    }
+   ]
+  },
+  {
+   "slug": "cna",
+   "name": "CNA",
+   "homepage": "https://www.channelnewsasia.com",
+   "group": "asia",
+   "owner": "Mediacorp",
+   "region": "asia",
+   "language": "en",
+   "paywalled": false,
+   "feeds": [
+    {
+     "url": "https://www.channelnewsasia.com/api/v1/rss-outbound-feed?_format=xml&category=6311",
+     "label": "World"
+    }
+   ]
+  },
+  {
+   "slug": "dawn",
+   "name": "Dawn",
+   "homepage": "https://www.dawn.com",
+   "group": "asia",
+   "owner": "Dawn Media Group",
+   "region": "asia",
+   "language": "en",
+   "paywalled": false,
+   "feeds": [
+    {
+     "url": "https://www.dawn.com/feeds/home",
+     "label": "Home"
+    }
+   ]
+  },
+  {
+   "slug": "chinadaily",
+   "name": "China Daily",
+   "homepage": "https://www.chinadaily.com.cn",
+   "group": "asia",
+   "owner": "China Daily",
+   "region": "asia",
+   "language": "en",
+   "paywalled": false,
+   "feeds": [
+    {
+     "url": "https://www.bing.com/news/search?q=site%3Achinadaily.com.cn&format=rss&qft=sortbydate%3d%221%22",
+     "label": "Bing Haberler: site:chinadaily.com.cn"
+    }
+   ],
+   "note": "Başlıklar Bing Haberler'in herkese açık RSS aramasından (site:chinadaily.com.cn) gelir; bağlantılar doğrudan China Daily sayfasına gider."
+  },
+  {
+   "slug": "globaltimes",
+   "name": "Global Times",
+   "homepage": "https://www.globaltimes.cn",
+   "group": "asia",
+   "owner": "People's Daily",
+   "region": "asia",
+   "language": "en",
+   "paywalled": false,
+   "feeds": [
+    {
+     "url": "https://www.bing.com/news/search?q=site%3Aglobaltimes.cn&format=rss&qft=sortbydate%3d%221%22",
+     "label": "Bing Haberler: site:globaltimes.cn"
+    }
+   ],
+   "note": "Başlıklar Bing Haberler'in herkese açık RSS aramasından (site:globaltimes.cn) gelir; bağlantılar doğrudan Global Times sayfasına gider."
+  },
+  {
+   "slug": "koreaherald",
+   "name": "The Korea Herald",
+   "homepage": "https://www.koreaherald.com",
+   "group": "asia",
+   "owner": "Herald Corporation",
+   "region": "asia",
+   "language": "en",
+   "paywalled": false,
+   "feeds": [
+    {
+     "url": "https://www.koreaherald.com/rss/newsAll",
+     "label": "All"
+    }
+   ]
+  },
+  {
+   "slug": "thediplomat",
+   "name": "The Diplomat",
+   "homepage": "https://thediplomat.com",
+   "group": "asia",
+   "owner": "Diplomat Media",
+   "region": "asia",
+   "language": "en",
+   "paywalled": false,
+   "feeds": [
+    {
+     "url": "https://thediplomat.com/feed/",
+     "label": "All"
+    }
+   ]
+  },
+  {
+   "slug": "trend",
+   "name": "Trend News Agency",
+   "homepage": "https://en.trend.az",
+   "group": "asia",
+   "owner": "Trend",
+   "region": "caucasus_central_asia",
+   "language": "en",
+   "paywalled": false,
+   "feeds": [
+    {
+     "url": "https://en.trend.az/feeds/index.rss",
+     "label": "All"
+    }
+   ]
+  },
+  {
+   "slug": "apa",
+   "name": "APA",
+   "homepage": "https://apa.az/en",
+   "group": "asia",
+   "owner": "APA Holding",
+   "region": "caucasus_central_asia",
+   "language": "az",
+   "paywalled": false,
+   "feeds": [
+    {
+     "url": "https://apa.az/rss",
+     "label": "Azərbaycan dili"
+    }
+   ]
+  },
+  {
+   "slug": "euronews",
+   "name": "Euronews",
+   "homepage": "https://www.euronews.com",
+   "group": "europe",
+   "owner": "Euronews",
+   "region": "europe",
+   "language": "en",
+   "paywalled": false,
+   "feeds": [
+    {
+     "url": "https://www.euronews.com/rss?level=theme&name=news",
+     "label": "News"
+    }
+   ]
+  },
+  {
+   "slug": "politico-eu",
+   "name": "Politico Europe",
+   "homepage": "https://www.politico.eu",
+   "group": "europe",
+   "owner": "Axel Springer",
+   "region": "europe",
+   "language": "en",
+   "paywalled": false,
+   "feeds": [
+    {
+     "url": "https://www.politico.eu/feed/",
+     "label": "All"
+    }
+   ]
+  },
+  {
+   "slug": "euractiv",
+   "name": "Euractiv",
+   "homepage": "https://www.euractiv.com",
+   "group": "europe",
+   "owner": "Euractiv Media",
+   "region": "europe",
+   "language": "en",
+   "paywalled": false,
+   "feeds": [
+    {
+     "url": "https://www.bing.com/news/search?q=site%3Aeuractiv.com&format=rss&qft=sortbydate%3d%221%22",
+     "label": "Bing Haberler: site:euractiv.com"
+    }
+   ],
+   "note": "Euractiv'in RSS adresi otomatik okuyuculara izin vermiyor (HTTP 403). Başlıklar Bing Haberler'in herkese açık RSS aramasından (site:euractiv.com) gelir; bağlantılar doğrudan Euractiv sayfasına gider."
+  },
+  {
+   "slug": "euobserver",
+   "name": "EUobserver",
+   "homepage": "https://euobserver.com",
+   "group": "europe",
+   "owner": "EUobserver",
+   "region": "europe",
+   "language": "en",
+   "paywalled": true,
+   "feeds": [
+    {
+     "url": "https://euobserver.com/feed/",
+     "label": "All"
+    }
+   ]
+  },
+  {
+   "slug": "kathimerini",
+   "name": "Kathimerini (English)",
+   "homepage": "https://www.ekathimerini.com",
+   "group": "europe",
+   "owner": "Kathimerini",
+   "region": "europe",
+   "language": "en",
+   "paywalled": false,
+   "feeds": [
+    {
+     "url": "https://www.bing.com/news/search?q=site%3Aekathimerini.com&format=rss&qft=sortbydate%3d%221%22",
+     "label": "Bing Haberler: site:ekathimerini.com"
+    }
+   ],
+   "note": "Sitenin kendi RSS adresi otomatik okuyuculara erişim izni vermiyor (HTTP 403). Engeli aşmaya çalışmıyoruz. Başlıklar Bing Haberler'in herkese açık RSS aramasından (site:ekathimerini.com) gelir; bağlantılar doğrudan Kathimerini (English) sayfasına gider."
+  },
+  {
+   "slug": "cyprusmail",
+   "name": "Cyprus Mail",
+   "homepage": "https://cyprus-mail.com",
+   "group": "europe",
+   "owner": "Cyprus Mail",
+   "region": "europe",
+   "language": "en",
+   "paywalled": false,
+   "feeds": [
+    {
+     "url": "https://cyprus-mail.com/feed/",
+     "label": "All"
+    }
+   ]
+  },
+  {
+   "slug": "balkaninsight",
+   "name": "Balkan Insight",
+   "homepage": "https://balkaninsight.com",
+   "group": "europe",
+   "owner": "BIRN",
+   "region": "europe",
+   "language": "en",
+   "paywalled": false,
+   "feeds": [
+    {
+     "url": "https://balkaninsight.com/feed/",
+     "label": "All"
+    }
+   ]
+  },
+  {
+   "slug": "africanews",
+   "name": "Africanews",
+   "homepage": "https://www.africanews.com",
+   "group": "other",
+   "owner": "Euronews",
+   "region": "africa",
+   "language": "en",
+   "paywalled": false,
+   "feeds": [
+    {
+     "url": "https://www.africanews.com/feed/rss",
+     "label": "All"
+    }
+   ]
+  },
+  {
+   "slug": "allafrica",
+   "name": "AllAfrica",
+   "homepage": "https://allafrica.com",
+   "group": "other",
+   "owner": "AllAfrica",
+   "region": "africa",
+   "language": "en",
+   "paywalled": false,
+   "feeds": [
+    {
+     "url": "https://allafrica.com/tools/headlines/rdf/latest/headlines.rdf",
+     "label": "Latest"
+    },
+    {
+     "url": "https://www.bing.com/news/search?q=site%3Aallafrica.com&format=rss&qft=sortbydate%3d%221%22",
+     "label": "Bing Haberler: site:allafrica.com"
+    }
+   ],
+   "note": "Sitenin kendi akışı ara ara zaman aşımına uğruyor; yedek olarak Bing Haberler aramasından (site:allafrica.com) da başlık alınır."
+  },
+  {
+   "slug": "mercopress",
+   "name": "MercoPress",
+   "homepage": "https://en.mercopress.com",
+   "group": "other",
+   "owner": "MercoPress",
+   "region": "latin_america",
+   "language": "en",
+   "paywalled": false,
+   "feeds": [
+    {
+     "url": "https://en.mercopress.com/rss",
+     "label": "All"
+    }
+   ]
+  },
+  {
+   "slug": "aa",
+   "name": "Anadolu Ajansı",
+   "homepage": "https://www.aa.com.tr/tr",
+   "group": "turkey",
+   "owner": "Anadolu Ajansı",
+   "region": "turkey",
+   "language": "tr",
+   "paywalled": false,
+   "feeds": [
+    {
+     "url": "https://www.aa.com.tr/tr/rss/default?cat=guncel",
+     "label": "Güncel"
+    },
+    {
+     "url": "https://www.aa.com.tr/tr/rss/default?cat=dunya",
+     "label": "Dünya"
+    },
+    {
+     "url": "https://www.aa.com.tr/tr/rss/default?cat=ekonomi",
+     "label": "Ekonomi"
+    },
+    {
+     "url": "https://www.aa.com.tr/tr/rss/default?cat=spor",
+     "label": "Spor"
+    }
+   ]
+  },
+  {
+   "slug": "trthaber",
+   "name": "TRT Haber",
+   "homepage": "https://www.trthaber.com",
+   "group": "turkey",
+   "owner": "TRT",
+   "region": "turkey",
+   "language": "tr",
+   "paywalled": false,
+   "feeds": [
+    {
+     "url": "https://www.trthaber.com/sondakika.rss",
+     "label": "Son dakika"
+    },
+    {
+     "url": "https://www.trthaber.com/dunya_articles.rss",
+     "label": "Dünya"
+    }
+   ]
+  },
+  {
+   "slug": "trtworld",
+   "name": "TRT World",
+   "homepage": "https://www.trtworld.com",
+   "group": "turkey",
+   "owner": "TRT",
+   "region": "turkey",
+   "language": "en",
+   "paywalled": false,
+   "feeds": [
+    {
+     "url": "https://www.trtworld.com/feed/rss.xml",
+     "label": "All"
+    }
+   ]
+  },
+  {
+   "slug": "sabah",
+   "name": "Sabah",
+   "homepage": "https://www.sabah.com.tr",
+   "group": "turkey",
+   "owner": "Turkuvaz",
+   "region": "turkey",
+   "language": "tr",
+   "paywalled": false,
+   "feeds": [
+    {
+     "url": "https://www.sabah.com.tr/rss/anasayfa.xml",
+     "label": "Ana sayfa"
+    },
+    {
+     "url": "https://www.sabah.com.tr/rss/dunya.xml",
+     "label": "Dünya"
+    }
+   ]
+  },
+  {
+   "slug": "ahaber",
+   "name": "A Haber",
+   "homepage": "https://www.ahaber.com.tr",
+   "group": "turkey",
+   "owner": "Turkuvaz",
+   "region": "turkey",
+   "language": "tr",
+   "paywalled": false,
+   "feeds": [
+    {
+     "url": "https://www.ahaber.com.tr/rss/anasayfa.xml",
+     "label": "Ana sayfa"
+    },
+    {
+     "url": "https://www.ahaber.com.tr/rss/dunya.xml",
+     "label": "Dünya"
+    }
+   ]
+  },
+  {
+   "slug": "anews",
+   "name": "A News",
+   "homepage": "https://www.anews.com.tr",
+   "group": "turkey",
+   "owner": "Turkuvaz",
+   "region": "turkey",
+   "language": "en",
+   "paywalled": false,
+   "feeds": [
+    {
+     "url": "https://www.anews.com.tr/rss/world.xml",
+     "label": "World"
+    }
+   ]
+  },
+  {
+   "slug": "dailysabah",
+   "name": "Daily Sabah",
+   "homepage": "https://www.dailysabah.com",
+   "group": "turkey",
+   "owner": "Turkuvaz",
+   "region": "turkey",
+   "language": "en",
+   "paywalled": false,
+   "feeds": [
+    {
+     "url": "https://www.dailysabah.com/rss/world",
+     "label": "World"
+    },
+    {
+     "url": "https://www.dailysabah.com/rss/turkiye",
+     "label": "Türkiye"
+    }
+   ]
+  },
+  {
+   "slug": "hurriyet",
+   "name": "Hürriyet",
+   "homepage": "https://www.hurriyet.com.tr",
+   "group": "turkey",
+   "owner": "Demirören",
+   "region": "turkey",
+   "language": "tr",
+   "paywalled": false,
+   "feeds": [
+    {
+     "url": "https://www.hurriyet.com.tr/rss/anasayfa",
+     "label": "Ana sayfa"
+    },
+    {
+     "url": "https://www.hurriyet.com.tr/rss/dunya",
+     "label": "Dünya"
+    }
+   ]
+  },
+  {
+   "slug": "hurriyetdailynews",
+   "name": "Hürriyet Daily News",
+   "homepage": "https://www.hurriyetdailynews.com",
+   "group": "turkey",
+   "owner": "Demirören",
+   "region": "turkey",
+   "language": "en",
+   "paywalled": false,
+   "feeds": [
+    {
+     "url": "https://www.hurriyetdailynews.com/rss/world",
+     "label": "World"
+    },
+    {
+     "url": "https://www.hurriyetdailynews.com/rss/turkey",
+     "label": "Türkiye"
+    }
+   ]
+  },
+  {
+   "slug": "milliyet",
+   "name": "Milliyet",
+   "homepage": "https://www.milliyet.com.tr",
+   "group": "turkey",
+   "owner": "Demirören",
+   "region": "turkey",
+   "language": "tr",
+   "paywalled": false,
+   "feeds": [
+    {
+     "url": "https://www.milliyet.com.tr/rss/rssnew/dunyarss.xml",
+     "label": "Dünya"
+    }
+   ]
+  },
+  {
+   "slug": "cnnturk",
+   "name": "CNN Türk",
+   "homepage": "https://www.cnnturk.com",
+   "group": "turkey",
+   "owner": "Demirören",
+   "region": "turkey",
+   "language": "tr",
+   "paywalled": false,
+   "feeds": [
+    {
+     "url": "https://www.cnnturk.com/feed/rss/dunya/news",
+     "label": "Dünya"
+    },
+    {
+     "url": "https://www.cnnturk.com/feed/rss/all/news",
+     "label": "Tümü"
+    }
+   ]
+  },
+  {
+   "slug": "ntv",
+   "name": "NTV",
+   "homepage": "https://www.ntv.com.tr",
+   "group": "turkey",
+   "owner": "Doğuş",
+   "region": "turkey",
+   "language": "tr",
+   "paywalled": false,
+   "feeds": [
+    {
+     "url": "https://www.ntv.com.tr/dunya.rss",
+     "label": "Dünya"
+    },
+    {
+     "url": "https://www.ntv.com.tr/son-dakika.rss",
+     "label": "Son dakika"
+    }
+   ]
+  },
+  {
+   "slug": "haberturk",
+   "name": "Habertürk",
+   "homepage": "https://www.haberturk.com",
+   "group": "turkey",
+   "owner": "Ciner",
+   "region": "turkey",
+   "language": "tr",
+   "paywalled": false,
+   "feeds": [
+    {
+     "url": "https://www.haberturk.com/rss/kategori/dunya.xml",
+     "label": "Dünya"
+    },
+    {
+     "url": "https://www.haberturk.com/rss",
+     "label": "Tümü"
+    }
+   ]
+  },
+  {
+   "slug": "yenisafak",
+   "name": "Yeni Şafak",
+   "homepage": "https://www.yenisafak.com",
+   "group": "turkey",
+   "owner": "Albayrak",
+   "region": "turkey",
+   "language": "tr",
+   "paywalled": false,
+   "feeds": [
+    {
+     "url": "https://www.yenisafak.com/rss?xml=dunya",
+     "label": "Dünya"
+    }
+   ]
+  },
+  {
+   "slug": "sozcu",
+   "name": "Sözcü",
+   "homepage": "https://www.sozcu.com.tr",
+   "group": "turkey",
+   "owner": "Sözcü",
+   "region": "turkey",
+   "language": "tr",
+   "paywalled": false,
+   "feeds": [
+    {
+     "url": "https://www.sozcu.com.tr/feeds-rss-category-dunya",
+     "label": "Dünya"
+    },
+    {
+     "url": "https://www.sozcu.com.tr/rss/dunya.xml",
+     "label": "Dünya (alt.)"
+    }
+   ]
+  },
+  {
+   "slug": "cumhuriyet",
+   "name": "Cumhuriyet",
+   "homepage": "https://www.cumhuriyet.com.tr",
+   "group": "turkey",
+   "owner": "Cumhuriyet Vakfı",
+   "region": "turkey",
+   "language": "tr",
+   "paywalled": false,
+   "feeds": [
+    {
+     "url": "https://www.cumhuriyet.com.tr/rss/son_dakika.xml",
+     "label": "Son dakika"
+    }
+   ]
+  },
+  {
+   "slug": "t24",
+   "name": "T24",
+   "homepage": "https://t24.com.tr",
+   "group": "turkey",
+   "owner": "T24",
+   "region": "turkey",
+   "language": "tr",
+   "paywalled": false,
+   "feeds": [
+    {
+     "url": "https://www.bing.com/news/search?q=site%3At24.com.tr&format=rss&qft=sortbydate%3d%221%22",
+     "label": "Bing Haberler: site:t24.com.tr"
+    }
+   ],
+   "note": "T24'ün RSS dosyası bozuk (okunamıyor). Başlıklar Bing Haberler'in herkese açık RSS aramasından (site:t24.com.tr) gelir; bağlantılar doğrudan T24 sayfasına gider."
+  },
+  {
+   "slug": "dha",
+   "name": "Demirören Haber Ajansı",
+   "homepage": "https://www.dha.com.tr",
+   "group": "turkey",
+   "owner": "Demirören",
+   "region": "turkey",
+   "language": "tr",
+   "paywalled": false,
+   "feeds": [
+    {
+     "url": "https://www.bing.com/news/search?q=site%3Adha.com.tr&format=rss&qft=sortbydate%3d%221%22",
+     "label": "Bing Haberler: site:dha.com.tr"
+    }
+   ],
+   "note": "Başlıklar Bing Haberler'in herkese açık RSS aramasından (site:dha.com.tr) gelir; bağlantılar doğrudan Demirören Haber Ajansı sayfasına gider."
+  },
+  {
+   "slug": "iha",
+   "name": "İhlas Haber Ajansı",
+   "homepage": "https://www.iha.com.tr",
+   "group": "turkey",
+   "owner": "İhlas",
+   "region": "turkey",
+   "language": "tr",
+   "paywalled": false,
+   "feeds": [
+    {
+     "url": "https://www.iha.com.tr/rss",
+     "label": "Tümü"
+    }
+   ],
+   "note": "İHA'nın RSS yayını bozuk ve Bing Haberler'de de güncel haberi yok (son kontrol 2026-09-28)."
+  },
+  {
+   "slug": "bbcturkce",
+   "name": "BBC Türkçe",
+   "homepage": "https://www.bbc.com/turkce",
+   "group": "turkey",
+   "owner": "BBC",
+   "region": "turkey",
+   "language": "tr",
+   "paywalled": false,
+   "feeds": [
+    {
+     "url": "https://feeds.bbci.co.uk/turkce/rss.xml",
+     "label": "Tümü"
+    }
+   ]
+  },
+  {
+   "slug": "dwturkce",
+   "name": "DW Türkçe",
+   "homepage": "https://www.dw.com/tr",
+   "group": "turkey",
+   "owner": "Deutsche Welle",
+   "region": "turkey",
+   "language": "tr",
+   "paywalled": false,
+   "feeds": [
+    {
+     "url": "https://rss.dw.com/rdf/rss-tur-all",
+     "label": "Tümü"
+    }
+   ]
+  },
+  {
+   "slug": "euronews-tr",
+   "name": "Euronews Türkçe",
+   "homepage": "https://tr.euronews.com",
+   "group": "turkey",
+   "owner": "Euronews",
+   "region": "turkey",
+   "language": "tr",
+   "paywalled": false,
+   "feeds": [
+    {
+     "url": "https://tr.euronews.com/rss",
+     "label": "Tümü"
+    }
+   ]
+  },
+  {
+   "slug": "indyturk",
+   "name": "Independent Türkçe",
+   "homepage": "https://www.indyturk.com",
+   "group": "turkey",
+   "owner": "SRMG",
+   "region": "turkey",
+   "language": "tr",
+   "paywalled": false,
+   "feeds": [
+    {
+     "url": "https://www.indyturk.com/rss.xml",
+     "label": "Tümü"
+    }
+   ]
+  },
+  {
+   "slug": "sputnik-tr",
+   "name": "Sputnik Türkiye",
+   "homepage": "https://anlatilaninotesi.com.tr",
+   "group": "turkey",
+   "owner": "Rossiya Segodnya",
+   "region": "turkey",
+   "language": "tr",
+   "paywalled": false,
+   "feeds": [
+    {
+     "url": "https://anlatilaninotesi.com.tr/export/rss2/archive/index.xml",
+     "label": "Tümü"
+    }
+   ]
+  },
+  {
+   "slug": "bloomberght",
+   "name": "Bloomberg HT",
+   "homepage": "https://www.bloomberght.com",
+   "group": "turkey",
+   "owner": "Ciner",
+   "region": "turkey",
+   "language": "tr",
+   "paywalled": false,
+   "feeds": [
+    {
+     "url": "https://www.bing.com/news/search?q=site%3Abloomberght.com&format=rss&qft=sortbydate%3d%221%22",
+     "label": "Bing Haberler: site:bloomberght.com"
+    }
+   ],
+   "note": "Bloomberg HT'nin RSS yayını güncellenmiyor. Başlıklar Bing Haberler'in herkese açık RSS aramasından (site:bloomberght.com) gelir; bağlantılar doğrudan Bloomberg HT sayfasına gider."
+  },
+  {
+   "slug": "dunya",
+   "name": "Dünya Gazetesi",
+   "homepage": "https://www.dunya.com",
+   "group": "turkey",
+   "owner": "Dünya",
+   "region": "turkey",
+   "language": "tr",
+   "paywalled": false,
+   "feeds": [
+    {
+     "url": "https://www.dunya.com/rss",
+     "label": "Tümü"
+    }
+   ]
+  },
+  {
+   "slug": "turkiyetoday",
+   "name": "Türkiye Today",
+   "homepage": "https://www.turkiyetoday.com",
+   "group": "turkey",
+   "owner": "Türkiye Today",
+   "region": "turkey",
+   "language": "en",
+   "paywalled": false,
+   "feeds": [
+    {
+     "url": "https://www.bing.com/news/search?q=site%3Aturkiyetoday.com&format=rss&qft=sortbydate%3d%221%22",
+     "label": "Bing Haberler: site:turkiyetoday.com"
+    }
+   ],
+   "note": "Türkiye Today'in RSS dosyası bozuk (okunamıyor). Başlıklar Bing Haberler'in herkese açık RSS aramasından (site:turkiyetoday.com) gelir; bağlantılar doğrudan Türkiye Today sayfasına gider."
+  },
+  {
+   "slug": "fotomac",
+   "name": "Fotomaç",
+   "homepage": "https://www.fotomac.com.tr",
+   "group": "sports",
+   "owner": "Turkuvaz",
+   "region": "turkey",
+   "language": "tr",
+   "paywalled": false,
+   "feeds": [
+    {
+     "url": "https://www.fotomac.com.tr/rss/anasayfa.xml",
+     "label": "Ana sayfa"
+    }
+   ]
+  },
+  {
+   "slug": "aspor",
+   "name": "A Spor",
+   "homepage": "https://www.aspor.com.tr",
+   "group": "sports",
+   "owner": "Turkuvaz",
+   "region": "turkey",
+   "language": "tr",
+   "paywalled": false,
+   "feeds": [
+    {
+     "url": "https://www.aspor.com.tr/rss/anasayfa.xml",
+     "label": "Ana sayfa"
+    }
+   ]
+  },
+  {
+   "slug": "ntvspor",
+   "name": "NTV Spor",
+   "homepage": "https://www.ntvspor.net",
+   "group": "sports",
+   "owner": "Doğuş",
+   "region": "turkey",
+   "language": "tr",
+   "paywalled": false,
+   "feeds": [
+    {
+     "url": "https://www.ntvspor.net/rss/anasayfa",
+     "label": "Ana sayfa"
+    }
+   ]
+  },
+  {
+   "slug": "sporx",
+   "name": "Sporx",
+   "homepage": "https://www.sporx.com",
+   "group": "sports",
+   "owner": "Sporx",
+   "region": "turkey",
+   "language": "tr",
+   "paywalled": false,
+   "feeds": [
+    {
+     "url": "https://www.sporx.com/_xml/rss.php",
+     "label": "Son haberler"
+    }
+   ]
+  },
+  {
+   "slug": "bbcsport",
+   "name": "BBC Sport",
+   "homepage": "https://www.bbc.com/sport",
+   "group": "sports",
+   "owner": "BBC",
+   "region": "europe",
+   "language": "en",
+   "paywalled": false,
+   "feeds": [
+    {
+     "url": "https://feeds.bbci.co.uk/sport/rss.xml",
+     "label": "Sport"
+    },
+    {
+     "url": "https://feeds.bbci.co.uk/sport/football/rss.xml",
+     "label": "Football"
+    }
+   ]
+  },
+  {
+   "slug": "guardian-sport",
+   "name": "The Guardian Sport",
+   "homepage": "https://www.theguardian.com/sport",
+   "group": "sports",
+   "owner": "Guardian Media Group",
+   "region": "europe",
+   "language": "en",
+   "paywalled": false,
+   "feeds": [
+    {
+     "url": "https://www.theguardian.com/sport/rss",
+     "label": "Sport"
+    },
+    {
+     "url": "https://www.theguardian.com/football/rss",
+     "label": "Football"
+    }
+   ]
+  },
+  {
+   "slug": "skysports",
+   "name": "Sky Sports",
+   "homepage": "https://www.skysports.com",
+   "group": "sports",
+   "owner": "Comcast",
+   "region": "europe",
+   "language": "en",
+   "paywalled": false,
+   "feeds": [
+    {
+     "url": "https://www.skysports.com/rss/12040",
+     "label": "News"
+    },
+    {
+     "url": "https://www.skysports.com/rss/11095",
+     "label": "Football"
+    }
+   ]
+  },
+  {
+   "slug": "espn",
+   "name": "ESPN",
+   "homepage": "https://www.espn.com",
+   "group": "sports",
+   "owner": "Disney",
+   "region": "north_america",
+   "language": "en",
+   "paywalled": false,
+   "feeds": [
+    {
+     "url": "https://www.espn.com/espn/rss/news",
+     "label": "Top"
+    },
+    {
+     "url": "https://www.espn.com/espn/rss/soccer/news",
+     "label": "Soccer"
+    }
+   ]
+  },
+  {
+   "slug": "athletic",
+   "name": "The Athletic",
+   "homepage": "https://www.nytimes.com/athletic",
+   "group": "sports",
+   "owner": "New York Times Co.",
+   "region": "north_america",
+   "language": "en",
+   "paywalled": true,
+   "feeds": [
+    {
+     "url": "https://www.nytimes.com/athletic/rss/news/",
+     "label": "News"
+    }
+   ]
+  },
+  {
+   "slug": "marca",
+   "name": "Marca",
+   "homepage": "https://www.marca.com",
+   "group": "sports",
+   "owner": "Unidad Editorial",
+   "region": "europe",
+   "language": "es",
+   "paywalled": false,
+   "feeds": [
+    {
+     "url": "https://e00-marca.uecdn.es/rss/futbol/primera-division.xml",
+     "label": "Primera División"
+    }
+   ]
+  },
+  {
+   "slug": "as",
+   "name": "AS",
+   "homepage": "https://as.com",
+   "group": "sports",
+   "owner": "PRISA",
+   "region": "europe",
+   "language": "es",
+   "paywalled": false,
+   "feeds": [
+    {
+     "url": "https://feeds.as.com/mrss-s/pages/as/site/as.com/portada",
+     "label": "Portada"
+    }
+   ]
+  },
+  {
+   "slug": "lequipe",
+   "name": "L'Équipe",
+   "homepage": "https://www.lequipe.fr",
+   "group": "sports",
+   "owner": "Groupe Amaury",
+   "region": "europe",
+   "language": "fr",
+   "paywalled": false,
+   "feeds": [
+    {
+     "url": "https://dwh.lequipe.fr/api/edito/rss?path=/",
+     "label": "À la une"
+    }
+   ]
+  },
+  {
+   "slug": "kicker",
+   "name": "kicker",
+   "homepage": "https://www.kicker.de",
+   "group": "sports",
+   "owner": "Olympia-Verlag",
+   "region": "europe",
+   "language": "de",
+   "paywalled": false,
+   "feeds": [
+    {
+     "url": "https://newsfeed.kicker.de/news/aktuell",
+     "label": "Aktuell"
+    },
+    {
+     "url": "https://newsfeed.kicker.de/news/fussball",
+     "label": "Fußball"
+    }
+   ]
+  },
+  {
+   "slug": "gazzetta",
+   "name": "La Gazzetta dello Sport",
+   "homepage": "https://www.gazzetta.it",
+   "group": "sports",
+   "owner": "RCS MediaGroup",
+   "region": "europe",
+   "language": "it",
+   "paywalled": false,
+   "feeds": [
+    {
+     "url": "https://www.bing.com/news/search?q=site%3Agazzetta.it&format=rss&qft=sortbydate%3d%221%22",
+     "label": "Bing Haberler: site:gazzetta.it"
+    }
+   ],
+   "note": "Başlıklar Bing Haberler'in herkese açık RSS aramasından (site:gazzetta.it) gelir; bağlantılar doğrudan La Gazzetta dello Sport sayfasına gider."
+  },
+  {
+   "slug": "uefa",
+   "name": "UEFA",
+   "homepage": "https://www.uefa.com",
+   "group": "sports",
+   "owner": "UEFA",
+   "region": "europe",
+   "language": "en",
+   "paywalled": false,
+   "feeds": [
+    {
+     "url": "https://www.bing.com/news/search?q=site%3Auefa.com&format=rss&qft=sortbydate%3d%221%22",
+     "label": "Bing Haberler: site:uefa.com"
+    }
+   ],
+   "note": "Başlıklar Bing Haberler'in herkese açık RSS aramasından (site:uefa.com) gelir; bağlantılar doğrudan UEFA sayfasına gider."
+  }
+ ],
+ "retired_feeds": [
+  "http://rss.cnn.com/rss/edition_world.rss",
+  "http://www.xinhuanet.com/english/rss/worldrss.xml",
+  "https://efe.com/feed/",
+  "https://english.ahram.org.eg/rss.ashx",
+  "https://english.kyodonews.net/rss/all.xml",
+  "https://euobserver.com/rss.xml",
+  "https://news.google.com/rss/search?q=site:al-monitor.com+when:2d&hl=en-US&gl=US&ceid=US:en",
+  "https://news.google.com/rss/search?q=site:apnews.com+when:1d&hl=en-US&gl=US&ceid=US:en",
+  "https://news.google.com/rss/search?q=site:ekathimerini.com+when:2d&hl=en-US&gl=US&ceid=US:en",
+  "https://news.google.com/rss/search?q=site:english.alarabiya.net+when:2d&hl=en-US&gl=US&ceid=US:en",
+  "https://news.google.com/rss/search?q=site:reuters.com+when:1d&hl=en-US&gl=US&ceid=US:en",
+  "https://news.google.com/rss/search?q=site:telegraph.co.uk+when:1d&hl=en-GB&gl=GB&ceid=GB:en",
+  "https://news.google.com/rss/search?q=site:timesofisrael.com+when:1d&hl=en-US&gl=US&ceid=US:en",
+  "https://rss.unian.net/site/news_eng.rss",
+  "https://sana.sy/en/?feed=rss2",
+  "https://t24.com.tr/rss",
+  "https://www.afp.com/en/rss.xml",
+  "https://www.bloomberght.com/rss",
+  "https://www.chinadaily.com.cn/rss/world_rss.xml",
+  "https://www.dha.com.tr/rss",
+  "https://www.euractiv.com/feed/",
+  "https://www.globaltimes.cn/rss/outbrain.xml",
+  "https://www.middleeastmonitor.com/feed/",
+  "https://www.rudaw.net/rss/english",
+  "https://www.trtworld.com/rss",
+  "https://www.turkiyetoday.com/feed/",
+  "https://xml2.corriereobjects.it/rss/esteri.xml"
+ ]
+}

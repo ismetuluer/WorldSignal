@@ -1,0 +1,61 @@
+import type {
+  UpdateStatus, FullTextWorkerStatus, MaintenanceStatus, NotifyStatus, Settings, StoryWorkerStatus } from "../api/types";
+
+/** Settings keys added since Phase 3 (stories, score, full text); spread into each test's settings. */
+export const STORY_SETTINGS = {
+  "stories.embed_model": "bge-m3:latest",
+  "stories.embed_summary": false,
+  "stories.threshold": 0.6,
+  "stories.cohesion": 0.45,
+  "stories.min_sources_for_ai": 2,
+  "score.w_sources": 0.45,
+  "score.w_freshness": 0.25,
+  "score.w_turkey": 0.2,
+  "score.w_interest": 0.1,
+  "interest.keywords": [],
+  "interest.categories": [],
+  "interest.regions": [],
+  "fulltext.enabled": true,
+  "fulltext.browser_path": "",
+  "fulltext.profile": "own",
+  "fulltext.visible": false,
+  "fulltext.per_site_hour": 4,
+  "fulltext.auto_min_score": 60,
+  "fulltext.auto_per_story": 2,
+  "history.morning_hour": 9,
+  "retention.fulltext_days": 30,
+  "backup.keep_daily": 14,
+  "app.close_to_tray": true,
+  "notify.enabled": true,
+  "notify.min_score": 60,
+  "notify.min_sources": 5,
+  "notify.quiet": true,
+  "notify.quiet_start": 23,
+  "notify.quiet_end": 7,
+} satisfies Partial<Settings>;
+
+export const STORY_WORKER: StoryWorkerStatus = {
+  running: true, state: "idle", model: "bge-m3:latest", last_error: null, embedded: 3, clustered: 3, stories: 2, multi_source: 1,
+};
+
+export const FULLTEXT_WORKER: FullTextWorkerStatus = {
+  running: true, state: "idle", browser: "Brave", profile: "own", current_article_id: null, last_error: null,
+  last_done_at: null, pending: 0, done: 0, failed: 0, blocked: 0, paused_sources: [],
+};
+
+/** Full-text fields of a story member that has none yet. */
+export const NO_FULLTEXT = {
+  fulltext_status: null, fulltext_error: null, fulltext_chars: null, fulltext_translate_status: null,
+} as const;
+
+export const MAINTENANCE: MaintenanceStatus = {
+  last_run_at: "2026-09-27T08:00:00Z", last_removed: { fulltexts: 2, vectors: 150 }, last_error: null,
+  last_backup: "worldsignal-20260927-080000-daily.db", backup_error: null, database_bytes: 45_000_000,
+};
+
+export const NOTIFY: NotifyStatus = { available: true, last_sent_at: null, last_story_id: null, sent: 0 };
+
+export const UPDATE_IDLE: UpdateStatus = {
+  state: "up_to_date", current: "0.8.0", latest: null, progress: null, error: null, checked_at: null, unsupported: null,
+  releases_url: "https://github.com/x/WorldSignal/releases", last_update: null, can_quit: true,
+};

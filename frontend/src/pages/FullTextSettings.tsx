@@ -1,0 +1,227 @@
+import { useCallback, useEffect, useState } from "react";
+import { api, ApiError } from "../api/client";
+import type { BrowserList, Settings } from "../api/types";
+import { useToast } from "../components/Toasts";
+import { Segmented, Spinner, Switch } from "../components/controls";
+import { describeError, useI18n } from "../i18n";
+import { fulltextErrorKey } from "../lib/fulltext";
+import { SubscriptionSites } from "./SubscriptionSites";
+import { useAppState } from "../state";
+
+const PER_SITE = [2, 4, 6, 10];
+const AUTO_SCORES = [0, 50, 60, 75];
+const PER_STORY = [0, 1, 2, 3];
+
+/** Settings for fetching full texts: browser, profile, login, pace and the queue's state. */
+export function FullTextSettings() {
+  const i18n = useI18n();
+  const { t, plural } = i18n;
+  const toast = useToast();
+  const { settings, updateSettings, status, refreshStatus } = useAppState();
+  const [browsers, setBrowsers] = useState<BrowserList | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  const fail = useCallback(
+    (e: unknown) => toast.show(describeError(i18n, e instanceof ApiError ? e.code : "generic"), "error"),
+    [toast, i18n],
+  );
+
+  const loadBrowsers = useCallback(() => api.browsers().then(setBrowsers, fail), [fail]);
+  const browserPath = settings["fulltext.browser_path"];
+  useEffect(() => {
+    void loadBrowsers();
+  }, [loadBrowsers, browserPath]);
+
+  const change = (patch: Partial<Settings>) => updateSettings(patch).then(() => refreshStatus(), fail);
+
+  const enablePaid = async () => {
+    setBusy(true);
+    try {
+      const targets = (await api.sources()).filter((s) => s.paywalled && s.enabled && s.fulltext_mode !== "browser");
+      for (const s of targets) await api.updateSource(s.id, { fulltext_mode: "browser" });
+      toast.show(plural("settings.fulltext.paidEnabled", targets.length), "success");
+    } catch (e) {
+      fail(e);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const ft = status?.fulltext;
+  const enabled = settings["fulltext.enabled"];
+  const profile = settings["fulltext.profile"];
+
+  return (
+    <section className="settings-group">
+      <h2 className="section-title">{t("settings.fulltext")}</h2>
+      <div className="settings-card">
+        <div className="settings-row">
+          <div className="settings-row-text">
+            <div className="settings-row-title">{t("settings.fulltext.enabled")}</div>
+            <div className="settings-row-hint">{t("settings.fulltext.enabledHint")}</div>
+          </div>
+          <Switch
+            checked={enabled}
+            label={t("settings.fulltext.enabled")}
+            onChange={(v) => void change({ "fulltext.enabled": v })}
+          />
+        </div>
+
+        <div className="settings-row">
+          <div className="settings-row-text">
+            <div className="settings-row-title">{t("settings.fulltext.browser")}</div>
+            <div className="settings-row-hint">{t("settings.fulltext.browserHint")}</div>
+          </div>
+          {browsers === null ? (
+            <Spinner />
+          ) : browsers.browsers.length === 0 ? (
+            <span className="settings-row-hint" role="status">{t("settings.fulltext.noBrowser")}</span>
+          ) : (
+            <select
+              className="select"
+              style={{ width: 260 }}
+              aria-label={t("settings.fulltext.browser")}
+              value={browserPath || ""}
+              onChange={(e) => void change({ "fulltext.browser_path": e.target.value })}
+            >
+              <option value="">
+                {t("settings.fulltext.browserAuto", {
+                  name: browsers.browsers.find((b) => b.path === browsers.chosen)?.name ?? "—",
+                })}
+              </option>
+              {browsers.browsers.map((b) => (
+                <option key={b.path} value={b.path}>
+                  {b.name}
+                </option>
+              ))}
+            </select>
+          )}
+        </div>
+
+        <div className="settings-row">
+          <div className="settings-row-text">
+            <div className="settings-row-title">{t("settings.fulltext.profile")}</div>
+            <div className="settings-row-hint">
+              {profile === "own" ? t("settings.fulltext.profile.ownHint") : t("settings.fulltext.profile.mainHint")}
+            </div>
+            {profile === "own" && browsers ? <div className="path">{browsers.own_profile}</div> : null}
+            {profile === "main" && browsers?.main_profile_in_use ? (
+              <div className="settings-row-hint warn" role="status">{t("settings.fulltext.mainInUse")}</div>
+            ) : null}
+          </div>
+          <Segmented<"own" | "main">
+            label={t("settings.fulltext.profile")}
+            value={profile}
+            onChange={(v) => void change({ "fulltext.profile": v })}
+            options={[
+              { value: "own", label: t("settings.fulltext.profile.own") },
+              { value: "main", label: t("settings.fulltext.profile.main") },
+            ]}
+          />
+        </div>
+
+        <div className="settings-row">
+          <div className="settings-row-text">
+            <div className="settings-row-title">{t("settings.fulltext.paid")}</div>
+            <div className="settings-row-hint">{t("settings.fulltext.paidHint")}</div>
+          </div>
+          <button className="btn" disabled={busy} onClick={() => void enablePaid()}>
+            {busy ? <Spinner /> : null}
+            {t("settings.fulltext.paidButton")}
+          </button>
+        </div>
+
+        <SubscriptionSites canOpen={profile === "own" && !!browsers?.chosen} />
+
+        <div className="settings-row">
+          <div className="settings-row-text">
+            <div className="settings-row-title">{t("settings.fulltext.perSite")}</div>
+            <div className="settings-row-hint">{t("settings.fulltext.perSiteHint")}</div>
+          </div>
+          <Segmented
+            label={t("settings.fulltext.perSite")}
+            value={settings["fulltext.per_site_hour"]}
+            onChange={(v) => void change({ "fulltext.per_site_hour": v })}
+            options={PER_SITE.map((n) => ({ value: n, label: t("settings.fulltext.perHour", { n }) }))}
+          />
+        </div>
+
+        <div className="settings-row">
+          <div className="settings-row-text">
+            <div className="settings-row-title">{t("settings.fulltext.auto")}</div>
+            <div className="settings-row-hint">{t("settings.fulltext.autoHint")}</div>
+          </div>
+          <div className="segment-stack">
+            <span>{t("settings.fulltext.autoScore")}</span>
+            <Segmented
+              label={t("settings.fulltext.autoScore")}
+              value={settings["fulltext.auto_min_score"]}
+              onChange={(v) => void change({ "fulltext.auto_min_score": v })}
+              options={AUTO_SCORES.map((n) => ({
+                value: n,
+                label: n === 0 ? t("settings.fulltext.autoAll") : t("settings.fulltext.autoScoreN", { n }),
+              }))}
+            />
+            <span>{t("settings.fulltext.autoPerStory")}</span>
+            <Segmented
+              label={t("settings.fulltext.autoPerStory")}
+              value={settings["fulltext.auto_per_story"]}
+              onChange={(v) => void change({ "fulltext.auto_per_story": v })}
+              options={PER_STORY.map((n) => ({
+                value: n,
+                label: n === 0 ? t("settings.fulltext.autoOff") : t("settings.fulltext.autoPerStoryN", { n }),
+              }))}
+            />
+          </div>
+        </div>
+
+        <div className="settings-row">
+          <div className="settings-row-text">
+            <div className="settings-row-title">{t("settings.fulltext.visible")}</div>
+            <div className="settings-row-hint">{t("settings.fulltext.visibleHint")}</div>
+          </div>
+          <Switch
+            checked={settings["fulltext.visible"]}
+            label={t("settings.fulltext.visible")}
+            onChange={(v) => void change({ "fulltext.visible": v })}
+          />
+        </div>
+
+        {ft ? (
+          <div className="settings-row">
+            <div className="settings-row-text">
+              <div className="settings-row-title">
+                {t("settings.ai.status")}: {t(`fulltext.state.${ft.state}`)}
+                {ft.browser && ft.state === "fetching" ? ` (${ft.browser})` : ""}
+              </div>
+              <div className="settings-status">
+                <span>{t("settings.fulltext.queue", { pending: ft.pending, done: ft.done })}</span>
+                {ft.failed + ft.blocked > 0 ? (
+                  <span>{plural("settings.fulltext.failed", ft.failed + ft.blocked)}</span>
+                ) : null}
+                {ft.last_error ? <span>{t("settings.fulltext.lastError", { reason: t(fulltextErrorKey(ft.last_error)) })}</span> : null}
+              </div>
+              {ft.paused_sources.length > 0 ? (
+                <ul className="paused-list" aria-label={t("settings.fulltext.paused")}>
+                  {ft.paused_sources.map((s) => (
+                    <li key={s.id}>
+                      <span>
+                        {t("settings.fulltext.pausedUntil", { name: s.name, time: i18n.time(s.fulltext_paused_until) })}
+                      </span>
+                      <button
+                        className="btn btn-sm"
+                        onClick={() => void api.resumeFulltextSource(s.id).then(refreshStatus, fail)}
+                      >
+                        {t("settings.fulltext.resume")}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
+            </div>
+          </div>
+        ) : null}
+      </div>
+    </section>
+  );
+}
