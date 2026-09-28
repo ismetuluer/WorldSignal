@@ -8,12 +8,13 @@ once per article and never recomputed automatically (cache).
 from __future__ import annotations
 
 import json
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from ..ai.enrich import EnrichResult
+from ..ai.languages import missing
 from ..country import HomeProfile
 from ..db import Database, utc_now_iso
 from ..textnorm import fold_for_search
@@ -32,7 +33,7 @@ class Job:
     summary: str
     language: str
     source_name: str
-    upgrade: bool = False  # redo of a finished article (English missing, or full text arrived)
+    upgrade: bool = False  # redo of a finished article (a language missing, or full text arrived)
 
 
 class AiRepository:
@@ -63,14 +64,15 @@ class AiRepository:
             )
             return cur.rowcount
 
-    def request(self, article_id: int) -> str:
-        """User asked for this article. Returns the resulting status."""
+    def request(self, article_id: int, languages: Sequence[str] = ()) -> str:
+        """User asked for this article. Returns the resulting status. A finished article is written again only
+        when it lacks one of ``languages``."""
         now = utc_now_iso()
         with self.db.transaction() as c:
             if c.execute("SELECT 1 FROM articles WHERE id = ?", (article_id,)).fetchone() is None:
                 raise KeyError(article_id)
-            row = c.execute("SELECT status FROM article_ai WHERE article_id = ?", (article_id,)).fetchone()
-            if row is not None and row["status"] == "done":
+            row = c.execute("SELECT status, texts FROM article_ai WHERE article_id = ?", (article_id,)).fetchone()
+            if row is not None and row["status"] == "done" and not missing(json.loads(row["texts"] or "{}"), languages):
                 return "done"
             priority = USER_REQUEST_BOOST + datetime.now(UTC).timestamp()
             c.execute(
@@ -88,11 +90,11 @@ class AiRepository:
                 "UPDATE article_ai SET status = 'pending', attempts = 0, error_code = NULL WHERE status = 'failed'"
             ).rowcount
 
-    def next_job(self, upgrade_since: str | None = None) -> Job | None:
+    def next_job(self, upgrade_since: str | None = None, languages: Sequence[str] = ("tr", "en")) -> Job | None:
         """The next queued article. When the queue is empty and ``upgrade_since`` is given, a finished
-        article from that window is redone when it still lacks the English text (written before
-        prompt v5) or its full text arrived after it was written; the old text stays visible
-        meanwhile. The model reads the full text when there is one, else the feed summary."""
+        article from that window is redone when it lacks one of ``languages`` (the user added a language)
+        or its full text arrived after it was written; the old text stays visible meanwhile.
+        The model reads the full text when there is one, else the feed summary."""
         row = self.db.conn.execute(
             """SELECT x.article_id, x.attempts, a.title,
                       CASE WHEN ft.status = 'done' THEN ft.text ELSE a.summary END AS summary,
@@ -117,9 +119,9 @@ class AiRepository:
                JOIN sources s ON s.id = a.source_id
                LEFT JOIN article_fulltext ft ON ft.article_id = a.id
                WHERE x.status = 'done' AND x.attempts < ? AND a.sort_at >= ? AND s.enabled = 1
-                 AND (x.title_en IS NULL OR (ft.status = 'done' AND ft.fetched_at > x.completed_at))
-               ORDER BY a.sort_at DESC LIMIT 1""",
-            (MAX_ATTEMPTS + 1, upgrade_since),
+                 AND ({lacking} OR (ft.status = 'done' AND ft.fetched_at > x.completed_at))
+               ORDER BY a.sort_at DESC LIMIT 1""".format(lacking=lacking_sql("x.texts", languages)),
+            (MAX_ATTEMPTS + 1, upgrade_since, *languages),
         ).fetchone()
         return Job(**dict(row), upgrade=True) if row else None
 
@@ -127,12 +129,11 @@ class AiRepository:
     def store_result(self, article_id: int, result: EnrichResult, *, model: str, prompt_version: int, duration_ms: int) -> None:
         with self.db.transaction() as c:
             c.execute(
-                """UPDATE article_ai SET status = 'done', model = ?, prompt_version = ?, title_tr = ?, summary_tr = ?,
-                       title_en = ?, summary_en = ?, category = ?, countries = ?, topics = ?, mentions_turkey = ?, issues = ?,
+                """UPDATE article_ai SET status = 'done', model = ?, prompt_version = ?, texts = ?,
+                       category = ?, countries = ?, topics = ?, mentions_turkey = ?, issues = ?,
                        error_code = NULL, duration_ms = ?, completed_at = ?, attempts = attempts + 1
                    WHERE article_id = ?""",
-                (model, prompt_version, result.title_tr, result.summary_tr, result.title_en, result.summary_en,
-                 result.category,
+                (model, prompt_version, json.dumps(result.texts, ensure_ascii=False), result.category,
                  json.dumps(result.countries), json.dumps(result.topics), int(result.mentions_turkey),
                  json.dumps(result.issues), duration_ms, utc_now_iso(), article_id),
             )
@@ -141,13 +142,13 @@ class AiRepository:
             c.execute("DELETE FROM article_ai_fts WHERE rowid = ?", (article_id,))
             c.execute(
                 "INSERT INTO article_ai_fts (rowid, title_tr, summary_tr) VALUES (?, ?, ?)",
-                # One index for both AI languages: a search finds the Turkish and the English text.
-                (article_id, fold_for_search(f"{result.title_tr} {result.title_en}"),
-                 fold_for_search(f"{result.summary_tr} {result.summary_en}")),
+                # One index for all AI languages (the column names are historical): a search finds any of them.
+                (article_id, fold_for_search(" ".join(t["title"] for t in result.texts.values())),
+                 fold_for_search(" ".join(t["summary"] for t in result.texts.values()))),
             )
 
     def store_upgrade_failure(self, article_id: int, code: str) -> None:
-        """A redo for the English text failed: the finished Turkish result stays as it is."""
+        """A redo (a new language, or the full text) failed: the finished result stays as it is."""
         with self.db.transaction() as c:
             c.execute("UPDATE article_ai SET attempts = attempts + 1, error_code = ? WHERE article_id = ?", (code, article_id))
 
@@ -184,4 +185,12 @@ class AiRepository:
         d = dict(row)
         for key in ("issues", "countries", "turkey_links"):
             d[key] = json.loads(d[key] or "[]")
+        d["texts"] = json.loads(d["texts"] or "{}")
         return d
+
+
+def lacking_sql(column: str, languages: Sequence[str]) -> str:
+    """SQL that is true when the JSON ``column`` has no title for one of ``languages`` (one ``?`` per language)."""
+    if not languages:
+        return "0"
+    return "(" + " OR ".join(f"json_extract({column}, '$.' || ? || '.title') IS NULL" for _ in languages) + ")"

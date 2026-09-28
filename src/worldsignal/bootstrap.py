@@ -27,6 +27,7 @@ from .stories.worker import StoryWorker
 from .updater import Updater
 from .country import HomeState, windows_country
 from .home_sync import HomeSync
+from .apikeys import SecretStore
 
 log = logging.getLogger(__name__)
 
@@ -46,9 +47,12 @@ def build_context(paths: DataPaths, token: str, ui_dir: Path | None, run_collect
     fulltext = FullTextRepository(db)
     history = HistoryRepository(db, stories)
     backups = BackupManager(db, paths.backups, paths.root)
+    keys = SecretStore(paths.root / "secrets.json")  # outside the database: backups never carry API keys
     return AppContext(
+        keys=keys,
         db=db, paths=paths, token=token, settings=settings, sources=sources, articles=articles,
-        collector=collector, ai=ai, ai_worker=AiWorker(ai, settings, stories=stories, fulltext=fulltext),
+        collector=collector, ai=ai,
+        ai_worker=AiWorker(ai, settings, stories=stories, fulltext=fulltext, home=home.profile, keys=keys),
         stories=stories, story_worker=StoryWorker(stories, settings), notebook=NotebookRepository(db, stories),
         fulltext=fulltext, fulltext_worker=FullTextWorker(fulltext, settings, paths.browser_profile),
         history=history, maintenance=Maintenance(history, settings, backups, fulltext), backups=backups,

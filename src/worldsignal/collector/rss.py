@@ -1,4 +1,4 @@
-"""Downloading and parsing RSS/Atom feeds.
+"""Downloading and parsing RSS/Atom feeds (and news sitemaps, see sitemap.py).
 
 The network layer (httpx) and the parser (feedparser) are kept separate so the
 parser can be tested with fixture files and the fetcher with a mock transport.
@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import calendar
 import logging
+from collections import Counter
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
@@ -18,6 +19,7 @@ import httpx
 
 from .. import __version__
 from ..textnorm import strip_html
+from .sitemap import ROBOTS, Robots, Sitemap, looks_like_sitemap, parse_sitemap
 
 log = logging.getLogger(__name__)
 
@@ -195,22 +197,14 @@ def make_client() -> httpx.AsyncClient:
     )
 
 
-async def fetch_feed(
-    client: httpx.AsyncClient,
-    url: str,
-    etag: str | None = None,
-    last_modified: str | None = None,
-) -> FetchResult:
-    headers = {}
-    if etag:
-        headers["If-None-Match"] = etag
-    if last_modified:
-        headers["If-Modified-Since"] = last_modified
-
+async def download(
+    client: httpx.AsyncClient, url: str, headers: dict[str, str] | None = None
+) -> tuple[int, bytes, str, str | None, str | None]:
+    """(status, body, final URL, ETag, Last-Modified). Errors become FetchError; 304 comes back with an empty body."""
     try:
-        async with client.stream("GET", url, headers=headers) as resp:
+        async with client.stream("GET", url, headers=headers or {}) as resp:
             if resp.status_code == 304:
-                return FetchResult(True, None, etag, last_modified, str(resp.url))
+                return 304, b"", str(resp.url), None, None
             if resp.status_code >= 400:
                 raise FetchError(f"http_{resp.status_code}", resp.reason_phrase)
             declared = resp.headers.get("content-length")
@@ -223,20 +217,72 @@ async def fetch_feed(
                 if size > MAX_FEED_BYTES:
                     raise FetchError("too_large", str(size))
                 chunks.append(chunk)
-            body = b"".join(chunks)
-            final_url = str(resp.url)
-            new_etag = resp.headers.get("etag")
-            new_last_modified = resp.headers.get("last-modified")
+            return (resp.status_code, b"".join(chunks), str(resp.url), resp.headers.get("etag"),
+                    resp.headers.get("last-modified"))
     except FetchError:
         raise
     except httpx.TimeoutException as exc:
         raise FetchError("timeout", repr(exc)) from exc
     except httpx.TooManyRedirects as exc:
         raise FetchError("redirect_loop", repr(exc)) from exc
-    except (httpx.ConnectError, httpx.NetworkError, httpx.ProtocolError, httpx.ProxyError) as exc:
-        raise FetchError("network", repr(exc)) from exc
     except httpx.HTTPError as exc:
         raise FetchError("network", repr(exc)) from exc
 
-    feed = parse_feed(body, final_url)
+
+async def fetch_feed(
+    client: httpx.AsyncClient,
+    url: str,
+    etag: str | None = None,
+    last_modified: str | None = None,
+    robots: Robots | None = None,
+) -> FetchResult:
+    """Download and parse an RSS/Atom feed, or a news sitemap (sitemap.py) where robots.txt allows it."""
+    headers = {}
+    if etag:
+        headers["If-None-Match"] = etag
+    if last_modified:
+        headers["If-Modified-Since"] = last_modified
+    status, body, final_url, new_etag, new_last_modified = await download(client, url, headers)
+    if status == 304:
+        return FetchResult(True, None, etag, last_modified, final_url)
+    if looks_like_sitemap(body):
+        feed = await _sitemap_feed(client, body, final_url, robots or ROBOTS)
+    else:
+        feed = parse_feed(body, final_url)
     return FetchResult(False, feed, new_etag, new_last_modified, final_url)
+
+
+def _read_sitemap(body: bytes) -> Sitemap:
+    try:
+        return parse_sitemap(body)
+    except (ValueError, SyntaxError) as exc:  # ElementTree's ParseError is a SyntaxError
+        raise FetchError("not_a_feed", f"broken sitemap: {exc}") from exc
+
+
+async def _sitemap_feed(client: httpx.AsyncClient, body: bytes, url: str, robots: Robots) -> ParsedFeed:
+    if not await robots.allows(client, url):
+        raise FetchError("robots_disallow", url)
+    first = _read_sitemap(body)
+    items, plain = list(first.items), first.has_urls
+    for child in first.children:  # a sitemap index: read its news (or newest) sitemaps
+        if not await robots.allows(client, child):
+            continue
+        _, child_body, _, _, _ = await download(client, child)
+        sub = _read_sitemap(child_body)
+        items += sub.items
+        plain = plain or sub.has_urls
+    if not items:
+        # Addresses without headlines would need every article page opened: not done.
+        raise FetchError("sitemap_no_titles" if plain else "empty_feed", url)
+    entries: list[ParsedEntry] = []
+    seen: set[str] = set()
+    for item in items:
+        key = canonical_url(item.url)
+        if key in seen:
+            continue
+        seen.add(key)
+        title = item.title if len(item.title) <= MAX_TITLE_CHARS else item.title[: MAX_TITLE_CHARS - 1].rstrip() + "…"
+        entries.append(ParsedEntry(dedupe_key=key, url=item.url, title=title, summary="", author=None,
+                                   published_at=item.published_at))
+    languages = Counter(i.language for i in items if i.language)
+    return ParsedFeed(title=None, language=languages.most_common(1)[0][0] if languages else None, entries=entries)

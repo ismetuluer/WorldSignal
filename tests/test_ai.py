@@ -6,13 +6,15 @@ import httpx
 import pytest
 
 from conftest import MINI_CATALOG
-from worldsignal.ai.enrich import SCHEMA, EnrichInput, fidelity_issues, validate
+from worldsignal.ai.enrich import EnrichInput, EnrichTask, fidelity_issues, validate
 from worldsignal.ai.ollama import OllamaClient, OllamaError
 from worldsignal.ai.worker import AiWorker
 from worldsignal.country import HomeState
 from worldsignal.collector.rss import ParsedEntry
 from worldsignal.repo.ai import AiRepository
 from worldsignal.repo.articles import ArticleFilter
+
+SCHEMA = EnrichTask().schema
 
 GOOD = {
     "title_tr": "Irak'ta seçim sonuçları açıklandı",
@@ -124,7 +126,7 @@ def test_list_models_and_version():
 def test_validate_normalises_output():
     inp = EnrichInput("Beta", "tr", "IRAK'ta seçim", "Katılım oranı yüzde 41 oldu.")
     r = validate({**GOOD, "category": "nonsense", "title_tr": '  "Başlık"  '}, inp)
-    assert r.category == "other" and r.title_tr == "Başlık" and r.issues == []
+    assert r.category == "other" and r.texts["tr"]["title"] == "Başlık" and r.issues == []
     r = validate({**GOOD, "countries": ["iq", "IQ", "Iraq", "usa", 5], "topics": ["nato", "bogus", "nato"]}, inp)
     assert r.countries == ["IQ"] and r.topics == ["nato"]
     with pytest.raises(ValueError):
@@ -193,7 +195,7 @@ def test_worker_processes_queue_and_results_are_searchable(db, sources, articles
     assert run(worker.step()) > 0  # queue empty -> idle
     assert worker.status()["state"] == "idle" and worker.status()["done"] == 2
     items = articles.list(ArticleFilter())
-    assert items[0]["title_tr"] == GOOD["title_tr"] and items[0]["category"] == "politics"
+    assert items[0]["ai_texts"]["tr"]["title"] == GOOD["title_tr"] and items[0]["category"] == "politics"
     # Turkish AI text is searchable ("seçim" only exists in the AI title).
     assert {i["id"] for i in articles.list(ArticleFilter(query="SECIM"))} == set(ids)
     assert len(articles.list(ArticleFilter(categories=["politics"], turkey_only=True))) == 2
@@ -217,8 +219,8 @@ def test_worker_pauses_without_penalising_articles(db, sources, articles, settin
     assert worker.status()["state"] == exc_code
     row = AiRepository(db).next_job()
     assert row is not None and row.attempts == 0
-    # Original article is still listed, just without Turkish fields.
-    assert articles.list(ArticleFilter())[0]["title_tr"] is None
+    # Original article is still listed, just without AI texts.
+    assert articles.list(ArticleFilter())[0]["ai_texts"] == {}
 
 
 def test_worker_model_missing_and_disabled_and_no_model(db, sources, articles, settings):
@@ -246,7 +248,7 @@ def test_pending_rows_do_not_leak_partial_fields(db, sources, articles):
     ids = add_articles(db, sources, articles, n=1)
     AiRepository(db).request(ids[0])
     item = articles.list(ArticleFilter())[0]
-    assert item["ai_status"] == "pending" and item["title_tr"] is None and item["ai_issues"] == []
+    assert item["ai_status"] == "pending" and item["ai_texts"] == {} and item["ai_issues"] == []
 
 
 def test_worker_waits_while_another_model_uses_the_gpu(db, sources, articles, settings):
@@ -272,14 +274,15 @@ def test_worker_can_be_told_not_to_yield(db, sources, articles, settings):
     assert worker.status()["done"] == 1
 
 
-# -- English next to Turkish (prompt v5) -----------------------------------------------------
+# -- the user's languages (prompt v6) ---------------------------------------------------------
 def test_english_is_stored_and_searchable(db, sources, articles, settings):
     from worldsignal.repo.articles import ArticleFilter
 
     add_articles(db, sources, articles, n=1)
     run(make_worker(db, settings, FakeOllama()).step())
     item = articles.list(ArticleFilter())[0]
-    assert item["title_en"] == "Iraq election results announced" and item["summary_en"].startswith("The results")
+    assert item["ai_texts"]["en"]["title"] == "Iraq election results announced"
+    assert item["ai_texts"]["en"]["summary"].startswith("The results")
     assert articles.count(ArticleFilter(query="turnout")) == 1  # English AI text is indexed
     assert articles.count(ArticleFilter(query="katılım")) == 1
 
@@ -299,7 +302,7 @@ def test_old_results_get_english_in_the_background_without_losing_turkish(db, so
     run(make_worker(db, settings, FakeOllama()).step())
     # Simulate results written before English existed.
     with db.transaction() as c:
-        c.execute("UPDATE article_ai SET title_en = NULL, summary_en = NULL, prompt_version = 4")
+        c.execute("UPDATE article_ai SET texts = json_remove(texts, '$.en'), prompt_version = 4")
     since = "2000-01-01T00:00:00Z"
     job = repo.next_job(since)
     assert job is not None and job.upgrade
@@ -309,10 +312,43 @@ def test_old_results_get_english_in_the_background_without_losing_turkish(db, so
     broken = FakeOllama(answer="not json")
     run(make_worker(db, settings, broken).step())
     row = repo.get(job.article_id)
-    assert row["status"] == "done" and row["title_tr"] and row["title_en"] is None
+    assert row["status"] == "done" and row["texts"]["tr"]["title"] and "en" not in row["texts"]
 
     fake = FakeOllama()
     for _ in range(3):
         run(make_worker(db, settings, fake).step())
-    assert all(repo.get(i)["title_en"] == "Iraq election results announced" for i in ids)
+    assert all(repo.get(i)["texts"]["en"]["title"] == "Iraq election results announced" for i in ids)
     assert repo.next_job(since) is None
+
+
+def test_the_prompt_follows_the_users_languages_and_topics():
+    task = EnrichTask(("pt", "ar"), ("nato", "Futebol argentino"), ask_turkey=False)
+    props = task.schema["properties"]
+    assert {"title_pt", "summary_pt", "title_ar", "summary_ar"} <= set(props) and "title_tr" not in props
+    assert "mentions_turkey" not in props and props["topics"]["items"]["enum"] == ["nato", "Futebol argentino"]
+    assert "Portuguese, Arabic" in task.system_prompt and "Türkiye" not in task.system_prompt
+    assert "topics" not in EnrichTask(("en",), ()).schema["properties"]  # no topics: nothing to ask
+
+    inp = EnrichInput("Clarín", "es", "Boca gana", "Boca ganó 2-1.")
+    answer = {"title_pt": "Boca vence", "summary_pt": "Boca venceu por 2-1.", "title_ar": "بوكا يفوز",
+              "summary_ar": "فاز بوكا 2-1.", "category": "sports", "countries": ["AR"],
+              "topics": ["Futebol argentino", "bogus"], "mentions_turkey": True}
+    r = validate(answer, inp, task)
+    assert set(r.texts) == {"pt", "ar"} and r.topics == ["Futebol argentino"] and r.mentions_turkey is False
+
+
+def test_a_new_language_is_added_to_finished_articles(db, sources, articles, settings):
+    ids = add_articles(db, sources, articles, n=1)
+    run(make_worker(db, settings, FakeOllama()).step())
+    settings.set("ai.languages", ["tr", "pt"])
+    repo = AiRepository(db)
+    assert repo.request(ids[0], ["tr", "en"]) == "done"
+    job = repo.next_job("2000-01-01T00:00:00Z", ["tr", "pt"])
+    assert job is not None and job.upgrade  # Portuguese is missing
+    fake = FakeOllama(answer={**GOOD, "title_pt": "Resultados das eleições no Iraque", "summary_pt": "Participação de 41%."})
+    run(make_worker(db, settings, fake).step())
+    sent = json.loads(fake.calls[-1].content)
+    assert "title_pt" in sent["format"]["properties"] and "title_en" not in sent["format"]["properties"]
+    texts = repo.get(ids[0])["texts"]
+    assert texts["pt"]["title"] == "Resultados das eleições no Iraque" and "en" not in texts
+    assert repo.next_job("2000-01-01T00:00:00Z", ["tr", "pt"]) is None

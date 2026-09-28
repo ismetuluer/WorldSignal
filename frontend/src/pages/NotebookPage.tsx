@@ -8,6 +8,7 @@ import { NoteEditor } from "../components/NoteEditor";
 import { OutputDialog } from "../components/OutputDialog";
 import { StoryDetail } from "../components/StoryDetail";
 import { describeError, useI18n } from "../i18n";
+import { meetingText } from "../lib/aiText";
 import { localDay } from "../lib/hooks";
 import { entryFromStory, notesOutput } from "../lib/outputs";
 import { navigate } from "../router";
@@ -134,8 +135,10 @@ export function NotebookPage() {
                     <ol className="notebook-meeting">
                       {data.meeting.map((m) => (
                         <li key={m.id}>
-                          <span className="meeting-title">{m.title}</span>
-                          {m.comment || m.why ? <span className="field-hint"> — {m.comment || m.why}</span> : null}
+                          <span className="meeting-title">{meetingText(m, i18n.lang).title}</span>
+                          {m.comment || meetingText(m, i18n.lang).why ? (
+                            <span className="field-hint"> — {m.comment || meetingText(m, i18n.lang).why}</span>
+                          ) : null}
                         </li>
                       ))}
                     </ol>

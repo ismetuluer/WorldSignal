@@ -155,7 +155,7 @@ class ArticleRepository:
             SELECT a.id, a.url, a.title, a.summary, a.author, a.published_at, a.first_seen_at, a.sort_at,
                    COALESCE(a.language, s.language) AS language,
                    s.id AS source_id, s.name AS source_name, s.region, s.catalog_group, s.paywalled,
-                   x.status AS ai_status, x.title_tr, x.summary_tr, x.title_en, x.summary_en, x.category, x.countries,
+                   x.status AS ai_status, x.texts AS ai_texts, x.category, x.countries,
                    a.home_relevance AS turkey_relevance, a.home_links AS turkey_links, x.issues AS ai_issues, x.model AS ai_model, x.error_code AS ai_error
             FROM articles a
             JOIN sources s ON s.id = a.source_id
@@ -173,10 +173,12 @@ class ArticleRepository:
             item["breaking"] = has_breaking_marker(item["title"]) and now - at <= MARKER_WINDOW
             for key in ("ai_issues", "countries", "turkey_links"):
                 item[key] = json.loads(item[key]) if item[key] else []
+            item["ai_texts"] = json.loads(item["ai_texts"] or "{}")
             if item["ai_status"] != "done":
                 # Only finished AI output is exposed; partial rows are queue bookkeeping.
-                for key in ("title_tr", "summary_tr", "title_en", "summary_en", "category", "ai_model", "turkey_relevance"):
+                for key in ("category", "ai_model", "turkey_relevance"):
                     item[key] = None
+                item["ai_texts"] = {}
                 item["turkey_links"] = []
         return items
 

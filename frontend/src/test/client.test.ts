@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { api, ApiError, initToken, setToken } from "../api/client";
-import { isHttpUrl, suggestName } from "../pages/sourceForm";
+import { isHttpUrl, isServiceUrl, suggestName } from "../pages/sourceForm";
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -59,6 +59,14 @@ describe("source form helpers", () => {
     expect(isHttpUrl("javascript:alert(1)")).toBe(false);
     expect(isHttpUrl("haber sitesi")).toBe(false);
     expect(isHttpUrl("https://localhost")).toBe(false);
+  });
+
+  it("accepts local service addresses for the AI (Ollama on this or another machine)", () => {
+    expect(isServiceUrl("http://localhost:11434")).toBe(true);
+    expect(isServiceUrl("http://gpu-pc:11434")).toBe(true);
+    expect(isServiceUrl("http://192.168.1.20:11434")).toBe(true);
+    expect(isServiceUrl("localhost:11434")).toBe(false);
+    expect(isServiceUrl("javascript:alert(1)")).toBe(false);
   });
 
   it("suggests a name from the feed title or host", () => {

@@ -3,6 +3,12 @@ import type {
 
 /** Settings keys added since Phase 3 (stories, score, full text); spread into each test's settings. */
 export const STORY_SETTINGS = {
+  "ai.provider": "ollama" as const,
+  "ai.gemini_model": "",
+  "ai.openai_model": "",
+  "ai.openai_url": "https://api.openai.com/v1",
+  "ai.anthropic_model": "",
+  "ai.cloud_rpm": 10,
   "stories.embed_model": "bge-m3:latest",
   "stories.embed_summary": false,
   "stories.threshold": 0.6,

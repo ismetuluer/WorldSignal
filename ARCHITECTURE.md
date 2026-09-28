@@ -15,7 +15,7 @@ Bu belge programın nasıl kurulduğunu anlatır. Ürün tanımı ve kullanım i
 │     ├─ api/app.py        → uç noktalar, girdi doğrulama, hata kodları               │
 │     ├─ repo/*            → depo katmanı: tüm veri erişimi buradan                   │
 │     ├─ collector/*       → arka plan RSS toplama (asyncio görevi)                   │
-│     ├─ ai/*              → Ollama istemcisi, Türkçe başlık/özet çalışanı            │
+│     ├─ ai/*              → Ollama/bulut istemcileri, başlık/özet çalışanı           │
 │     ├─ stories/*         → gömme, hikâye birleştirme, önem skoru (asyncio görevi)   │
 │     └─ db/*              → SQLite bağlantısı, sürümlü göçler, yedek                 │
 │                                                                                     │
@@ -55,8 +55,10 @@ src/worldsignal/
   api/app.py           HTTP uç noktaları
   collector/rss.py     Tek bir akışı indirme + çözümleme
   collector/service.py Arka planda sürekli toplama döngüsü
-  ai/                  ollama.py (istemci), enrich.py + story.py (istemler), translate.py (tam metin çevirisi),
-                       worker.py (YZ kuyruğu)
+  ai/                  ollama.py (istemci), cloud.py (Gemini / OpenAI uyumlu / Anthropic istemcileri),
+                       languages.py (özet dilleri), enrich.py + story.py (istemler), translate.py (tam metin
+                       çevirisi), worker.py (YZ kuyruğu)
+  apikeys.py           Bulut API anahtarları (DPAPI ile şifreli, veritabanı dışında)
   fulltext/            extract.py (sayfadan metin), fetch.py (indirme, tarayıcı oturumu), worker.py (tam metin kuyruğu)
   stories/             embedding.py (ne gömülür), score.py (önem skoru), worker.py (birleştirme)
   repo/                sources.py, articles.py, ai.py, stories.py, notebook.py, fulltext.py, history.py, settings.py
@@ -105,10 +107,14 @@ tests/                   Arka uç + uçtan uca testler
   - Düzeltmeden sonra hâlâ gelecekteyse ya da tarih yoksa: ilk görülme zamanı.
 - `articles_fts`: arama indeksi.
 - `settings`: anahtar/JSON değer.
-- `article_ai` (şema v2): haber başına YZ kuyruğu + sonucu (Türkçe başlık/özet, kategori, bulunan ülkeler ve konular,
+- `article_ai` (şema v2): haber başına YZ kuyruğu + sonucu (başlık/özet, kategori, bulunan ülkeler ve konular,
   `mentions_turkey`, uyarılar). Eski `turkey_relevance/turkey_links` sütunları 0.9'dan beri okunmaz.
+  Şema v9'dan beri metinler dile göre tek JSON sütununda: `article_ai.texts` = `{"tr": {"title", "summary"}, "pt": …}`;
+  aynı biçim `stories.ai_texts` ve `meeting_items.texts` (`{dil: {title, summary, why}}`) ile
+  `article_fulltext.translations` (`{dil: metin}`) için de geçerli. Eski `*_tr/*_en` sütunları göçte JSON'a
+  kopyalandı; artık okunmaz (SQLite'ta sütun silmek tabloyu yeniden kurmayı gerektirir).
 - `articles.home_relevance / home_links` (şema v8): haberin **kullanıcının ülkesiyle** bağlantısı (aşağıda "Ülkem").
-- `article_ai_fts`: Türkçe YZ metinleri için arama indeksi.
+- `article_ai_fts`: YZ metinleri için arama indeksi (tüm dillerin başlık/özetleri tek satırda).
 - `article_embeddings` (şema v3): haber başına gömme vektörü (float32 blob) ve hangi modelle üretildiği.
 - `stories`: hikâye (olay). Skor, skor parçaları + gerekçe etiketleri (JSON), ülke bağlantısı (sütun adı tarihsel
   olarak `turkey_relevance`), kategori, temsilci
@@ -132,17 +138,32 @@ tests/                   Arka uç + uçtan uca testler
 - Bir turdaki tüm istekler ağ hatasıyla düşerse bilgisayar çevrimdışı kabul edilir: akışlar cezalandırılmaz,
   arayüzde "çevrimdışı" gösterilir, 2 dk sonra yeniden denenir.
 
-## Yapay zekâ (Ollama)
+## Yapay zekâ (Ollama ya da bulut)
 
 ```
-articles ──(son 24 sa, otomatik)──► article_ai [pending] ──► AiWorker ──► Ollama /api/chat (JSON şema)
+articles ──(son 24 sa, otomatik)──► article_ai [pending] ──► AiWorker ──► Ollama /api/chat ya da bulut (JSON şema)
                       ▲                                           │
   "Türkçeleştir" (öne alır)                                       ▼
                                           validate + uydurma denetimi ──► article_ai [done] + article_ai_fts
 ```
 
 - `ai/ollama.py`: istemci. Hatalar koda çevrilir: `unreachable`, `model_missing`, `timeout`, `bad_response`, `http_<n>`.
-- `ai/enrich.py`: istem (İngilizce talimat, Türkçe çıktı), JSON şeması, `PROMPT_VERSION`, doğrulama.
+- **Özet dilleri** (0.11, `ai/languages.py`): `ai.languages` = 1–4 dil kodu (`OUTPUT_LANGUAGES`, 31 dil); `null` =
+  arayüz dili + İngilizce. `EnrichTask(languages, topics, ask_turkey)` istemi ve düz JSON şemasını
+  (`title_<dil>`, `summary_<dil>`…) bu dillere göre kurar; çıktı uzunluğu dil sayısıyla büyür. Dil eklenince eksik
+  dili olan sonuçlar (`repo/ai.py: lacking_sql`) yeni işler bittikten sonra arka planda yeniden üretilir; başarısız
+  olursa eski metin korunur. Arayüz her metni kendi dil kodunun yazı yönüyle (`dir`, Arapça/Farsça/İbranice sağdan
+  sola) gösterir.
+- **Sağlayıcı** (0.11, `ai.provider`): `ollama` (varsayılan) ya da kullanıcının kendi anahtarıyla `gemini`, `openai`
+  (OpenAI uyumlu her hizmet; `ai.openai_url`, yerel LM Studio anahtarsız), `anthropic`. `ai/cloud.py` üç istemciyi
+  Ollama istemcisiyle aynı arayüzde sunar (`chat_json`, `list_models`, aynı hata kodları); JSON şeması Gemini'de
+  `responseSchema`, OpenAI'da `json_schema` (desteklemeyen hizmette `json_object`), Anthropic'te zorunlu araç çağrısıyla
+  verilir. Ek hata kodları: `no_key`, `bad_key` (401/403), `rate_limited` (429) — bunlar hizmet hatasıdır, haber
+  cezalandırılmaz, çalışan duraklar. İstekler `ai.cloud_rpm` ile seyreltilir (iş arası en az 60/rpm sn). Kibar mod
+  (`gpu_busy`) yalnızca Ollama'da uygulanır. Hikâye birleştirme (gömme) her zaman Ollama'da kalır.
+  **Karar (2026-09-28)**: bulut hizmetine her şey, abonelikle alınan tam metinler dahil, gönderilebilir; telif ve kullanım
+  koşulları sorumluluğu kullanıcıdadır ve Ayarlar'da açıkça yazar.
+- `ai/enrich.py`: istem (İngilizce talimat, seçili dillerde çıktı), JSON şeması, `PROMPT_VERSION`, doğrulama.
   - Kategoriler sabit listeden (`CATEGORIES`); arayüz çevirir.
   - **Ülke bağlantısını model değil kod belirler** ("Ülkem", `country.py`). Model yalnızca metinde olanı çıkarır:
     ülkeler (ISO kodu), Türkiye geçiyor mu, açıkça geçen konular (Karadeniz, Doğu Akdeniz, NATO, AB genişlemesi, göç,
@@ -172,7 +193,7 @@ articles ──(son 24 sa, otomatik)──► article_ai [pending] ──► AiW
   - **Kibar mod** (`ai.yield_gpu`, varsayılan açık): Ollama'da başka bir model yüklüyse (kullanıcının kendi işi) onu
     bellekten atmamak için bekler (`gpu_busy`). İşlemcide çalışan modeller (`size_vram` 0, ör. bizim bge-m3) sayılmaz.
   - Çıktı uzunluğu `num_predict` ile sınırlı; model döngüye girse bile GPU'yu tutamaz.
-- Arama: Türkçe YZ başlık/özetleri ayrı FTS indeksinde (`article_ai_fts`); arama hem orijinal hem Türkçe metinde yapılır.
+- Arama: YZ başlık/özetleri ayrı FTS indeksinde (`article_ai_fts`); arama hem orijinal hem YZ metinlerinde yapılır.
 - Model seçimi `tools/benchmark_models.py` ile gerçek haberler üzerinde yapıldı; rapor `docs/MODEL_KARSILASTIRMA.md`.
 
 ## Hikâyeler ve önem skoru (Faz 3)
@@ -234,10 +255,10 @@ articles ─► StoryWorker: gömme (Ollama /api/embed, işlemcide) ─► artic
 
 ## İngilizce ve tam metin (Faz 5)
 
-### Türkçe + İngilizce
-- Haber istemi v5 ve hikâye istemi v2, tek çağrıda hem Türkçe hem İngilizce başlık/özet/gerekçe üretir
-  (`article_ai.title_en/summary_en`, `stories.ai_*_en`, toplantı anlık görüntüsünde `*_en`). Uydurma denetimi iki dile de
-  uygulanır; FTS iki dili de indeksler.
+### Türkçe + İngilizce (0.11'de seçilebilir dillere genişledi)
+- Haber istemi v5 ve hikâye istemi v2, tek çağrıda hem Türkçe hem İngilizce başlık/özet/gerekçe üretiyordu. 0.11'den beri
+  diller kullanıcı seçimidir ve metinler dile göre JSON'da durur (bkz. "Özet dilleri"). Uydurma denetimi her dile
+  uygulanır; FTS tüm dilleri indeksler.
 - Eski (yalnızca Türkçe) sonuçlar, yeni işler bittikten sonra "yükseltme" işi olarak yeniden üretilir; yükseltme
   başarısız olursa Türkçe sonuç korunur (`Job.upgrade`, `store_upgrade_failure`).
 
@@ -247,7 +268,7 @@ articles ─► StoryWorker: gömme (Ollama /api/embed, işlemcide) ─► artic
   kullanıcının gerçek Brave'i (yoksa Chrome/Edge), gerçek kullanıcı profili; sahte parmak izi, sahte kimlik, paywall
   atlatma sitesi yok. **Değişmeyen sınırlar**: CAPTCHA/robot doğrulaması asla çözülmez (haber `blocked`, site 12 saat
   bekletilir); insan temposu (tek sekme, site başına saatte sınır, sayfalar arası rastgele bekleme); tam metin çıktılara
-  girmez; hiçbir veri dışarı gönderilmez.
+  girmez; Ollama kullanılırken hiçbir veri dışarı gönderilmez (bulut sağlayıcı seçilirse bkz. "Sağlayıcı").
 - **Kaynak başına yöntem** (`sources.fulltext_mode`): `off` (yalnızca RSS), `http` (ücretsiz siteler; dürüst bir
   User-Agent'la sade indirme), `browser` (abonelik siteleri). Ücretli kaynaklar `off` başlar; kullanıcı abone olduklarını
   açar. Kullanıcı açıkça isterse `off` kaynak da bir kez denenir (ücretliyse tarayıcıyla).
@@ -264,7 +285,7 @@ articles ─► StoryWorker: gömme (Ollama /api/embed, işlemcide) ─► artic
   `wordCount` bildiriyorsa ve çıkarılan metin bunun yarısından azsa sonuç `paywall` olur (yalnızca ücretsiz kısmı
   gösterilmiş sayfa; gerçek Washington Post sayfasında görüldü).
 - **YZ ile bağlantı**: tam metin gelince haberin YZ özeti tam metinle yeniden üretilir (istem kaynağı:
-  `ft.text` varsa o, yoksa RSS özeti). Tam metnin Türkçe/İngilizce çevirisi yalnızca istek üzerine yapılır
+  `ft.text` varsa o, yoksa RSS özeti). Tam metnin özet dillerine çevirisi yalnızca istek üzerine yapılır
   (`ai/translate.py`: paragraf sınırında ~1800 karakterlik parçalar), YZ kuyruğunda en önce çalışır; haberin kendi
   diline çeviri yapılmaz.
 
@@ -280,7 +301,7 @@ articles ─► StoryWorker: gömme (Ollama /api/embed, işlemcide) ─► artic
   gösterir (`/api/articles?day=`).
 - **Arama**: tüm günlerde hikâye ve haber araması (mevcut FTS5, Türkçe katlama), zaman sınırı olmadan.
 - **Dönüm noktaları** (`/api/stories/{id}` → `milestones`): ilk haber; 3/5/10/20/40 bağımsız kaynağa ulaşma; ilk doğrudan
-  Türkiye bağlantısı; ilk Türkçe kaynak (hikâye Türkçe başlamadıysa); son haber.
+  ülke bağlantısı; arayüz dilindeki ilk kaynak (`own_language_source`, hikâye o dilde başlamadıysa); son haber.
 - **Saklama** (`maintenance.py`, açılıştan 1 dk sonra ve 6 saatte bir): `retention.fulltext_days` (varsayılan 30; 0 =
   silme) günden eski haberlerin tam metni ve çevirisi silinir. Hikâye eşleştirme vektörleri yalnızca son 7 gün için
   tutulur (eşleştirme son 72 saate bakar; haber başına ~4 KB, yılda GB'lar tutardı). Başlık, özet, YZ metinleri,
@@ -309,6 +330,14 @@ Bing'in `pubDate`'i ABD Pasifik yerel saatidir ama "GMT" diye yazılır; `bing_t
 düzeltir. Bing tek aramada ~12 haber verdiği için büyük ajanslar (Reuters 18, AP 16 arama) bölüm bölüm aranır;
 aynı haber birkaç aramada çıkarsa yayıncı adresine göre tek kayıt olur.
 
+**Haber site haritaları** (0.10, `collector/sitemap.py`): `fetch_feed` indirdiği dosya `<urlset>`/`<sitemapindex>` ise
+onu Google News site haritası olarak okur (`news:title`, `news:publication_date`, `news:language`). Önce robots.txt
+sorulur (`Robots`, site başına 24 saat önbellek, ürün adı `WorldSignal`; RFC 9309: 4xx = izin, 5xx/ağ hatası = izin
+yok) ve izin yoksa `robots_disallow` hatası verilir. Dizin dosyasında adında "news" geçen (yoksa en yeni) en çok iki
+alt harita okunur. Başlıksız düz haritalar `sitemap_no_titles` ile reddedilir. Veritabanında ayrı bir akış türü
+yoktur: tür, dosyanın içeriğinden anlaşılır. `POST /api/feeds/test` bir web sayfasıyla karşılaşınca (`not_a_feed`)
+`discover` ile sayfadaki `<link rel="alternate">` akışlarını ve robots.txt'deki izinli haber haritalarını önerir.
+
 ## Güvenlik
 
 - Sunucu yalnızca `127.0.0.1`'de dinler. Her açılışta rastgele port ve rastgele oturum anahtarı üretilir.
@@ -316,6 +345,10 @@ aynı haber birkaç aramada çıkarsa yayıncı adresine göre tek kayıt olur.
   Anahtarsız istek `401` alır. Böylece bilgisayarda açık bir web sayfası bu sunucuya istek atamaz.
 - Tek kopya kilidi (`instance.lock`, işletim sistemi düzeyinde): iki kopyanın aynı veritabanına yazması engellenir.
   Program çökerse kilit kendiliğinden kalkar.
+- **Bulut API anahtarları** (`apikeys.py`): `<veri>/secrets.json`, her anahtar Windows DPAPI (`CryptProtectData`,
+  kullanıcı hesabına bağlı) ile şifreli; atomik yazılır. Veritabanında değildir, bu yüzden yedeklere girmez. API yalnızca
+  yazılabilir: `GET /api/ai/keys` hangi hizmette anahtar olduğunu söyler, anahtarın kendisini asla döndürmez; anahtar
+  günlüklere yazılmaz. Anahtar yalnızca ilgili hizmetin kendi adresine, başlıkta gönderilir.
 
 ## Çok dillilik (arayüz)
 

@@ -155,9 +155,9 @@ def make_story(db, sources, articles, key: str, score: float, spreading: int, mi
     sid = stories.assign(ids[key], None, similarity=1.0)
     parts = {"tags": [{"kind": "spreading", "count": spreading, "hours": 3}]}
     with db.transaction() as c:
-        c.execute("UPDATE stories SET score = ?, score_parts = ?, last_seen_at = ?, ai_title_tr = ?, ai_title_en = ? WHERE id = ?",
+        c.execute("UPDATE stories SET score = ?, score_parts = ?, last_seen_at = ?, ai_texts = ? WHERE id = ?",
                   (score, json.dumps(parts), (NOW - timedelta(minutes=minutes_ago)).strftime("%Y-%m-%dT%H:%M:%SZ"),
-                   f"Hikâye {key}", f"Story EN {key}", sid))
+                   json.dumps({"tr": {"title": f"Hikâye {key}"}, "en": {"title": f"Story EN {key}"}}), sid))
     return sid
 
 

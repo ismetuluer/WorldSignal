@@ -1167,6 +1167,34 @@ textarea {
   color: var(--text-2);
 }
 
+.test-result .suggestions {
+  margin-top: 8px;
+  color: var(--text);
+}
+
+.test-result .suggestions ul {
+  list-style: none;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.test-result .suggestions li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.suggestion-url {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .range {
   width: 100%;
   accent-color: var(--accent);
@@ -1684,20 +1712,65 @@ a.member-title svg {
   text-align: right;
 }
 
-/* "My country" settings: topic check boxes. */
-.check-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
-  gap: 8px 16px;
+/* Editable lists in the settings: the AI's languages, "my country" topics. */
+.chip-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
-.check-row {
+.chip-list {
   display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.chip {
+  display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 4px;
+  padding: 4px 6px 4px 10px;
+  border-radius: var(--radius-pill);
+  background: var(--accent-soft);
+  color: var(--text);
   font-size: 13px;
+}
+
+.chip-remove {
+  display: inline-grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
   color: var(--text-2);
   cursor: pointer;
+}
+
+.chip-remove:hover {
+  background: var(--surface-hover);
+  color: var(--text);
+}
+
+.chip-add {
+  display: flex;
+  gap: 8px;
+  max-width: 420px;
+}
+
+.chip-suggestions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.chip-editor > .select {
+  width: 220px;
 }
 
 /* ---------- Notebook, meeting list, outputs (phase 4) --------------------------- */

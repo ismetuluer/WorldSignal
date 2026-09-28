@@ -102,7 +102,8 @@ class HistoryRepository:
         rows = self.db.conn.execute(
             """SELECT sa.story_id, a.id, a.sort_at, a.title, s.region, s.reliability,
                       COALESCE(NULLIF(s.owner, ''), s.slug) AS owner_key,
-                      x.title_tr, x.category, a.home_relevance AS turkey_relevance
+                      (SELECT group_concat(json_extract(j.value, '$.title'), ' ') FROM json_each(x.texts) j) AS ai_titles,
+                      x.category, a.home_relevance AS turkey_relevance
                FROM story_articles sa
                JOIN articles a ON a.id = sa.article_id
                JOIN sources s ON s.id = a.source_id AND s.enabled = 1
@@ -122,7 +123,7 @@ class HistoryRepository:
         for sid, members in by_story.items():
             ms = [
                 Member(r["id"], r["owner_key"], r["reliability"], parse_iso(r["sort_at"]), r["region"],
-                       f"{r['title']} {r['title_tr'] or ''}", r["category"], r["turkey_relevance"])
+                       f"{r['title']} {r['ai_titles'] or ''}", r["category"], r["turkey_relevance"])
                 for r in members
             ]
             if len(independent_sources(ms)) < min_sources:
@@ -162,9 +163,9 @@ class HistoryRepository:
         }
 
     # -- milestones of one story ------------------------------------------------------------------
-    def milestones(self, story_id: int) -> list[dict[str, Any]]:
-        """Turning points: first report, independent-source thresholds, first Türkiye link,
-        first Turkish-language source, latest report."""
+    def milestones(self, story_id: int, language: str = "tr") -> list[dict[str, Any]]:
+        """Turning points: first report, independent-source thresholds, first link to the user's country,
+        first source in the user's ``language`` (the interface language), latest report."""
         rows = self.db.conn.execute(
             """SELECT a.id, a.sort_at, s.name AS source_name, COALESCE(NULLIF(s.owner, ''), s.slug) AS owner_key,
                       COALESCE(a.language, s.language) AS language, a.home_relevance AS turkey_relevance
@@ -181,8 +182,8 @@ class HistoryRepository:
         owners: set[str] = set()
         thresholds = list(SOURCE_MILESTONES)
         turkey_seen = False
-        # A story that started in Turkish has no "first Turkish source" turning point.
-        turkish_seen = rows[0]["language"] == "tr"
+        # A story that started in the user's language has no "first source in your language" turning point.
+        own_seen = rows[0]["language"] == language
         for r in rows:
             owners.add(r["owner_key"])
             while thresholds and len(owners) >= thresholds[0]:
@@ -190,9 +191,10 @@ class HistoryRepository:
             if not turkey_seen and r["turkey_relevance"] == "direct":
                 turkey_seen = True
                 out.append({"kind": "turkey", "at": r["sort_at"], "source": r["source_name"]})
-            if not turkish_seen and r["language"] == "tr":
-                turkish_seen = True
-                out.append({"kind": "turkish_source", "at": r["sort_at"], "source": r["source_name"]})
+            if not own_seen and r["language"] == language:
+                own_seen = True
+                out.append({"kind": "own_language_source", "at": r["sort_at"], "source": r["source_name"],
+                            "language": language})
         if len(rows) > 1:
             out.append({"kind": "latest", "at": rows[-1]["sort_at"], "source": rows[-1]["source_name"]})
         return out

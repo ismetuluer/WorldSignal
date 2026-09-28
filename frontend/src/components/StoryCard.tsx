@@ -1,7 +1,8 @@
 import type { ScoreTag, Story } from "../api/types";
 import { useState } from "react";
 import { useI18n, type I18n, type MessageKey } from "../i18n";
-import { otherLang, storySummaryText, storyTitle, storyWhy, type AiLang, type ShownText } from "../lib/aiText";
+import { aiLanguages, storyLanguages, storySummaryText, storyTitle, storyWhy, type AiLang, type ShownText } from "../lib/aiText";
+import { useAppState } from "../state";
 import { textDirection } from "../lib/hooks";
 import { Icon } from "./Icon";
 import { useMeeting } from "./meeting";
@@ -18,17 +19,19 @@ export function storySummary(s: Story, lang: AiLang = "tr"): string {
   return storySummaryText(s, lang);
 }
 
-/** Switches the AI texts of one card between Turkish and English. Hidden when there is nothing to switch to. */
-export function LangToggle({ lang, onChange, available }: { lang: AiLang; onChange: (l: AiLang) => void; available: boolean }) {
-  const { t } = useI18n();
-  if (!available) return null;
-  const next = otherLang(lang);
+/** Steps the AI texts of one card through the languages they exist in (the user's AI languages). Shows the
+ * next language's code; hidden when there is only one language. */
+export function LangToggle({ current, languages, onChange }: { current: AiLang; languages: string[]; onChange: (l: AiLang) => void }) {
+  const i18n = useI18n();
+  if (languages.length < 2) return null;
+  const next = languages[(languages.indexOf(current) + 1) % languages.length]!;
+  const label = i18n.t("ai.showIn", { language: i18n.languageName(next) });
   return (
     <button
       type="button"
       className="lang-toggle"
-      title={t(next === "en" ? "ai.showIn.en" : "ai.showIn.tr")}
-      aria-label={t(next === "en" ? "ai.showIn.en" : "ai.showIn.tr")}
+      title={label}
+      aria-label={label}
       onClick={(e) => {
         e.stopPropagation();
         onChange(next);
@@ -137,10 +140,11 @@ export function StoryCard({
   const headline = storyHeadline(s, lang);
   const summary = storySummary(s, lang);
   const why = storyWhy(s, lang);
-  const bilingual = s.ai_status === "done" && !!s.ai_title_tr && !!s.ai_title_en;
+  const { settings } = useAppState();
+  const languages = storyLanguages(s, aiLanguages(settings));
   const { names, more } = sourceLine(s.sources);
   const numbers = s.ai_status === "done" ? issueNumbers(s.ai_issues) : "";
-  const dir = headline.translated ? "ltr" : textDirection(headline.lang);
+  const dir = textDirection(headline.lang);
   const meeting = useMeeting();
   const inMeeting = meeting.has(s.id);
 
@@ -167,7 +171,7 @@ export function StoryCard({
         </span>
         {s.article_count > s.source_count ? <span>{plural("stories.articles", s.article_count)}</span> : null}
         {s.category ? <span className="badge">{t(`category.${s.category}`)}</span> : null}
-        <LangToggle lang={lang} onChange={setLang} available={bilingual} />
+        <LangToggle current={headline.lang} languages={languages} onChange={setLang} />
       </div>
 
       <h2 className="article-title" dir={dir}>

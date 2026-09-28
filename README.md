@@ -1,17 +1,16 @@
 # World Signal
 
-**Dünya gündemini tek ekranda toplayan, aynı olayı anlatan haberleri birleştiren, önem sırasına dizen ve Türkçe
-özetleyen bir Windows masaüstü programı.**
+**Türkçe · [English](README.en.md)**
+
+**Dünya gündemini tek ekranda toplayan, aynı olayı anlatan haberleri birleştiren, önem sırasına dizen ve seçtiğiniz
+dillerde özetleyen bir Windows masaüstü programı.**
 
 Haber merkezlerinde sabah toplantısına hazırlanmak için yapıldı: yüzlerce kaynağın RSS akışlarını gün boyu tarar,
 aynı olayı anlatan haberleri tek bir "hikâye" kartında toplar ("9 kaynakta geçiyor"), hikâyeleri önem sırasına koyar
-ve isterseniz bilgisayarınızdaki yapay zekâyla Türkçe (ve İngilizce) başlık ve özet yazar. Toplantı listesi, not
+ve isterseniz yapay zekâyla seçtiğiniz dillerde (örneğin Türkçe ve İngilizce) başlık ve özet yazar. Toplantı listesi, not
 defteri, geçmiş günler ve yazdırılabilir çıktılar da içindedir.
 
-> *English: World Signal is a Windows desktop app that collects news from hundreds of RSS feeds, merges reports of
-> the same event into one story, ranks stories by importance and — with a local AI model (Ollama) — writes Turkish and
-> English headlines and summaries. The interface is available in Turkish and English. Everything runs on your own
-> computer; see [Privacy](#gizlilik-ve-güvenlik) and [Copyright](#telif-ve-abonelikler).*
+Arayüz Türkçe ve İngilizcedir.
 
 ---
 
@@ -21,6 +20,7 @@ defteri, geçmiş günler ve yazdırılabilir çıktılar da içindedir.
 - [Kurulum](#kurulum)
 - [Güncellemeler](#güncellemeler)
 - [Yapay zekâ (isteğe bağlı)](#yapay-zekâ-isteğe-bağlı)
+  - [Özet dilleri](#özet-dilleri) · [Bulut yapay zekâ](#bulut-yapay-zekâ)
 - [Kullanım](#kullanım)
 - [Telif ve abonelikler](#telif-ve-abonelikler)
 - [Gizlilik ve güvenlik](#gizlilik-ve-güvenlik)
@@ -36,7 +36,7 @@ defteri, geçmiş günler ve yazdırılabilir çıktılar da içindedir.
 | **Haber toplama** | 140'a yakın kaynak hazır gelir (Batı basını, ajanslar, Orta Doğu, Rusya/Ukrayna, Asya, Avrupa, Türk basını, spor). Her kaynağın akışı çalışıp çalışmadığı denenerek kataloğa girer. Kendi RSS adreslerinizi de ekleyebilirsiniz. |
 | **Hikâyeler** | Aynı olayı anlatan haberler, farklı dillerde olsalar da tek kartta birleşir. Yanlış birleşeni ayırabilir, ayrı kalanları birleştirebilirsiniz. |
 | **Önem sırası** | Bağımsız kaynak sayısı, tazelik, **ülkenizle bağlantısı** ve sizin ilgi alanlarınıza göre. Her kartta skorun **neden** yüksek olduğu yazar; yayıncının "Özel" dediği haberler ve hızla yayılan **Son dakika** hikâyeleri rozetle işaretlenir. |
-| **Türkçe özet** | Bilgisayarınızda Ollama varsa: Türkçe ve İngilizce başlık, 3–5 cümlelik özet, kategori, "neden önemli". Yalnızca kaynak metne dayanır; orijinal başlık ve bağlantı her zaman bir tık uzakta. |
+| **Özet** | Seçtiğiniz 1–4 dilde (Türkçe, İngilizce, Portekizce, Arapça…) başlık, 3–5 cümlelik özet, kategori, "neden önemli". Bilgisayarınızdaki Ollama ya da kendi anahtarınızla bir bulut hizmeti yazar. Yalnızca kaynak metne dayanır; orijinal başlık ve bağlantı her zaman bir tık uzakta. |
 | **Toplantı ve notlar** | Tek tuşla toplantı listesine ekleme, sürükleyerek sıralama, hikâyeye not, günlere göre not defteri. |
 | **Çıktılar** | Toplantı listesi, haber detayı, sabah bülteni ve notlar: biçimli kopyala (Word/Outlook), düz metin (WhatsApp), yazdır/PDF, **e-postayla gönder**. |
 | **Geçmiş** | Takvimden bir gün seçip o sabahki sıralamayı görme, tüm günlerde arama, bir hikâyenin gün gün gelişimi. |
@@ -82,15 +82,17 @@ yeni zip'i bu sayfadan indirip eski klasörün yerine ayıklayın (verileriniz y
 ## Yapay zekâ (isteğe bağlı)
 
 World Signal yapay zekâ olmadan da çalışır: haberler toplanır, orijinal dilinde listelenir, aranır, not alınır.
-Aşağıdaki iki özellik bilgisayarınızda [Ollama](https://ollama.com) ister. Ollama ücretsizdir, kurulumu yönetici izni
-gerektirmez ve **her şey bilgisayarınızda çalışır; hiçbir metin dışarı gönderilmez.**
+Yapay zekâ iki iş yapar:
 
-| Özellik | Gereken model | Donanım |
+| Özellik | Nerede çalışır | Donanım |
 |---|---|---|
-| **Hikâye birleştirme** (aynı olayı anlatan haberleri bulmak) | `bge-m3` (1,2 GB) | Ekran kartı gerekmez; işlemcide çalışır. Çoğu bilgisayar için uygundur. |
-| **Türkçe başlık ve özet** | Bir dil modeli (aşağıda) | Güçlü bir ekran kartı önerilir. |
+| **Hikâye birleştirme** (aynı olayı anlatan haberleri bulmak) | Her zaman bilgisayarınızdaki [Ollama](https://ollama.com), `bge-m3` modeli (1,2 GB) | Ekran kartı gerekmez; işlemcide çalışır. |
+| **Başlık ve özet** | Ollama'daki bir dil modeli **ya da** bir bulut hizmeti (bkz. [Bulut yapay zekâ](#bulut-yapay-zekâ)) | Ollama için güçlü bir ekran kartı önerilir; bulut hizmeti için gerekmez. |
 
-Kurulum:
+Ollama ücretsizdir, kurulumu yönetici izni gerektirmez ve **Ollama ile her şey bilgisayarınızda çalışır; hiçbir
+metin dışarı gönderilmez.**
+
+### Ollama kurulumu
 
 1. [ollama.com/download](https://ollama.com/download) adresinden Ollama'yı kurun.
 2. Komut İstemi'ni açıp hikâye birleştirme modelini indirin:
@@ -101,13 +103,46 @@ Kurulum:
 
    | Ekran kartı belleği | Önerilen model | Not |
    |---|---|---|
-   | 16 GB ve üstü | Gemma 4 26B-A4B | En iyi Türkçe; testlerde seçilen model |
-   | 8–12 GB | `gemma4:12b` ya da `qwen3.5:9b` | İyi Türkçe, daha hızlı |
+   | 16 GB ve üstü | Gemma 4 26B-A4B | Testlerde en iyi sonuç |
+   | 8–12 GB | `gemma4:12b` ya da `qwen3.5:9b` | İyi, daha hızlı |
    | 6–8 GB | `gemma4` (8B) | Kabul edilebilir; kısa özetler |
-   | Ayrı ekran kartı yok | — | **Ayarlar → Yapay zekâ**'dan özetlemeyi kapatın; hikâye birleştirme yine çalışır |
+   | Ayrı ekran kartı yok | — | Bir [bulut hizmeti](#bulut-yapay-zekâ) seçin ya da özetlemeyi kapatın; hikâye birleştirme yine çalışır |
 
    Model karşılaştırması gerçek haberlerle yapıldı (bkz. `tools/benchmark_models.py`).
 4. Ollama başka bir bilgisayarda çalışıyorsa **Ayarlar → Yapay zekâ → Ollama adresi**'ne o adresi yazabilirsiniz.
+
+### Özet dilleri
+
+**Ayarlar → Yapay zekâ → Özet dilleri**'nden 1–4 dil seçersiniz (30'dan fazla dil var; varsayılan: arayüz dili ve
+İngilizce). Başlık ve özetler bu dillerin hepsinde yazılır; kartlardaki dil düğmesiyle aralarında geçersiniz, çıktıların
+dilini de bunlardan seçersiniz. Sonradan dil eklerseniz eski haberler arka planda tamamlanır. Her dil işi uzatır:
+Ollama'da dört dil, tek dilin yaklaşık üç katı sürer.
+
+### Bulut yapay zekâ
+
+Ekran kartınız yoksa ya da yetmiyorsa başlık ve özetleri bir bulut hizmetine yazdırabilirsiniz. **Ayarlar → Yapay zekâ
+→ Yapay zekâ nerede çalışsın?** bölümünden seçin:
+
+| Hizmet | Anahtarı nereden alırsınız | Not |
+|---|---|---|
+| **Google Gemini** | [aistudio.google.com/apikey](https://aistudio.google.com/apikey) | Ücretsiz kullanım kotası var. |
+| **OpenAI uyumlu** | [platform.openai.com/api-keys](https://platform.openai.com/api-keys) | Aynı arayüzü kullanan başka hizmetler de olur (OpenRouter, Groq, Mistral, DeepSeek…): **Hizmet adresi**'ne onların adresini yazın. Bilgisayarınızdaki LM Studio da bu yolla, anahtarsız kullanılabilir. |
+| **Anthropic Claude** | [console.anthropic.com](https://console.anthropic.com/settings/keys) | |
+
+1. Hizmeti seçin, kendi hesabınızdan aldığınız **API anahtarını** yapıştırıp **Kaydet** deyin.
+2. **Bağlantıyı test et** hizmetin modellerini listeler; **Model** kutusundan birini seçin.
+3. Ücretsiz planlar dakikada az istek kabul eder; **Dakikada en çok istek** değerini planınıza göre ayarlayın. Sınır
+   aşılırsa program bekler ve kendiliğinden devam eder.
+
+> **Dikkat:** Bulut hizmeti seçildiğinde haberlerin metni — **abonelikle okuduğunuz tam metinler dahil** — o hizmete
+> gönderilir. Hizmetin kullanım koşulları, ücreti ve bu metinlerin telif sorumluluğu size aittir. Bunu istemiyorsanız
+> Ollama'yı kullanın.
+
+Anahtar yalnızca bu bilgisayarda, Windows'un kullanıcı hesabınıza bağlı şifrelemesiyle (DPAPI) saklanır; ekranda bir daha
+gösterilmez, günlüklere ve yedeklere girmez. Hikâye birleştirme bulut hizmeti seçildiğinde de Ollama'daki `bge-m3` ile
+bilgisayarınızda yapılır.
+
+### Sorunlar
 
 Ollama kapalıysa ya da model yoksa program çökmez: ekranın üstünde nedenini söyleyen bir uyarı çıkar ve haberler
 orijinal dillerinde gösterilir. Özetlerin sağlamlığı için özetteki sayılar kaynakla karşılaştırılır; kaynakta geçmeyen
@@ -119,10 +154,11 @@ bir sayı varsa "Dikkat" uyarısı gösterilir.
   etiketler nedenini söyler ("5 kaynak", "3 saatte 4 kaynak", "Türkiye bağlantısı"). *Haberler* görünümü tek tek en
   yeni haberlerdir. Üstte arama, zaman aralığı ve filtreler var (bölge, kaynak grubu, dil, kategori, kaynak,
   "Türkiye bağlantılı"). **Seçtiğiniz filtreler hatırlanır.**
-- **Ülkem** — "Türkiye bağlantılı" filtresi ve etiketleri Ayarlar → **Ülkem**'de seçtiğiniz ülkeye göre çalışır
+- **Ülkem** — "(Ülkeniz) bağlantılı" filtresi ve etiketleri Ayarlar → **Ülkem**'de seçtiğiniz ülkeye göre çalışır
   (varsayılan: Windows'un bölge ayarı). Haber, yapay zekâ onu okuduktan sonra değerlendirilir: ülkeniz haberde
   geçiyorsa *doğrudan*, bir komşunuz, seçtiğiniz yakın ülkeler ya da konular geçiyorsa *dolaylı* bağlantılıdır.
-- **Hikâye ayrıntısı** — Türkçe özet, skorun dökümü, günlere göre gelişim, tüm haberler ve bağlantıları, notlarınız.
+  Konuları listeden ekleyip çıkarabilir, kendi konularınızı yazabilirsiniz.
+- **Hikâye ayrıntısı** — özet, skorun dökümü, günlere göre gelişim, tüm haberler ve bağlantıları, notlarınız.
   Yanlış gruplanmış haberi **Bu hikâyeden ayır**, aynı olayı anlatan iki hikâyeyi **Başka hikâyeyle birleştir**.
 - **Toplantı** — bugünün öneri listesi. Hikâyeyi **Toplantıya ekle** (ya da `T`), sürükleyerek sırala, her öneriye kısa
   gerekçe yaz.
@@ -134,13 +170,14 @@ bir sayı varsa "Dikkat" uyarısı gösterilir.
     uygulamasında düz metin taslak açar (metin uzunsa kısaltılır, tamamı panoya da kopyalanır). Program e-postayı
     kendisi **göndermez**; alıcıyı yazıp gönderen sizsiniz;
   - **Yazdır / PDF**: PDF için yazıcı olarak "Microsoft Print to PDF"i seçin.
-  Çıktının dili (Türkçe/İngilizce) ayrıca seçilir. **Sabah bülteni** seçilen zaman aralığının en önemli hikâyelerini
+  Çıktının dili özet dillerinizden ayrıca seçilir. **Sabah bülteni** seçilen zaman aralığının en önemli hikâyelerini
   kategorilere göre dizer.
 - **Geçmiş** — takvimden bir gün; *Sabah 09:00* o sabahki sıralamayı, *Günün tamamı* gün sonundaki sıralamayı gösterir.
   Arama tüm günlerde çalışır; Türkçe karakter ve büyük/küçük harf ayırmaz.
 - **Kaynaklar** — kaynakları açıp kapatın, güvenilirlik ağırlığı ve medya grubu verin (aynı gruptan kaynaklar tek
-  kaynak sayılır), **Kaynak ekle** ile kendi RSS adresinizi deneyip ekleyin. Çalışmayan akışlar kırmızıyla ve nedeniyle
-  görünür.
+  kaynak sayılır), **Kaynak ekle** ile kendi RSS adresinizi deneyip ekleyin. RSS adresini bilmiyorsanız sitenin
+  adresini yazın: program sitenin RSS bağlantılarını ve izin verilen haber site haritalarını önerir. Çalışmayan
+  akışlar kırmızıyla ve nedeniyle görünür.
 - **Ayarlar** — tema (sistem / açık / koyu), arayüz dili, yapay zekâ, hikâye ve skor ayarları, ilgi profiliniz
   (anahtar kelime, kategori, bölge), ülkem, tam metin, saklama süresi, bildirimler ve sessiz saatler, yedekler,
   güncellemeler.
@@ -154,14 +191,18 @@ World Signal kimsenin içeriğini yeniden yayımlamaz; yalnızca **sizin** ekran
 - Haberler yayıncıların herkese açık RSS akışlarından gelir: başlık, kısa özet ve bağlantı. RSS vermeyen birkaç kaynak
   için Bing Haberler'in herkese açık RSS araması kullanılır; bağlantılar doğrudan yayıncıya gider. Reuters ve AP'nin
   kendi siteleri otomatik okuyuculara kapalı olduğu için bu ajanslar bölüm bölüm Bing aramasıyla izlenir.
+- RSS'i olmayan bazı siteler, arama motorları için yayımladıkları **haber site haritasından** okunur; bu yalnızca
+  sitenin robots.txt dosyası otomatik okuyuculara izin veriyorsa yapılır.
 - **Ücretli siteler:** Bir makalenin tamamını ancak **sizin** o sitede aboneliğiniz varsa okuyabilirsiniz. Bunun için
   **Ayarlar → Tam metin → Abonelik siteleri**'nden siteyi açıp kendi hesabınızla bir kez giriş yaparsınız; oturum
   yalnızca bu bilgisayarda, World Signal'e ait ayrı bir tarayıcı profilinde saklanır. Aboneliğiniz yoksa o sitenin
   yalnızca başlığını, kısa özetini ve bağlantısını görürsünüz.
 - Program abonelik duvarlarını aşmaz, robot doğrulamalarını (CAPTCHA) çözmez, arşiv/paywall atlatma sitelerini
   kullanmaz. Sayfaları insan temposunda açar (site başına saatte birkaç sayfa, aynı anda tek sayfa).
-- **Tam metinler hiçbir çıktıya konmaz.** Kopyalama, yazdırma, PDF ve e-posta yalnızca Türkçe/İngilizce özetleri,
-  kaynak adlarını ve bağlantıları içerir.
+- **Tam metinler hiçbir çıktıya konmaz.** Kopyalama, yazdırma, PDF ve e-posta yalnızca özetleri, kaynak adlarını ve
+  bağlantıları içerir.
+- Bir [bulut yapay zekâ](#bulut-yapay-zekâ) hizmeti seçerseniz, özetlenmek üzere o hizmete gönderilen metinlerin
+  (tam metinler dahil) sorumluluğu size aittir.
 - Kendi eklediğiniz akışlar (örneğin kurumunuzun abone olduğu bir ajansın özel RSS adresi) yalnızca sizin
   veritabanınızda durur; hiçbir yere gönderilmez ve bu depoda yer almaz.
 
@@ -171,11 +212,14 @@ Program yalnızca şu adreslerle konuşur:
 
 - haber kaynaklarının RSS akışları ve (tam metin istediğinizde) makale sayfaları;
 - Ollama'nın adresi (varsayılan olarak bilgisayarınızın kendisi: `localhost`);
+- **yalnızca siz seçerseniz** bir bulut yapay zekâ hizmeti (Google Gemini, OpenAI uyumlu bir hizmet ya da Anthropic
+  Claude): özetlenecek haber metinleri, tam metinler dahil;
 - GitHub, yalnızca yeni sürüm bilgisi ve indirme için (kapatılabilir).
 
 Kullanım verisi, istatistik ya da kişisel bilgi toplanmaz ve gönderilmez. Programın arayüzü yalnızca bu bilgisayardan
 (`127.0.0.1`) ve her açılışta değişen gizli bir anahtarla erişilebilen yerel bir sunucudur. Veritabanı, notlar,
-tarayıcı profili ve oturum çerezleri yalnızca `%LOCALAPPDATA%\WorldSignal` altında durur.
+tarayıcı profili ve oturum çerezleri yalnızca `%LOCALAPPDATA%\WorldSignal` altında durur. Bulut hizmeti API anahtarları
+aynı klasörde, Windows'un kullanıcı hesabınıza bağlı şifrelemesiyle (`secrets.json`, DPAPI) saklanır; yedeklere girmez.
 
 ## Sorun giderme
 
@@ -183,8 +227,9 @@ tarayıcı profili ve oturum çerezleri yalnızca `%LOCALAPPDATA%\WorldSignal` a
 |---|---|
 | Program açılmıyor | Bir uyarı penceresi nedenini ve günlük dosyasının yerini gösterir: `%LOCALAPPDATA%\WorldSignal\logs\worldsignal.log`. |
 | İkinci kez çift tıklayınca bir şey olmuyor | Program zaten açık (tepside); var olan pencere öne gelir. Tamamen kapatmak için tepsi simgesine sağ tıklayın → **Çıkış**. |
-| Başlıklar ve özetler Türkçe değil | Arayüz dili Türkçedir, ama haberlerin Türkçe başlık ve özetleri bilgisayarınızdaki yapay zekâ (Ollama) ile üretilir. Ollama yoksa haberler orijinal dillerinde görünür (bkz. [Yapay zekâ](#yapay-zekâ-isteğe-bağlı)). |
-| "Özetler hazırlanamıyor: Ollama'ya ulaşılamıyor" | Ollama kapalı ya da kurulu değil. Açın ya da Ayarlar → Yapay zekâ'dan özetlemeyi kapatın. |
+| Başlıklar ve özetler kendi dilimde değil | Başlık ve özetleri yapay zekâ yazar (Ollama ya da bir bulut hizmeti). Hiçbiri yoksa haberler orijinal dillerinde görünür (bkz. [Yapay zekâ](#yapay-zekâ-isteğe-bağlı)). Dilinizin **Özet dilleri**'nde seçili olduğunu da denetleyin. |
+| "Özetler hazırlanamıyor: Ollama hizmetine ulaşılamıyor" | Ollama kapalı ya da kurulu değil. Açın, bir bulut hizmeti seçin ya da Ayarlar → Yapay zekâ'dan özetlemeyi kapatın. |
+| "API anahtarı kabul edilmedi" / "istek sınırı doldu" | Anahtar geçersiz ya da süresi dolmuş: Ayarlar → Yapay zekâ'dan yenisini girin. İstek sınırında program bekleyip devam eder; sık oluyorsa **Dakikada en çok istek** değerini düşürün. |
 | Özetler çok yavaş, ekran kartı ısınıyor | Daha küçük bir model seçin (bkz. [tablo](#yapay-zekâ-isteğe-bağlı)). |
 | Bir kaynak kırmızı görünüyor | Kaynaklar ekranında nedeni yazar (site kapalı, adres değişmiş, otomatik okuyuculara kapalı…). |
 | Tam metin "abonelik duvarı" diyor | O siteye Ayarlar → Tam metin → Abonelik siteleri'nden giriş yapın; aboneliğiniz yoksa tam metin alınamaz. |

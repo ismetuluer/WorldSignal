@@ -22,6 +22,11 @@ vi.mock("../api/client", async (importOriginal) => {
       backups: vi.fn(),
       fulltextSites: vi.fn(),
       home: vi.fn(),
+      meta: vi.fn(),
+      aiKeys: vi.fn(),
+      setAiKey: vi.fn(),
+      deleteAiKey: vi.fn(),
+      testCloud: vi.fn(),
     },
   };
 });
@@ -31,7 +36,7 @@ import { ToastProvider } from "../components/Toasts";
 import { I18nProvider } from "../i18n";
 import { FeedPage } from "../pages/FeedPage";
 import { SettingsPage } from "../pages/SettingsPage";
-import { AppStateProvider } from "../state";
+import { AppStateProvider, useAppState } from "../state";
 import { FULLTEXT_WORKER, HOME, MAINTENANCE, NOTIFY, STORY_SETTINGS, STORY_WORKER, UPDATE_IDLE } from "./fixtures";
 
 const mocked = vi.mocked(api, true);
@@ -45,7 +50,7 @@ const SETTINGS: Settings = {
   "ai.model": "qwen3:14b",
   "ai.max_age_hours": 24,
   "ai.yield_gpu": true,
-  "feed.view": "articles", "feed.filters": { regions: [], groups: [], langs: [], sources: [], categories: [], turkey: false }, "update.auto_check": true, "update.auto_download": true, "home.country": "", "home.related": null, "home.topics": null, "home.keywords": [],
+  "feed.view": "articles", "feed.filters": { regions: [], groups: [], langs: [], sources: [], categories: [], turkey: false }, "update.auto_check": true, "update.auto_download": true, "home.country": "", "home.related": null, "home.topics": null, "home.keywords": [], "ai.languages": null,
   ...STORY_SETTINGS,
 };
 const META: Meta = {
@@ -53,7 +58,7 @@ const META: Meta = {
   groups: ["turkey", "western"],
   languages: ["en", "tr"],
   categories: ["politics", "economy", "diplomacy"],
-  ui_languages: ["tr", "en"], home_country: "TR", system_country: "TR",
+  ui_languages: ["tr", "en"], home_country: "TR", system_country: "TR", ai_output_languages: ["tr", "en", "pt", "ar"],
   data_dir: "C:\\data",
   version: "0.2.0",
 };
@@ -74,7 +79,7 @@ function article(id: number, title: string, extra: Partial<Article> = {}): Artic
   return {
     id, title, url: `https://x.example/${id}`, summary: `${title} summary`, author: null,
     published_at: now, first_seen_at: now, sort_at: now, language: "en", source_id: 1, source_name: "Alpha",
-    region: "europe", catalog_group: "western", paywalled: false, exclusive: false, breaking: false, ai_status: null, title_tr: null, summary_tr: null, title_en: null, summary_en: null,
+    region: "europe", catalog_group: "western", paywalled: false, exclusive: false, breaking: false, ai_status: null, ai_texts: {},
     category: null, countries: [], turkey_relevance: null, turkey_links: [], ai_issues: [], ai_model: null, ai_error: null,
     ...extra,
   };
@@ -84,8 +89,7 @@ const enriched = (id: number, extra: Partial<Article> = {}) =>
   article(id, "Leaders meet in Brussels", {
     summary: "EU leaders gathered on Saturday.",
     ai_status: "done",
-    title_tr: "Liderler Brüksel'de bir araya geldi",
-    summary_tr: "AB liderleri cumartesi günü toplandı.",
+    ai_texts: { tr: { title: "Liderler Brüksel'de bir araya geldi", summary: "AB liderleri cumartesi günü toplandı." } },
     category: "diplomacy",
     countries: ["GR", "BE"],
     turkey_relevance: "indirect",
@@ -131,7 +135,7 @@ describe("AI in the feed", () => {
     await userEvent.click(within(card).getByRole("button", { name: "Orijinal metni göster" }));
     expect(within(card).getByRole("link", { name: "Leaders meet in Brussels" })).toBeInTheDocument();
     expect(within(card).getByText("EU leaders gathered on Saturday.")).toBeInTheDocument();
-    await userEvent.click(within(card).getByRole("button", { name: "Türkçe özeti göster" }));
+    await userEvent.click(within(card).getByRole("button", { name: "Özeti göster" }));
     expect(within(card).getByRole("link", { name: "Liderler Brüksel'de bir araya geldi" })).toBeInTheDocument();
   });
 
@@ -145,7 +149,7 @@ describe("AI in the feed", () => {
     mocked.articles.mockResolvedValue({ items: [article(7, "Old story")], next: null, total: 1 });
     mocked.requestAi.mockResolvedValue({ status: "pending" });
     wrap(<FeedPage />);
-    await userEvent.click(await screen.findByRole("button", { name: "Türkçeleştir" }));
+    await userEvent.click(await screen.findByRole("button", { name: "Özetle" }));
     expect(mocked.requestAi).toHaveBeenCalledWith(7);
     expect(await screen.findByText("Özet için kuyruğa alındı")).toBeInTheDocument();
   });
@@ -163,14 +167,18 @@ describe("AI in the feed", () => {
   });
 
   it.each([
-    ["unreachable", "Özetler hazırlanamıyor: Ollama'ya ulaşılamıyor", "Yeniden dene"],
-    ["model_missing", "Seçili dil modeli bu bilgisayarda yüklü değil", "Ayarlara git"],
+    ["unreachable", "Özetler hazırlanamıyor: Ollama hizmetine ulaşılamıyor", "Yeniden dene"],
+    ["model_missing", "Seçili dil modeli bulunamadı", "Ayarlara git"],
     ["no_model", "Özetler için dil modeli seçilmedi", "Ayarlara git"],
     ["timeout", "Ekran kartı meşgul", "Yeniden dene"],
     ["gpu_busy", "Özetler bekliyor: ekran kartı başka bir işle meşgul", "Ayarlara git"],
+    ["no_key", "Özetler için API anahtarı gerekli", "Ayarlara git"],
+    ["bad_key", "API anahtarı kabul edilmedi", "Ayarlara git"],
+    ["rate_limited", "Özetler bekliyor: Google Gemini istek sınırı doldu", "Yeniden dene"],
   ] as const)("explains the AI state %s and keeps showing articles", async (state, title, action) => {
     window.location.hash = "";
-    mocked.status.mockResolvedValue({ ...STATUS, ai: { ...AI, state } });
+    const provider = ["no_key", "bad_key", "rate_limited"].includes(state) ? "gemini" : "ollama";
+    mocked.status.mockResolvedValue({ ...STATUS, ai: { ...AI, state, provider } });
     mocked.articles.mockResolvedValue({ items: [article(1, "Original language story")], next: null, total: 1 });
     mocked.retryAi.mockResolvedValue({ requeued: 0 });
     wrap(<FeedPage />);
@@ -225,10 +233,78 @@ describe("AI settings", () => {
   it("marks a configured model that is not installed and explains the connection error", async () => {
     mocked.testOllama.mockResolvedValue({ ok: false, error_code: "unreachable", version: null, models: [] });
     wrap(<SettingsPage />);
-    expect(await screen.findByText("Bağlantı kurulamadı: Ollama'ya ulaşılamıyor")).toBeInTheDocument();
+    expect(await screen.findByText("Bağlantı kurulamadı: Ollama hizmetine ulaşılamıyor")).toBeInTheDocument();
     expect(screen.getByRole("option", { name: "qwen3:14b (yüklü değil)" })).toBeInTheDocument();
   });
 });
+
+describe("Cloud AI", () => {
+  it("chooses a cloud service, saves a write-only key and picks a model from the service's list", async () => {
+    mocked.testOllama.mockResolvedValue({ ok: false, error_code: "unreachable", version: null, models: [] });
+    mocked.aiKeys.mockResolvedValue({ gemini: false, openai: false, anthropic: false });
+    mocked.setAiKey.mockResolvedValue({ gemini: true, openai: false, anthropic: false });
+    mocked.deleteAiKey.mockResolvedValue({ gemini: false, openai: false, anthropic: false });
+    mocked.testCloud.mockResolvedValue({ ok: true, error_code: null, models: ["gemini-a", "gemini-b"] });
+    wrap(<SettingsPage />);
+    await userEvent.selectOptions(await screen.findByRole("combobox", { name: "Yapay zekâ nerede çalışsın?" }), "gemini");
+    expect(mocked.updateSettings).toHaveBeenLastCalledWith({ "ai.provider": "gemini" });
+    expect(await screen.findByText(/abonelikle okunan tam metinler dahil\) Google Gemini hizmetine gönderilir/)).toBeInTheDocument();
+    expect(screen.queryByRole("textbox", { name: "Ollama adresi" })).not.toBeInTheDocument();
+
+    const keyInput = await screen.findByLabelText("API anahtarı");
+    expect(keyInput).toHaveAttribute("type", "password");
+    await userEvent.type(keyInput, "AIza-secret-key");
+    await userEvent.click(screen.getByRole("button", { name: "Kaydet" }));
+    expect(mocked.setAiKey).toHaveBeenCalledWith("gemini", "AIza-secret-key");
+    expect(await screen.findByText("Anahtar kayıtlı (bu bilgisayarda, şifreli).")).toBeInTheDocument();
+    expect(keyInput).toHaveValue("");  // the key is not kept on screen
+    expect(await screen.findByText("Bağlantı başarılı: 2 model.")).toBeInTheDocument();
+
+    const model = screen.getByRole("combobox", { name: "Model" });
+    await userEvent.type(model, "gemini-a");
+    await userEvent.tab();
+    expect(mocked.updateSettings).toHaveBeenLastCalledWith({ "ai.gemini_model": "gemini-a" });
+    await userEvent.click(screen.getByRole("button", { name: "Anahtarı sil" }));
+    expect(mocked.deleteAiKey).toHaveBeenCalledWith("gemini");
+  });
+});
+
+describe("AI languages", () => {
+  it("adds and removes the languages the AI writes in, keeping at least one", async () => {
+    mocked.testOllama.mockResolvedValue({ ok: false, error_code: "unreachable", version: null, models: [] });
+    wrap(<SettingsPage />);
+    const list = await screen.findByRole("list", { name: "Özet dilleri" });
+    // Not set yet: the interface language and English.
+    expect(within(list).getAllByRole("listitem").map((li) => li.textContent)).toEqual(["Türkçe", "İngilizce"]);
+    await userEvent.click(within(list).getByRole("button", { name: "İngilizce kaldır" }));
+    expect(mocked.updateSettings).toHaveBeenLastCalledWith({ "ai.languages": ["tr"] });
+    expect(within(list).queryByRole("button", { name: "Türkçe kaldır" })).not.toBeInTheDocument(); // the last one stays
+    await userEvent.selectOptions(screen.getByRole("combobox", { name: "Dil ekle…" }), "pt");
+    expect(mocked.updateSettings).toHaveBeenLastCalledWith({ "ai.languages": ["tr", "pt"] });
+    expect(within(list).getByText("Portekizce")).toBeInTheDocument();
+  });
+
+  it("refreshes the language filter choices when new reports arrive", async () => {
+    mocked.articles.mockResolvedValue({ items: [], next: null, total: 0 });
+    mocked.meta.mockResolvedValue({ ...META, languages: ["en", "pt", "tr"] });
+    const { rerender } = wrap(<FeedPage />);
+    await waitFor(() => expect(mocked.status).toHaveBeenCalled());
+    expect(mocked.meta).not.toHaveBeenCalled();  // nothing new yet
+    mocked.status.mockResolvedValue({ ...STATUS, articles: { total: 7, recent: 7 } });
+    rerender(
+      <AppStateProvider initialSettings={SETTINGS} initialMeta={META}>
+        <I18nProvider lang="tr"><ToastProvider><StatusRefresher /></ToastProvider></I18nProvider>
+      </AppStateProvider>,
+    );
+    await userEvent.click(await screen.findByRole("button", { name: "refresh" }));
+    await waitFor(() => expect(mocked.meta).toHaveBeenCalled());
+  });
+});
+
+function StatusRefresher() {
+  const { refreshStatus, status } = useAppState();
+  return <button onClick={() => refreshStatus()}>{status ? "refresh" : "wait"}</button>;
+}
 
 describe("My country", () => {
   it("shows the country the rules use and saves another one", async () => {
@@ -243,17 +319,20 @@ describe("My country", () => {
     await waitFor(() => expect(mocked.home).toHaveBeenCalledTimes(2));
   });
 
-  it("edits topics and extra words and can return to the defaults", async () => {
+  it("adds and removes topics, including the user's own, and can return to the defaults", async () => {
     mocked.testOllama.mockResolvedValue({ ok: false, error_code: "unreachable", version: null, models: [] });
     wrap(<SettingsPage />);
-    const nato = await screen.findByRole("checkbox", { name: "NATO" });
-    expect(nato).toBeChecked();
-    expect(screen.getByRole("checkbox", { name: "Göç" })).not.toBeChecked();
-    await userEvent.click(nato);
+    const topics = await screen.findByRole("list", { name: "Konular" });
+    expect(within(topics).getByText("Karadeniz")).toBeInTheDocument();
+    await userEvent.click(within(topics).getByRole("button", { name: "NATO kaldır" }));
     expect(mocked.updateSettings).toHaveBeenCalledWith({ "home.topics": ["black_sea"] });
-    await userEvent.click(screen.getByRole("checkbox", { name: "Göç" }));
-    // Topics are saved in the server's order, whatever order they were ticked in.
+    // A built-in suggestion, then a topic of one's own.
+    await userEvent.click(screen.getByRole("button", { name: "+ Göç" }));
     expect(mocked.updateSettings).toHaveBeenLastCalledWith({ "home.topics": ["black_sea", "nato", "migration"] });
+    await userEvent.type(screen.getByRole("textbox", { name: "Konu ekle" }), "  Kıbrıs sorunu ");
+    await userEvent.click(screen.getByRole("button", { name: "Konu ekle" }));
+    expect(mocked.updateSettings).toHaveBeenLastCalledWith({ "home.topics": ["black_sea", "nato", "Kıbrıs sorunu"] });
+    expect(screen.getByRole("textbox", { name: "Konu ekle" })).toHaveValue("");
     const words = screen.getByRole("textbox", { name: "Ek kelimeler" });
     await userEvent.type(words, "İzmir, TBMM ,izmir");
     await userEvent.tab();
@@ -278,6 +357,6 @@ describe("AI switched off", () => {
     mocked.articles.mockResolvedValue({ items: [article(1, "Story")], next: null, total: 1 });
     wrap(<FeedPage />);
     await screen.findByText("Story");
-    await waitFor(() => expect(screen.queryByRole("button", { name: "Türkçeleştir" })).not.toBeInTheDocument());
+    await waitFor(() => expect(screen.queryByRole("button", { name: "Özetle" })).not.toBeInTheDocument());
   });
 });

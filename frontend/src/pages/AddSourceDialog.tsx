@@ -27,8 +27,8 @@ export function AddSourceDialog({ onClose, onAdded }: { onClose: () => void; onA
   const urlValid = isHttpUrl(url.trim());
   const canSave = result?.ok === true && testedUrl === url.trim() && name.trim() !== "" && !saving;
 
-  const test = async () => {
-    const target = url.trim();
+  const test = async (target = url.trim()) => {
+    setUrl(target);
     setTesting(true);
     setResult(null);
     try {
@@ -132,6 +132,24 @@ export function AddSourceDialog({ onClose, onAdded }: { onClose: () => void; onA
         ) : (
           <div className="test-result fail" role="alert">
             {t("add.failed", { reason: describeError(i18n, result.error_code) })}
+            {result.suggestions?.length ? (
+              <div className="suggestions">
+                <div>{t("add.suggestions")}</div>
+                <ul>
+                  {result.suggestions.map((s) => (
+                    <li key={s.url}>
+                      <span className="badge">{t(s.kind === "rss" ? "add.kind.rss" : "add.kind.sitemap")}</span>
+                      <span className="suggestion-url" title={s.url}>{s.title || s.url}</span>
+                      <button type="button" className="btn btn-sm" disabled={testing} onClick={() => void test(s.url)}>
+                        {t("add.trySuggestion")}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : result.error_code === "not_a_feed" && result.suggestions ? (
+              <div>{t("add.noSuggestions")}</div>
+            ) : null}
           </div>
         )
       ) : null}

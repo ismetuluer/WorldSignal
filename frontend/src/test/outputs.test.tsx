@@ -11,9 +11,9 @@ const DAY = "2026-09-27";
 
 function item(id: number, extra: Partial<MeetingItem> = {}): MeetingItem {
   return {
-    id, day: DAY, story_id: id, position: id - 1, comment: "", title: `Başlık ${id}`, summary: `Özet ${id}.`, why: `YZ gerekçe ${id}`,
+    id, day: DAY, story_id: id, position: id - 1, comment: "", title: `Başlık ${id}`, texts: { tr: { title: `Başlık ${id}`, summary: `Özet ${id}.`, why: `YZ gerekçe ${id}` } },
     category: "politics", sources: [{ name: "Reuters", url: "https://r.example/1" }, { name: "BBC", url: "https://b.example/1" }],
-    created_at: DAY, updated_at: DAY, title_en: null, summary_en: null, why_en: null, ...extra,
+    created_at: DAY, updated_at: DAY, ...extra,
   };
 }
 
@@ -21,7 +21,7 @@ function member(id: number, source: string, extra: Partial<StoryMember> = {}): S
   return {
     id, url: `https://x.example/${id}`, title: `Original ${id}`, summary: "Publisher's own text", sort_at: `2026-09-27T0${id}:00:00Z`,
     language: "en", source_id: id, source_name: source, paywalled: true, exclusive: false, region: "europe", similarity: 1, assigned_by: "auto",
-    title_tr: null, summary_tr: null, title_en: null, summary_en: null, ...NO_FULLTEXT, ...extra,
+    ai_texts: {}, ...NO_FULLTEXT, ...extra,
   };
 }
 
@@ -30,7 +30,7 @@ function story(id: number, extra: Partial<Story> = {}): Story {
   return {
     id, breaking: false, exclusive: false, first_seen_at: DAY, last_seen_at: DAY, article_count: 2, source_count: 2, score: 50, score_parts: {},
     turkey_relevance: "none", category: "economy", representative_id: 1, representative: members[0]!, ai_status: "done",
-    ai_title_tr: `Hikâye ${id}`, ai_summary_tr: "Türkçe özet.", ai_why: "Neden önemli.", ai_title_en: null, ai_summary_en: null, ai_why_en: null, ai_issues: [], ai_article_count: 2,
+    ai_texts: { tr: { title: `Hikâye ${id}`, summary: "Türkçe özet.", why: "Neden önemli." } }, ai_issues: [], ai_article_count: 2,
     ai_model: "m", sources: ["FT", "Reuters"], members, timeline: [], ...extra,
   };
 }
@@ -47,7 +47,7 @@ describe("output templates", () => {
   });
 
   it("escapes markup and drops non-http links", () => {
-    const doc = meetingOutput(tr, DAY, [item(1, { title: '<img src=x onerror="alert(1)">', sources: [{ name: "Evil", url: "javascript:alert(1)" }] })]);
+    const doc = meetingOutput(tr, DAY, [item(1, { title: '<img src=x onerror="alert(1)">', texts: {}, sources: [{ name: "Evil", url: "javascript:alert(1)" }] })]);
     expect(doc.html).not.toContain("<img");
     expect(doc.html).toContain("&lt;img");
     expect(doc.html).not.toContain("javascript:");
@@ -58,19 +58,19 @@ describe("output templates", () => {
   it("story details never carry the publisher's own text", () => {
     const withAi = storyOutput(tr, story(1), DAY);
     expect(withAi.text).toContain("Türkçe özet.");
-    const noAi = storyOutput(tr, story(2, { ai_status: null, ai_title_tr: null, ai_summary_tr: null }), DAY);
+    const noAi = storyOutput(tr, story(2, { ai_status: null, ai_texts: {} }), DAY);
     expect(noAi.text).toContain("*Original 1*");
-    expect(noAi.text).toContain("Türkçe özet henüz hazır değil.");
+    expect(noAi.text).toContain("Özet henüz hazır değil.");
     expect(noAi.text + noAi.html).not.toContain("Publisher's own text");
     expect(noAi.text).toContain("FT (https://x.example/2)");
   });
 
   it("bulletin groups by category in score order, uncategorised last", () => {
     const doc = bulletinOutput(tr, DAY, 24, [
-      story(1, { category: null, ai_title_tr: "Kategorisiz" }),
-      story(2, { category: "conflict_defense", ai_title_tr: "Savunma haberi" }),
-      story(3, { category: "economy", ai_title_tr: "Ekonomi haberi" }),
-      story(4, { category: "conflict_defense", ai_title_tr: "İkinci savunma" }),
+      story(1, { category: null, ai_texts: { tr: { title: "Kategorisiz", summary: "Türkçe özet." } } }),
+      story(2, { category: "conflict_defense", ai_texts: { tr: { title: "Savunma haberi", summary: "Türkçe özet." } } }),
+      story(3, { category: "economy", ai_texts: { tr: { title: "Ekonomi haberi", summary: "Türkçe özet." } } }),
+      story(4, { category: "conflict_defense", ai_texts: { tr: { title: "İkinci savunma", summary: "Türkçe özet." } } }),
     ]);
     const order = ["— ÇATIŞMA VE SAVUNMA —", "Savunma haberi", "İkinci savunma", "— EKONOMİ —", "Ekonomi haberi", "— DİĞER —", "Kategorisiz"];
     let last = -1;
@@ -177,7 +177,7 @@ describe("autosave", () => {
 describe("English outputs", () => {
   const en = createI18n("en");
   it("uses the English AI texts and English labels", () => {
-    const doc = meetingOutput(en, DAY, [item(1, { title_en: "Proposal one", why_en: "AI reason one" })], "en");
+    const doc = meetingOutput(en, DAY, [item(1, { texts: { tr: { title: "Başlık 1", summary: "Özet 1.", why: "YZ gerekçe 1" }, en: { title: "Proposal one", summary: "", why: "AI reason one" } } })], "en");
     expect(doc.title).toBe("Meeting proposals");
     expect(doc.text).toContain("*1. Proposal one*\nAI reason one");
     expect(doc.text).toContain("Sunday, 27 September 2026");
@@ -185,7 +185,7 @@ describe("English outputs", () => {
   });
 
   it("falls back to Turkish text where English is missing, and never to the publisher's text", () => {
-    const s = story(1, { ai_title_en: null, ai_summary_en: null });
+    const s = story(1);
     const doc = storyOutput(en, s, DAY, "en");
     expect(doc.text).toContain("*Hikâye 1*");
     expect(doc.text).toContain("Türkçe özet.");

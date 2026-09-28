@@ -74,6 +74,16 @@ export function AppStateProvider({
     return () => window.clearTimeout(timer.current);
   }, [poll]);
 
+  // The filter choices (languages seen so far) grow with the collection: on a fresh install they are empty at start.
+  const articleTotal = status?.articles.total;
+  const seenTotal = useRef(articleTotal);
+  useEffect(() => {
+    if (articleTotal === undefined || articleTotal === seenTotal.current) return;
+    const first = seenTotal.current === undefined;
+    seenTotal.current = articleTotal;
+    if (!first) api.meta().then(setMeta, () => undefined);
+  }, [articleTotal]);
+
   const updateSettings = useCallback(async (patch: Partial<Settings>) => {
     // Optimistic: theme/language switch instantly. Functional updates keep quick
     // successive changes from overwriting each other.

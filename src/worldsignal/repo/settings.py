@@ -24,6 +24,17 @@ DEFAULTS: dict[str, Any] = {
     "home.topics": None,
     "home.keywords": [],
     "ai.enabled": True,
+    # Where the AI runs: "ollama" (this or another computer) or a cloud service the user chose, with its model.
+    # API keys are not settings: apikeys.py keeps them encrypted outside the database.
+    "ai.provider": "ollama",
+    "ai.gemini_model": "",
+    "ai.openai_model": "",
+    "ai.openai_url": "https://api.openai.com/v1",
+    "ai.anthropic_model": "",
+    "ai.cloud_rpm": 10,  # requests per minute to a cloud service (free plans allow few)
+    # Languages the AI writes titles, summaries and translations in (ai/languages.py). None = the interface
+    # language and English.
+    "ai.languages": None,
     "ai.url": "http://localhost:11434",
     "ai.model": "gemma4-26b-a4b:latest",  # chosen by the project owner on 2026-09-27 after tools/benchmark_models.py
     "ai.max_age_hours": 24,  # newer articles are queued automatically; older ones on request

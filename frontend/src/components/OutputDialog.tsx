@@ -1,6 +1,8 @@
 import { useMemo, useRef, useState, type ReactNode } from "react";
 import { createI18n, describeError, useI18n, type I18n } from "../i18n";
-import type { AiLang } from "../lib/aiText";
+import type { UiLanguage } from "../api/types";
+import { aiLanguages, type AiLang } from "../lib/aiText";
+import { useAppState } from "../state";
 import { api, ApiError } from "../api/client";
 import { printDocument, type OutputDoc } from "../lib/outputs";
 import { Dialog, Segmented, Spinner, StateView } from "./controls";
@@ -79,8 +81,15 @@ export function OutputDialog({
   const toast = useToast();
   const frame = useRef<HTMLIFrameElement>(null);
   const [busy, setBusy] = useState(false);
-  const [lang, setLang] = useState<AiLang>(i18n.lang);
-  const outI18n = useMemo(() => (lang === i18n.lang ? i18n : createI18n(lang, undefined, i18n.home)), [lang, i18n]);
+  const { settings } = useAppState();
+  const languages = aiLanguages(settings);
+  const [lang, setLang] = useState<AiLang>(languages.includes(i18n.lang) ? i18n.lang : languages[0]!);
+  // Labels ("Sources", "Why") come from the interface dictionaries; other AI languages use the English one.
+  const labelLang: UiLanguage = lang === "tr" || lang === "en" ? lang : "en";
+  const outI18n = useMemo(
+    () => (labelLang === i18n.lang ? i18n : createI18n(labelLang, undefined, i18n.home)),
+    [labelLang, i18n],
+  );
   const doc = useMemo(() => (build && !error && !empty ? build(lang, outI18n) : null), [build, error, empty, lang, outI18n]);
 
   const page = doc ? printDocument(doc, outI18n.t("output.generated", { date: outI18n.dateTime(new Date().toISOString()) }), lang) : "";
@@ -153,15 +162,14 @@ export function OutputDialog({
       }
     >
       <div className="output-options">
-        <Segmented
-          label={t("output.language")}
-          value={lang}
-          onChange={setLang}
-          options={[
-            { value: "tr" as const, label: "Türkçe" },
-            { value: "en" as const, label: "English" },
-          ]}
-        />
+        {languages.length > 1 ? (
+          <Segmented
+            label={t("output.language")}
+            value={lang}
+            onChange={setLang}
+            options={languages.map((l) => ({ value: l, label: i18n.languageName(l) }))}
+          />
+        ) : null}
         {options}
       </div>
       {error ? (

@@ -110,10 +110,13 @@ def test_home_country_can_be_changed(client, ctx):
     assert meta["home_country"] == "TR" and meta["system_country"] == "TR"
 
     for bad in ({"home.country": "XX"}, {"home.country": "tr"}, {"home.country": "ZA", "home.related": ["QQ"]},
-                {"home.topics": ["weather"]}, {"home.keywords": ["x"]}):
+                {"home.topics": ["x"]}, {"home.topics": ["y" * 61]}, {"home.keywords": ["x"]}):
         assert client.patch("/api/settings", headers=H, json=bad).status_code == 422, bad
-    client.patch("/api/settings", headers=H, json={"home.topics": ["nato"], "home.keywords": [" Kapadokya ", "Kapadokya"]})
-    assert client.get("/api/settings", headers=H).json()["home.keywords"] == ["Kapadokya"]
+    client.patch("/api/settings", headers=H, json={"home.topics": ["nato", " Kıbrıs sorunu ", "Kıbrıs sorunu"],
+                                                   "home.keywords": [" Kapadokya ", "Kapadokya"]})
+    saved = client.get("/api/settings", headers=H).json()
+    assert saved["home.keywords"] == ["Kapadokya"] and saved["home.topics"] == ["nato", "Kıbrıs sorunu"]
+    assert client.get("/api/home", headers=H).json()["topics"] == ["nato", "Kıbrıs sorunu"]  # the user's own topic
     # A new country starts from its own defaults: no related countries, no topics.
     client.patch("/api/settings", headers=H, json={"home.country": "ZA"})
     info = client.get("/api/home", headers=H).json()
@@ -190,6 +193,12 @@ def test_feed_test_endpoint(client, monkeypatch):
             return httpx.Response(200, content=fixture_bytes("rss_turkish.xml"))
         if request.url.host == "html.example":
             return httpx.Response(200, content=fixture_bytes("not_a_feed.html"))
+        if request.url.host == "site.example":  # a web page with a feed link, and a news sitemap in robots.txt
+            if request.url.path == "/robots.txt":
+                return httpx.Response(200, text="User-agent: *\nAllow: /\nSitemap: https://site.example/news-sitemap.xml\n")
+            return httpx.Response(200, content=b'<html><head><link rel="alternate" type="application/rss+xml" href="/feed"></head></html>')
+        if request.url.host == "closed.example" and request.url.path == "/robots.txt":
+            return httpx.Response(200, text="Sitemap: https://closed.example/sitemap-news.xml\n")
         return httpx.Response(403)
 
     monkeypatch.setattr(app_module, "make_client", lambda: httpx.AsyncClient(transport=httpx.MockTransport(handler)))
@@ -197,8 +206,18 @@ def test_feed_test_endpoint(client, monkeypatch):
     assert good["ok"] and good["item_count"] == 4 and good["language"] == "tr"
     assert good["sample_titles"][0] == "IRAK'ta seçim sonuçları açıklandı"
     html = client.post("/api/feeds/test", headers=H, json={"url": "https://html.example/"}).json()
-    assert html == {"ok": False, "error_code": "not_a_feed", "error_detail": html["error_detail"]}
-    assert client.post("/api/feeds/test", headers=H, json={"url": "https://blocked.example/rss"}).json()["error_code"] == "http_403"
+    assert html == {"ok": False, "error_code": "not_a_feed", "error_detail": html["error_detail"], "suggestions": []}
+    site = client.post("/api/feeds/test", headers=H, json={"url": "https://site.example/"}).json()
+    assert site["error_code"] == "not_a_feed" and site["suggestions"] == [
+        {"url": "https://site.example/feed", "kind": "rss", "title": ""},
+        {"url": "https://site.example/news-sitemap.xml", "kind": "sitemap", "title": ""},
+    ]
+    blocked = client.post("/api/feeds/test", headers=H, json={"url": "https://blocked.example/rss"}).json()
+    assert blocked["error_code"] == "http_403" and blocked["suggestions"] == []
+    # The home page refuses programs, but robots.txt still names a news sitemap.
+    closed = client.post("/api/feeds/test", headers=H, json={"url": "https://closed.example/"}).json()
+    assert closed["error_code"] == "http_403"
+    assert closed["suggestions"] == [{"url": "https://closed.example/sitemap-news.xml", "kind": "sitemap", "title": ""}]
 
 
 def test_collector_run_and_status(client):
@@ -220,7 +239,7 @@ def test_ai_endpoints(client, ctx, monkeypatch):
     assert client.get("/api/status", headers=H).json()["ai"]["done"] == 0
 
     first = client.get("/api/articles", headers=H).json()["items"][0]
-    assert first["ai_status"] is None and first["title_tr"] is None
+    assert first["ai_status"] is None and first["ai_texts"] == {}
     assert client.post(f"/api/articles/{first['id']}/ai", headers=H).json() == {"status": "pending"}
     assert client.post("/api/articles/99999/ai", headers=H).status_code == 404
     assert client.get("/api/articles", headers=H).json()["items"][0]["ai_status"] == "pending"
@@ -230,6 +249,13 @@ def test_ai_endpoints(client, ctx, monkeypatch):
     assert r.json()["ai.url"] == "http://127.0.0.1:11434" and r.json()["ai.model"] == "qwen3:14b"
     assert client.patch("/api/settings", headers=H, json={"ai.url": "not a url"}).status_code == 422
     assert client.patch("/api/settings", headers=H, json={"ai.max_age_hours": 0}).status_code == 422
+    # The AI's languages: known codes, one to four, no duplicates.
+    assert client.get("/api/settings", headers=H).json()["ai.languages"] is None  # interface language + English
+    for bad in ([], ["tr", "en", "de", "fr", "es"], ["xx"], ["TR"]):
+        assert client.patch("/api/settings", headers=H, json={"ai.languages": bad}).status_code == 422, bad
+    r = client.patch("/api/settings", headers=H, json={"ai.languages": ["pt", "ar", "pt"]})
+    assert r.json()["ai.languages"] == ["pt", "ar"]
+    assert "pt" in client.get("/api/meta", headers=H).json()["ai_output_languages"]
     assert "politics" in client.get("/api/meta", headers=H).json()["categories"]
     assert client.get("/api/articles", headers=H, params={"turkey": "true", "category": "politics"}).json()["total"] == 0
 

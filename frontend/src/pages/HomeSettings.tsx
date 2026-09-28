@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { api, ApiError } from "../api/client";
 import type { HomeInfo, Settings } from "../api/types";
+import { ChipList } from "../components/ChipList";
 import { MultiSelect } from "../components/MultiSelect";
 import { useToast } from "../components/Toasts";
-import { describeError, useI18n, type MessageKey } from "../i18n";
+import { describeError, useI18n } from "../i18n";
 import { useAppState } from "../state";
 import { parseKeywords } from "./StorySettings";
 
@@ -57,6 +58,17 @@ export function HomeSettings() {
   };
 
   const customised = settings["home.related"] !== null || settings["home.topics"] !== null;
+  const [topic, setTopic] = useState("");
+  // Built-in topics have translated names; the user's own topics are shown as written.
+  const topicLabel = (x: string) => i18n.tryT(`topic.${x}`) ?? x;
+  const addTopic = (value: string) => {
+    const clean = value.trim();
+    if (!info || clean.length < 2) return;
+    setTopic("");
+    const known = info.topics.some((x) => x.toLocaleLowerCase(i18n.locale) === clean.toLocaleLowerCase(i18n.locale));
+    if (!known) change({ "home.topics": [...info.topics, clean] });
+  };
+  const suggestions = info ? info.all_topics.filter((x) => !info.topics.includes(x)) : [];
 
   return (
     <section className="settings-group">
@@ -131,23 +143,45 @@ export function HomeSettings() {
                 <div className="settings-row-title">{t("settings.home.topics")}</div>
                 <div className="settings-row-hint">{t("settings.home.topicsHint")}</div>
               </div>
-              <div className="check-grid">
-                {info.all_topics.map((topic) => (
-                  <label key={topic} className="check-row">
-                    <input
-                      type="checkbox"
-                      checked={info.topics.includes(topic)}
-                      onChange={(e) =>
-                        change({
-                          "home.topics": e.target.checked
-                            ? info.all_topics.filter((x) => x === topic || info.topics.includes(x))
-                            : info.topics.filter((x) => x !== topic),
-                        })
-                      }
-                    />
-                    <span>{t(`topic.${topic}` as MessageKey)}</span>
-                  </label>
-                ))}
+              <div className="chip-editor">
+                {info.topics.length ? (
+                  <ChipList
+                    label={t("settings.home.topics")}
+                    items={info.topics.map((x) => ({ value: x, label: topicLabel(x) }))}
+                    onRemove={(x) => change({ "home.topics": info.topics.filter((y) => y !== x) })}
+                  />
+                ) : (
+                  <span className="settings-row-hint">{t("settings.home.topicsNone")}</span>
+                )}
+                <form
+                  className="chip-add"
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    addTopic(topic);
+                  }}
+                >
+                  <input
+                    className="input"
+                    value={topic}
+                    maxLength={60}
+                    placeholder={t("settings.home.topicPlaceholder")}
+                    aria-label={t("settings.home.addTopic")}
+                    onChange={(e) => setTopic(e.target.value)}
+                  />
+                  <button type="submit" className="btn" disabled={topic.trim().length < 2}>
+                    {t("settings.home.addTopic")}
+                  </button>
+                </form>
+                {suggestions.length ? (
+                  <div className="chip-suggestions">
+                    <span className="settings-row-hint">{t("settings.home.suggested")}</span>
+                    {suggestions.map((x) => (
+                      <button key={x} type="button" className="btn btn-sm" onClick={() => addTopic(x)}>
+                        + {topicLabel(x)}
+                      </button>
+                    ))}
+                  </div>
+                ) : null}
               </div>
             </div>
 

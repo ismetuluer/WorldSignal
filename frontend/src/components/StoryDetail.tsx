@@ -11,7 +11,7 @@ import { useMeeting } from "./meeting";
 import { NoteEditor } from "./NoteEditor";
 import { OutputDialog } from "./OutputDialog";
 import { issueNumbers, LangToggle, ScorePill, ScoreTags, storyHeadline, storySummary } from "./StoryCard";
-import { storyWhy, type AiLang } from "../lib/aiText";
+import { aiLanguages, storyLanguages, storyWhy, type AiLang } from "../lib/aiText";
 import { useToast } from "./Toasts";
 import { MemberFullText } from "./FullText";
 import { openableUrl } from "../lib/links";
@@ -268,10 +268,10 @@ function StoryBody({
           <ScorePill score={s.score} i18n={i18n} />
           {s.category ? <span className="badge">{t(`category.${s.category}`)}</span> : null}
           <span>{plural("stories.sources", s.source_count)}</span>
-          <LangToggle lang={lang} onChange={setLang} available={s.ai_status === "done" && !!s.ai_title_tr && !!s.ai_title_en} />
+          <LangToggle current={headline.lang} languages={storyLanguages(s, aiLanguages(settings))} onChange={setLang} />
           <span>{plural("stories.articles", s.article_count)}</span>
         </div>
-        <h3 className="story-headline" dir={headline.translated ? "ltr" : textDirection(headline.lang)}>{headline.text}</h3>
+        <h3 className="story-headline" dir={textDirection(headline.lang)}>{headline.text}</h3>
         {headline.translated && rep && rep.language !== headline.lang ? (
           <p className="article-original">
             <span>{t("ai.original")}:</span> <span dir={textDirection(rep.language)}>{rep.title}</span>
@@ -348,7 +348,10 @@ function StoryBody({
                   <span>
                     {ms.kind === "sources"
                       ? t("stories.milestone.sources", { count: ms.count, source: ms.source })
-                      : t(`stories.milestone.${ms.kind}`, { source: ms.source })}
+                      : t(`stories.milestone.${ms.kind}`, {
+                          source: ms.source,
+                          language: ms.kind === "own_language_source" ? i18n.languageName(ms.language) : "",
+                        })}
                   </span>
                 </li>
               ))}
@@ -376,10 +379,10 @@ function StoryBody({
                 {m.assigned_by === "user" ? <span className="badge badge-accent">{t("stories.userPlaced")}</span> : null}
               </div>
               <a className="member-title" href={openableUrl(m.url, m.title)} target="_blank" rel="noopener noreferrer" title={t("feed.openOriginal")}>
-                <span dir={memberTitle(m, lang) !== m.title ? "ltr" : textDirection(m.language)}>{memberTitle(m, lang)}</span>
+                <span dir={textDirection(memberTitle(m, lang).lang)}>{memberTitle(m, lang).text}</span>
                 <Icon name="external" size={12} />
               </a>
-              {memberTitle(m, lang) !== m.title && m.language !== lang ? (
+              {memberTitle(m, lang).text !== m.title && m.language !== memberTitle(m, lang).lang ? (
                 <p className="article-original">
                   <span>{t("ai.original")}:</span> <span dir={textDirection(m.language)}>{m.title}</span>
                 </p>
@@ -452,7 +455,7 @@ function MergePicker({
                     <span>{plural("stories.sources", s.source_count)}</span>
                     <span>{i18n.relative(s.last_seen_at)}</span>
                   </span>
-                  <span className="member-title" dir={h.translated ? "ltr" : textDirection(h.lang)}>{h.text}</span>
+                  <span className="member-title" dir={textDirection(h.lang)}>{h.text}</span>
                 </button>
               </li>
             );
@@ -466,6 +469,9 @@ function MergePicker({
   );
 }
 
-function memberTitle(m: StoryMember, lang: AiLang): string {
-  return (lang === "en" ? m.title_en || m.title_tr : m.title_tr || m.title_en) || m.title;
+function memberTitle(m: StoryMember, lang: AiLang): { text: string; lang: string } {
+  const own = m.ai_texts[lang]?.title;
+  if (own) return { text: own, lang };
+  const other = Object.keys(m.ai_texts).find((l) => m.ai_texts[l]?.title);
+  return other ? { text: m.ai_texts[other]!.title, lang: other } : { text: m.title, lang: m.language };
 }

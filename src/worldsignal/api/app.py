@@ -23,6 +23,7 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Annotated, Any, Literal
 
+import httpx
 from fastapi import APIRouter, Depends, FastAPI, Header, HTTPException, Query
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
@@ -32,7 +33,8 @@ from .. import __version__
 from ..ai.enrich import CATEGORIES
 from ..ai.ollama import OllamaClient, OllamaError
 from ..ai.worker import AiWorker
-from ..collector.rss import FetchError, fetch_feed, make_client
+from ..collector.rss import FetchError, download, fetch_feed, make_client
+from ..collector.sitemap import discover
 from ..collector.service import Collector
 from ..db import Database, utc_now_iso
 from ..paths import DataPaths
@@ -52,7 +54,11 @@ from ..repo.stories import StoryFilter, StoryRepository
 from ..stories.embedding import recommended_settings
 from ..stories.worker import StoryWorker, interest_from, weights_from
 from ..updater import UpdateError, Updater
-from ..country import TOPICS, HomeState, countries as country_data, profile as country_profile
+from ..apikeys import SecretStore
+from ..ai.cloud import OPENAI_URL, make_client as make_cloud_client
+from ..country import MAX_TOPIC, MAX_TOPICS, MIN_TOPIC, TOPICS, HomeState, countries as country_data
+from ..country import profile as country_profile
+from ..ai.languages import MAX_LANGUAGES, OUTPUT_LANGUAGES, effective as ai_languages
 from ..home_sync import HomeSync
 from .. import mailer
 
@@ -92,6 +98,7 @@ class AppContext:
     updater: Updater | None = None
     home: HomeState | None = None
     home_sync: HomeSync | None = None
+    keys: SecretStore | None = None  # API keys of cloud AI services
     extra: dict[str, Any] = field(default_factory=dict)
 
 
@@ -126,7 +133,12 @@ class SettingsPatch(BaseModel):
     update_auto_check: bool | None = Field(None, alias="update.auto_check")
     home_country: Annotated[str, Field(pattern=r"^([A-Z]{2})?$")] | None = Field(None, alias="home.country")
     home_related: list[Annotated[str, Field(pattern=r"^[A-Z]{2}$")]] | None = Field(None, alias="home.related", max_length=50)
-    home_topics: list[Literal[TOPICS]] | None = Field(None, alias="home.topics")  # type: ignore[valid-type]
+    home_topics: list[Annotated[str, Field(min_length=MIN_TOPIC, max_length=MAX_TOPIC)]] | None = Field(
+        None, alias="home.topics", max_length=MAX_TOPICS
+    )
+    ai_languages: list[Annotated[str, Field(pattern=r"^[a-z]{2}$")]] | None = Field(
+        None, alias="ai.languages", min_length=1, max_length=MAX_LANGUAGES
+    )
     home_keywords: list[Annotated[str, Field(min_length=2, max_length=60)]] | None = Field(
         None, alias="home.keywords", max_length=50
     )
@@ -134,6 +146,12 @@ class SettingsPatch(BaseModel):
     ai_enabled: bool | None = Field(None, alias="ai.enabled")
     ai_url: HttpUrl | None = Field(None, alias="ai.url")
     ai_model: str | None = Field(None, alias="ai.model", max_length=200)
+    ai_provider: Literal["ollama", "gemini", "openai", "anthropic"] | None = Field(None, alias="ai.provider")
+    ai_gemini_model: str | None = Field(None, alias="ai.gemini_model", max_length=200)
+    ai_openai_model: str | None = Field(None, alias="ai.openai_model", max_length=200)
+    ai_anthropic_model: str | None = Field(None, alias="ai.anthropic_model", max_length=200)
+    ai_openai_url: HttpUrl | None = Field(None, alias="ai.openai_url")
+    ai_cloud_rpm: int | None = Field(None, alias="ai.cloud_rpm", ge=1, le=600)
     ai_max_age_hours: int | None = Field(None, alias="ai.max_age_hours", ge=1, le=168)
     ai_yield_gpu: bool | None = Field(None, alias="ai.yield_gpu")
     stories_embed_model: str | None = Field(None, alias="stories.embed_model", min_length=1, max_length=200)
@@ -204,6 +222,15 @@ class MeetingPatch(BaseModel):
 class MeetingOrder(BaseModel):
     day: str
     ids: list[int] = Field(max_length=500)
+
+
+class ApiKeyBody(BaseModel):
+    key: str = Field(min_length=8, max_length=400)
+
+
+class CloudTestRequest(BaseModel):
+    provider: Literal["gemini", "openai", "anthropic"]
+    url: HttpUrl | None = None  # OpenAI-compatible services only
 
 
 class OllamaTestRequest(BaseModel):
@@ -328,6 +355,7 @@ def create_app(ctx: AppContext) -> FastAPI:
             "data_dir": str(ctx.paths.root),
             # The user's country: settings "home.country", or this when it is "" (Windows' region).
             "home_country": ctx.home.profile().code if ctx.home is not None else "TR",
+            "ai_output_languages": list(OUTPUT_LANGUAGES),
             "system_country": country_profile({}, ctx.home.system_country).code if ctx.home is not None else "TR",
             "version": __version__,
         }
@@ -364,6 +392,11 @@ def create_app(ctx: AppContext) -> FastAPI:
             raise api_error(400, "unknown_setting", ", ".join(sorted(unknown)))
         if "ai.url" in values:
             values["ai.url"] = str(values["ai.url"]).rstrip("/")
+        if "ai.openai_url" in values:
+            values["ai.openai_url"] = str(values["ai.openai_url"]).rstrip("/")
+        for key in ("ai.gemini_model", "ai.openai_model", "ai.anthropic_model"):
+            if key in values:
+                values[key] = str(values[key]).strip()
         if "ai.model" in values:
             values["ai.model"] = values["ai.model"].strip()
         if "stories.embed_model" in values:
@@ -379,6 +412,13 @@ def create_app(ctx: AppContext) -> FastAPI:
             # A new country starts with its own defaults for related countries and topics.
             values.setdefault("home.related", None)
             values.setdefault("home.topics", None)
+        if values.get("ai.languages") is not None:
+            unknown_langs = [x for x in values["ai.languages"] if x not in OUTPUT_LANGUAGES]
+            if unknown_langs:
+                raise api_error(422, "unknown_language", ", ".join(unknown_langs))
+            values["ai.languages"] = list(dict.fromkeys(values["ai.languages"]))
+        if values.get("home.topics") is not None:
+            values["home.topics"] = list(dict.fromkeys(t.strip() for t in values["home.topics"] if t.strip()))
         if "home.keywords" in values:
             values["home.keywords"] = list(dict.fromkeys(k.strip() for k in values["home.keywords"] if k.strip()))
         ctx.settings.set_many(values)
@@ -431,9 +471,9 @@ def create_app(ctx: AppContext) -> FastAPI:
 
     @api.post("/articles/{article_id}/ai")
     def request_ai(article_id: int) -> dict[str, Any]:
-        """Ask for Turkish title/summary of one article now (jumps the queue)."""
+        """Ask for the AI title and summary of one article now (jumps the queue)."""
         try:
-            status = ctx.ai.request(article_id)
+            status = ctx.ai.request(article_id, ai_languages(ctx.settings.get_preferences()))
         except KeyError:
             raise api_error(404, "not_found") from None
         ctx.ai_worker.wake()
@@ -472,7 +512,7 @@ def create_app(ctx: AppContext) -> FastAPI:
         story = ctx.stories.get(story_id)
         if story is None:
             raise api_error(404, "not_found")
-        story["milestones"] = ctx.history.milestones(story_id)
+        story["milestones"] = ctx.history.milestones(story_id, ctx.settings.get_preferences()["ui.language"])
         return story
 
     @api.post("/articles/{article_id}/detach")
@@ -613,7 +653,7 @@ def create_app(ctx: AppContext) -> FastAPI:
     @api.post("/articles/{article_id}/fulltext/translate")
     def translate_fulltext(article_id: int) -> dict[str, str]:
         try:
-            status = ctx.fulltext.request_translation(article_id)
+            status = ctx.fulltext.request_translation(article_id, ai_languages(ctx.settings.get_preferences()))
         except LookupError:
             raise api_error(409, "no_fulltext") from None
         ctx.ai_worker.wake()
@@ -678,6 +718,43 @@ def create_app(ctx: AppContext) -> FastAPI:
     @api.get("/ai/status")
     def ai_status() -> dict[str, Any]:
         return ctx.ai_worker.status()
+
+    # -- cloud AI: keys (write-only) and a connection test -----------------------------------------------
+    def key_store() -> SecretStore:
+        if ctx.keys is None:
+            raise api_error(409, "keys_unavailable")
+        return ctx.keys
+
+    @api.get("/ai/keys")
+    def ai_keys() -> dict[str, bool]:
+        """Which services have a key; the keys themselves never leave the backend."""
+        return key_store().status()
+
+    @api.put("/ai/keys/{provider}")
+    def set_ai_key(provider: Literal["gemini", "openai", "anthropic"], body: ApiKeyBody) -> dict[str, bool]:
+        store = key_store()
+        store.set(provider, body.key.strip())
+        ctx.ai_worker.wake()
+        return store.status()
+
+    @api.delete("/ai/keys/{provider}")
+    def delete_ai_key(provider: Literal["gemini", "openai", "anthropic"]) -> dict[str, bool]:
+        store = key_store()
+        store.delete(provider)
+        return store.status()
+
+    @api.post("/ai/cloud/test")
+    async def cloud_test(body: CloudTestRequest) -> dict[str, Any]:
+        """Check the saved key of a service and list its models (the OpenAI-compatible address from the request)."""
+        key = key_store().get(body.provider) or ""
+        url = str(body.url).rstrip("/") if body.url else ""
+        if not key and not (body.provider == "openai" and url and url != OPENAI_URL):
+            return {"ok": False, "error_code": "no_key", "models": []}
+        try:
+            models = await make_cloud_client(body.provider, key, url).list_models()
+        except OllamaError as exc:
+            return {"ok": False, "error_code": exc.code, "models": []}
+        return {"ok": True, "error_code": None, "models": models}
 
     @api.post("/ai/test")
     async def ai_test(body: OllamaTestRequest) -> dict[str, Any]:
@@ -783,6 +860,18 @@ def create_app(ctx: AppContext) -> FastAPI:
         except NotFound:
             raise api_error(404, "not_found") from None
 
+    async def suggest_feeds(client: httpx.AsyncClient, url: str, page_loaded: bool) -> list[dict[str, str]]:
+        html = None
+        if page_loaded:
+            try:
+                _, page, url, _, _ = await download(client, url)
+                html = page.decode("utf-8", errors="replace")
+            except FetchError:
+                html = None
+        return await discover(client, url, html)
+
+    SUGGEST_ON = {"not_a_feed", "http_401", "http_403", "http_404"}
+
     @api.post("/feeds/test")
     async def test_feed(body: FeedTestRequest) -> dict[str, Any]:
         """Fetch a feed without saving it, so the user sees whether it works."""
@@ -790,7 +879,12 @@ def create_app(ctx: AppContext) -> FastAPI:
             try:
                 result = await fetch_feed(client, str(body.url))
             except FetchError as exc:
-                return {"ok": False, "error_code": exc.code, "error_detail": exc.detail[:300]}
+                failed: dict[str, Any] = {"ok": False, "error_code": exc.code, "error_detail": exc.detail[:300]}
+                if exc.code in SUGGEST_ON:
+                    # A web page (or one closed to programs): offer the feeds it declares and the news sitemaps
+                    # its robots.txt allows.
+                    failed["suggestions"] = await suggest_feeds(client, str(body.url), exc.code == "not_a_feed")
+                return failed
         feed = result.feed
         assert feed is not None
         dated = [e.published_at for e in feed.entries if e.published_at]

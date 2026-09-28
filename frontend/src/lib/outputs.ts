@@ -5,8 +5,9 @@
  *     also prints well (wrapped by ``printDocument``);
  *   - ``text``: plain text for WhatsApp and similar (``*bold*`` titles).
  *
- * Every template can be made in Turkish or English: the AI texts of that language are used and
- * the labels come from that language's dictionary (the caller passes an ``I18n`` for it).
+ * Every template can be made in any of the user's AI languages: the AI texts of that language are used and
+ * the labels come from the matching interface dictionary (English for languages without one; the caller passes
+ * an ``I18n`` for it).
  *
  * Copyright: only AI text, headlines, source names and links are ever included — never the
  * publishers' own summaries or full text.
@@ -14,6 +15,7 @@
 import type { MeetingItem, Story } from "../api/types";
 import type { I18n, MessageKey } from "../i18n";
 import { meetingText, storySummaryText, storyTitle, storyWhy, type AiLang } from "./aiText";
+import { textDirection } from "./hooks";
 import { openableUrl } from "./links";
 
 export interface OutputDoc {
@@ -205,7 +207,7 @@ export function notesOutput(i18n: I18n, day: string, notes: { title: string; bod
 
 /** Full printable page around an output (A4, generous margins, date line at the bottom). */
 export function printDocument(doc: OutputDoc, footer: string, lang: string): string {
-  return `<!doctype html><html lang="${escapeHtml(lang)}"><head><meta charset="utf-8"><base target="_blank"><title>${escapeHtml(doc.title)}</title>
+  return `<!doctype html><html lang="${escapeHtml(lang)}" dir="${textDirection(lang)}"><head><meta charset="utf-8"><base target="_blank"><title>${escapeHtml(doc.title)}</title>
 <style>
   @page { size: A4; margin: 18mm 16mm 20mm; }
   html { background: #fff; }

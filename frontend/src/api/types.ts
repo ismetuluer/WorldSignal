@@ -22,6 +22,16 @@ export type CatalogGroup =
   | "sports";
 
 export type UiLanguage = "tr" | "en";
+
+/** One AI text: a headline, a summary and (stories, meeting items) why it deserves the meeting. */
+export interface AiText {
+  title: string;
+  summary: string;
+  why?: string;
+}
+
+/** AI texts by language code ("tr", "pt", …): the languages of the setting ai.languages. */
+export type AiTexts = Record<string, AiText>;
 export type ThemeSetting = "system" | "light" | "dark";
 
 export interface FeedFilters {
@@ -47,6 +57,15 @@ export interface Settings {
   "home.topics": string[] | null;
   "home.keywords": string[];
   "ai.enabled": boolean;
+  /** Languages the AI writes in; null = the interface language and English. */
+  "ai.languages": string[] | null;
+  "ai.provider": AiProvider;
+  "ai.gemini_model": string;
+  "ai.openai_model": string;
+  "ai.openai_url": string;
+  "ai.anthropic_model": string;
+  /** Requests per minute to a cloud service. */
+  "ai.cloud_rpm": number;
   "ai.url": string;
   "ai.model": string;
   "ai.max_age_hours": number;
@@ -118,12 +137,9 @@ export interface Article {
   paywalled: boolean;
   exclusive: boolean;
   breaking: boolean;
-  /** AI enrichment; the text fields are only set when ai_status is "done". */
+  /** AI enrichment; the texts are only set when ai_status is "done". */
   ai_status: AiItemStatus | null;
-  title_tr: string | null;
-  summary_tr: string | null;
-  title_en: string | null;
-  summary_en: string | null;
+  ai_texts: AiTexts;
   category: Category | null;
   /** ISO 3166-1 alpha-2 codes the AI found in the text. */
   countries: string[];
@@ -206,11 +222,25 @@ export type AiState =
   | "unreachable"
   | "model_missing"
   | "timeout"
-  | "gpu_busy";
+  | "gpu_busy"
+  | "no_key"
+  | "bad_key"
+  | "rate_limited";
+
+/** Where the AI runs: Ollama (this or another computer) or a cloud service the user chose. */
+export type AiProvider = "ollama" | "gemini" | "openai" | "anthropic";
+export type CloudProvider = Exclude<AiProvider, "ollama">;
+
+export interface CloudTestResult {
+  ok: boolean;
+  error_code: string | null;
+  models: string[];
+}
 
 export interface AiStatus {
   running: boolean;
   state: AiState;
+  provider?: AiProvider;
   /** Other model(s) occupying the GPU when state is "gpu_busy". */
   busy_with: string | null;
   model: string | null;
@@ -279,10 +309,7 @@ export interface StoryMember {
   region: Region;
   similarity: number | null;
   assigned_by: "auto" | "user";
-  title_tr: string | null;
-  summary_tr: string | null;
-  title_en: string | null;
-  summary_en: string | null;
+  ai_texts: AiTexts;
   fulltext_status: FullTextStatus | null;
   fulltext_error: string | null;
   fulltext_chars: number | null;
@@ -319,8 +346,8 @@ export interface FullText {
   error_code: string | null;
   fetched_at: string | null;
   translate_status: AiItemStatus | null;
-  text_tr: string | null;
-  text_en: string | null;
+  /** Translations of the text by language (not into the article's own language). */
+  translations: Record<string, string>;
 }
 
 export interface FullTextSite {
@@ -359,12 +386,8 @@ export interface Story {
   representative_id: number | null;
   representative: StoryMember | null;
   ai_status: AiItemStatus | null;
-  ai_title_tr: string | null;
-  ai_summary_tr: string | null;
-  ai_why: string | null;
-  ai_title_en: string | null;
-  ai_summary_en: string | null;
-  ai_why_en: string | null;
+  /** The story's own AI texts (title, summary, why) by language; empty until ai_status is "done". */
+  ai_texts: AiTexts;
   ai_issues: string[];
   ai_article_count: number | null;
   ai_model: string | null;
@@ -376,7 +399,8 @@ export interface Story {
 }
 
 export type Milestone =
-  | { kind: "first" | "turkey" | "turkish_source" | "latest"; at: string; source: string }
+  | { kind: "first" | "turkey" | "latest"; at: string; source: string }
+  | { kind: "own_language_source"; at: string; source: string; language: string }
   | { kind: "sources"; at: string; source: string; count: number };
 
 export interface MaintenanceStatus {
@@ -479,6 +503,8 @@ export interface Meta {
   /** The country the relevance rules use now, and the one "" (Windows' region) stands for. */
   home_country: string;
   system_country: string;
+  /** Language codes the AI can write in. */
+  ai_output_languages: string[];
 }
 
 /** GET /api/home: the user's country as the rules see it. */
@@ -494,9 +520,18 @@ export interface HomeInfo {
   syncing: boolean;
 }
 
+/** A feed a web page offers: an RSS/Atom link in the page, or a news sitemap robots.txt allows. */
+export interface FeedSuggestion {
+  url: string;
+  kind: "rss" | "sitemap";
+  title: string;
+}
+
 export interface FeedTestResult {
   ok: boolean;
   error_code: string | null;
+  /** When the address was a web page (not_a_feed). */
+  suggestions?: FeedSuggestion[];
   error_detail?: string;
   title?: string | null;
   language?: string | null;
@@ -561,12 +596,9 @@ export interface MeetingItem {
   story_id: number | null;
   position: number;
   comment: string;
+  /** The headline when there is no AI text (e.g. the original title). */
   title: string;
-  summary: string | null;
-  why: string | null;
-  title_en: string | null;
-  summary_en: string | null;
-  why_en: string | null;
+  texts: AiTexts;
   category: Category | null;
   sources: { name: string; url: string }[];
   created_at: string;

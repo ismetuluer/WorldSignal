@@ -1,4 +1,4 @@
-"""Translation of an article's full text into Turkish and English, on the user's request.
+"""Translation of an article's full text into the user's languages (``ai.languages``), on request.
 
 The text is split at paragraph boundaries into chunks the model can translate in one answer.
 A chunk is translated faithfully (no summarising, no additions); numbers are checked like in
@@ -10,11 +10,10 @@ from __future__ import annotations
 from typing import Any
 
 from .enrich import fidelity_issues
+from .languages import name as lang_name
 
 CHUNK_CHARS = 1800
 NUM_PREDICT = 2048
-
-LANG_NAMES = {"tr": "Turkish", "en": "English"}
 
 SCHEMA: dict[str, Any] = {
     "type": "object",
@@ -25,7 +24,7 @@ SCHEMA: dict[str, Any] = {
 
 def system_prompt(target: str) -> str:
     return f"""You are a professional news translator.
-Translate the given part of a news article into {LANG_NAMES[target]}.
+Translate the given part of a news article into {lang_name(target)}.
 
 Strict rules:
 - Translate everything, sentence by sentence. Do not summarise, shorten, explain or add anything.
@@ -58,8 +57,9 @@ def chunks(text: str, size: int = CHUNK_CHARS) -> list[str]:
     return out
 
 
-def targets(source_language: str) -> list[str]:
-    return [lang for lang in ("tr", "en") if lang != source_language]
+def targets(languages: list[str], source_language: str) -> list[str]:
+    """Nothing is translated into the language the article is already in."""
+    return [lang for lang in languages if lang != source_language]
 
 
 def check(source: str, translated: str) -> list[str]:

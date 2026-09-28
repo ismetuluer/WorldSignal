@@ -2,6 +2,55 @@
 
 Sürüm numaraları [Anlamsal Sürümleme](https://semver.org/lang/tr/) izler. 1.0'a kadar her faz bir ara sürümdür.
 
+## [0.11.0] — 2026-09-28 — Özet dilleri ve bulut yapay zekâ
+
+### Eklendi
+- **Özet dillerini siz seçersiniz.** Ayarlar → Yapay zekâ → **Özet dilleri**: 31 dilden 1–4 tanesi (örneğin Portekizce
+  ve Arapça). Başlık, özet, hikâye gerekçesi ve tam metin çevirisi bu dillerde yazılır; kartlardaki dil düğmesi
+  aralarında gezer, çıktılar bu dillerden birinde alınır. Sağdan sola yazılan diller (Arapça, Farsça, İbranice) doğru
+  yönde gösterilir. Sonradan eklenen dil eski haberler için arka planda tamamlanır. Varsayılan: arayüz dili + İngilizce.
+- **Bulut yapay zekâ.** Ollama yerine kendi API anahtarınızla **Google Gemini**, **OpenAI uyumlu** bir hizmet
+  (OpenAI, OpenRouter, Groq, Mistral, DeepSeek…, ya da bilgisayarınızdaki LM Studio) veya **Anthropic Claude**
+  seçilebilir. Bağlantı testi hizmetin modellerini listeler; dakikadaki istek sayısı ayarlanabilir, sınır aşılınca
+  program bekler. Anahtar yalnızca bu bilgisayarda, Windows'un kullanıcıya bağlı şifrelemesiyle (DPAPI) saklanır;
+  ekrana, günlüklere ve yedeklere girmez. Ayarlarda açık uyarı: haber metinleri (abonelikle okunan tam metinler dahil)
+  seçilen hizmete gönderilir; kullanım koşulları, ücret ve telif sorumluluğu kullanıcıdadır. Hikâye birleştirme yine
+  bilgisayardaki Ollama (`bge-m3`) ile yapılır.
+- **Ülkem → Konular** listeden eklenip çıkarılabiliyor; kendi konunuzu da yazabilirsiniz (en çok 20). Yapay zekâ haberin
+  bu konuları anlatıp anlatmadığını söyler.
+
+### Değişti
+- İstemler artık bir Türk haber merkezini varsaymıyor; "Türkiye geçiyor mu?" sorusu yalnızca ülkesi Türkiye olan
+  kullanıcılar için sorulur. Değerlendirme yöntemi aynı (yapay zekâ okur, kural karar verir).
+- Arayüz metinleri sadeleşti: belge yolları ve iç notlar ("Karşılaştırma: docs/…") kaldırıldı; ülke ve dil metinleri
+  her ülkeden kullanıcıya uyacak biçimde yazıldı. Zaman çizelgesindeki "ilk Türkçe kaynak", arayüz dilindeki ilk kaynak
+  oldu.
+- YZ metinleri dile göre tek JSON sütununda saklanıyor (şema v9); eski Türkçe/İngilizce sonuçlar göçte aynen taşındı.
+
+### Düzeltildi
+- **Dil filtresi boş kalıyordu** ("Eşleşme yok"): ilk kurulumda seçenekler yalnızca açılışta yükleniyordu; artık
+  yeni haber geldikçe yenileniyor.
+- Ollama adresine `http://localhost:11434` yazınca kutu yanlışlıkla "geçersiz" görünüyordu.
+
+## [0.10.0] — 2026-09-28 — RSS'i olmayan siteler
+
+### Eklendi
+- **Haber site haritaları akış olarak okunur.** RSS vermeyen birçok haber sitesi arama motorları için başlık, saat ve
+  dil içeren bir "haber site haritası" yayımlıyor. World Signal bunu RSS gibi okur; ama yalnızca sitenin robots.txt
+  dosyası izin veriyorsa (her site için günde bir kez sorulur). robots.txt okunamazsa okumaz. Başlığı olmayan düz site
+  haritaları kullanılmaz (sayfaları tek tek açmak gerekirdi).
+- **Kaynak ekle, sitenin adresinden akış bulur.** RSS adresi yerine sitenin adresi yazılırsa sayfanın bildirdiği
+  RSS/Atom bağlantıları ve robots.txt'nin izin verdiği haber site haritaları önerilir; **Dene** ile biri denenir.
+- Katalogda CNN, Times of Israel, Kathimerini ve Bloomberg HT artık haberleri doğrudan yayıncının site haritasından da
+  alıyor (Bing akışı özet için kalıyor; aynı haber tek kayıt olur).
+
+### Denenip kullanılmayanlar
+- AP ve Al Arabiya'nın haber site haritaları otomatik okuyucuları reddediyor (403). Reuters'ın robots.txt'si
+  otomatik okumayı tümden kapatıyor. The Telegraph site haritasına robots.txt'de izin verse de otomatik okuyucuları
+  başka yollarla engelliyor. Bu siteler Bing üzerinden izlenmeye devam ediyor.
+- RSS-Bridge (PHP sunucusu gerektirir; Reuters köprüsü de engelleniyor) eklenmedi; site haritası yaklaşımı onun işe
+  yarayan kısmını kurulum gerektirmeden karşılıyor.
+
 ## [0.9.0] — 2026-09-28 — Ülkem, ajanslar, rozetler
 
 ### Eklendi

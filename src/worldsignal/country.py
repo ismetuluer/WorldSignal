@@ -25,8 +25,10 @@ from .paths import resource_dir
 
 log = logging.getLogger(__name__)
 
-# The topics the AI can recognise in a report (ai/enrich.py asks for them).
+# Built-in topics (the Türkiye defaults; the UI names them). Users can add their own topics as plain words
+# ("Mercosur", "Premier League"): the AI is asked which of the user's topics a report talks about.
 TOPICS = ("black_sea", "eastern_mediterranean", "nato", "eu_enlargement", "migration", "turkic_states")
+MIN_TOPIC, MAX_TOPIC, MAX_TOPICS = 2, 60, 20
 TURKIC_STATES = ("AZ", "KZ", "UZ", "KG", "TM")
 DEFAULT_COUNTRY = "TR"
 # Raise when the rules below change: every stored rating is then made again (home_sync.py).
@@ -128,7 +130,7 @@ def profile(prefs: dict[str, Any], system_country: str | None = None) -> HomePro
     return HomeProfile(
         code=code,
         related=tuple(r for r in dict.fromkeys(related) if r != code and r in countries()),
-        topics=tuple(t for t in dict.fromkeys(topics) if t in TOPICS),
+        topics=tuple(t for t in dict.fromkeys(str(t).strip() for t in topics) if MIN_TOPIC <= len(t) <= MAX_TOPIC),
         keywords=keywords,
         neighbours=tuple(dict.fromkeys([*data.get("neighbours", []), *EXTRA_NEIGHBOURS.get(code, ())])),
         names=name_pattern(code, keywords),

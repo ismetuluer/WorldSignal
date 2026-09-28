@@ -73,3 +73,45 @@ def test_corrupt_database_file_raises_clear_error(data_paths):
     with pytest.raises(sqlite3.DatabaseError):
         database.migrate()
     database.close_thread_connection()
+
+
+def test_turkish_and_english_ai_texts_move_to_the_language_columns(data_paths, monkeypatch):
+    """0009: the fixed *_tr / *_en columns become one JSON column per row, nothing is lost."""
+    import json
+
+    real = database_module._load_migrations()
+    database = Database(data_paths.database, backup_dir=data_paths.backups)
+    monkeypatch.setattr(database_module, "_load_migrations", lambda: [m for m in real if m[0] <= 8])
+    database.migrate()
+    c = database.conn
+    now = "2026-09-28T08:00:00Z"
+    c.execute("""INSERT INTO sources (id, slug, name, catalog_group, region, language, created_at, updated_at)
+                 VALUES (1, 's', 'S', 'other', 'global', 'en', ?, ?)""", (now, now))
+    c.execute("INSERT INTO feeds (id, source_id, url, created_at) VALUES (1, 1, 'https://s.example/rss', ?)", (now,))
+    for aid in (1, 2, 3):
+        c.execute("""INSERT INTO articles (id, source_id, feed_id, dedupe_key, url, title, first_seen_at, sort_at)
+                     VALUES (?, 1, 1, ?, 'https://s.example/a', 'Headline', ?, ?)""", (aid, f"k{aid}", now, now))
+    c.execute("""INSERT INTO article_ai (article_id, status, title_tr, summary_tr, title_en, summary_en, queued_at)
+                 VALUES (1, 'done', 'Başlık', 'Özet.', 'Title', 'Summary.', ?)""", (now,))
+    c.execute("INSERT INTO article_ai (article_id, status, title_tr, summary_tr, queued_at) VALUES (2, 'done', 'Yalnız', NULL, ?)",
+              (now,))
+    c.execute("INSERT INTO article_ai (article_id, status, queued_at) VALUES (3, 'pending', ?)", (now,))
+    c.execute("""INSERT INTO stories (id, first_seen_at, last_seen_at, ai_status, ai_title_tr, ai_summary_tr, ai_why,
+                                      ai_title_en, ai_summary_en, ai_why_en, created_at, updated_at)
+                 VALUES (1, ?, ?, 'done', 'H', 'Ö', 'N', 'S', 'Sum', 'W', ?, ?)""", (now, now, now, now))
+    c.execute("""INSERT INTO meeting_items (day, story_id, position, title, summary, why, title_en, created_at, updated_at)
+                 VALUES ('2026-09-28', 1, 0, 'H', 'Ö', NULL, 'S', ?, ?)""", (now, now))
+    c.execute("""INSERT INTO article_fulltext (article_id, status, text, queued_at, translate_status, text_tr, text_en)
+                 VALUES (1, 'done', 'Text', ?, 'done', 'Metin', 'Text')""", (now,))
+
+    monkeypatch.setattr(database_module, "_load_migrations", lambda: real)
+    database.migrate()
+    texts = {r[0]: json.loads(r[1]) for r in c.execute("SELECT article_id, texts FROM article_ai")}
+    assert texts[1] == {"tr": {"title": "Başlık", "summary": "Özet."}, "en": {"title": "Title", "summary": "Summary."}}
+    assert texts[2] == {"tr": {"title": "Yalnız", "summary": ""}} and texts[3] == {}
+    story = json.loads(c.execute("SELECT ai_texts FROM stories").fetchone()[0])
+    assert story == {"tr": {"title": "H", "summary": "Ö", "why": "N"}, "en": {"title": "S", "summary": "Sum", "why": "W"}}
+    item = json.loads(c.execute("SELECT texts FROM meeting_items").fetchone()[0])
+    assert item == {"tr": {"title": "H", "summary": "Ö", "why": ""}, "en": {"title": "S", "summary": "", "why": ""}}
+    assert json.loads(c.execute("SELECT translations FROM article_fulltext").fetchone()[0]) == {"tr": "Metin", "en": "Text"}
+    database.close_thread_connection()

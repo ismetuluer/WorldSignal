@@ -241,7 +241,8 @@ def test_story_summaries_come_first_and_by_score(db, sources, articles, settings
     ai_worker = AiWorker(AiRepository(db), settings, client_factory=chat.client, stories=repo)
     run(ai_worker.step())
     hormuz = repo.get(repo.story_of(ids["a1"]))
-    assert hormuz["ai_status"] == "done" and hormuz["ai_title_tr"] == STORY_ANSWER["title_tr"]
+    assert hormuz["ai_status"] == "done" and hormuz["ai_texts"]["tr"]["title"] == STORY_ANSWER["title_tr"]
+    assert hormuz["ai_texts"]["en"]["why"] == STORY_ANSWER["why_meeting_en"]
     assert hormuz["ai_article_count"] == 4 and hormuz["ai_issues"] == []
     assert "3 independent outlets" in chat.prompts[0]
     # One report per outlet first.
@@ -345,21 +346,21 @@ def test_wake_during_a_step_is_not_lost(db, settings, kind):
 def test_representative_is_the_most_typical_report_not_an_outlier():
     from worldsignal.repo.stories import pick_representative, to_blob
 
-    def row(aid, vec, title_tr=None, reliability=1.0):
-        return {"id": aid, "vector": to_blob(vec) if vec is not None else None, "title_tr": title_tr,
+    def row(aid, vec, ai_titles=None, reliability=1.0):
+        return {"id": aid, "vector": to_blob(vec) if vec is not None else None, "ai_titles": ai_titles,
                 "reliability": reliability, "sort_at": f"2026-09-27T0{aid}:00:00Z"}
 
     rows = [
         row(1, [1.0, 0.1, 0.0]),
         row(2, [1.0, 0.0, 0.05]),
         row(3, [0.95, 0.05, 0.0]),
-        row(4, [0.2, 0.0, 1.0], title_tr="Alakasız ama Türkçe", reliability=2.0),  # chained-in outlier
+        row(4, [0.2, 0.0, 1.0], ai_titles="Alakasız ama çevrilmiş", reliability=2.0),  # chained-in outlier
     ]
     assert pick_representative(rows) in (1, 2, 3)
-    # Among typical reports, a Turkish title wins.
-    rows[2]["title_tr"] = "Türkçe başlık"
+    # Among typical reports, one with an AI title wins.
+    rows[2]["ai_titles"] = "Çevrilmiş başlık"
     assert pick_representative(rows) == 3
-    # No vectors at all: most reliable with a Turkish title.
+    # No vectors at all: most reliable with an AI title.
     assert pick_representative([{**r, "vector": None} for r in rows]) == 4
 
 
@@ -375,19 +376,21 @@ def test_choose_story_requires_a_close_member_and_cohesion():
     assert choose_story(np.array([]), np.array([], dtype=np.int64), 0.5, 0.0) == (None, None)
 
 
-def test_story_summaries_without_english_are_redone(db, sources, articles, settings):
+def test_story_summaries_missing_a_language_are_redone(db, sources, articles, settings):
     ids = seed_articles(db, sources, articles, SPECS)
     run(make_worker(db, settings, FakeEmbedOllama()).step())
     repo = StoryRepository(db)
     sid = repo.story_of(ids["a1"])
     since = "2000-01-01T00:00:00Z"
-    repo.store_story_ai(sid, title="Eski", summary="Eski özet.", why="w", category=None, issues=[], model="m",
-                        article_count=4)  # written before English existed
+    repo.store_story_ai(sid, texts={"tr": {"title": "Eski", "summary": "Eski özet.", "why": "w"}}, category=None,
+                        issues=[], model="m", article_count=4)  # English is missing
     assert repo.next_story_job(since, 2)["id"] == sid
+    assert repo.next_story_job(since, 2, languages=("tr",)) is None or repo.next_story_job(since, 2, languages=("tr",))["id"] != sid
     settings.set("ai.model", "m")
     run(AiWorker(AiRepository(db), settings, client_factory=FakeChat().client, stories=repo).step())
     story = repo.get(sid)
-    assert story["ai_title_en"] == "Iran seizes US drone in Hormuz" and story["ai_why_en"].startswith("The event")
+    assert story["ai_texts"]["en"]["title"] == "Iran seizes US drone in Hormuz"
+    assert story["ai_texts"]["en"]["why"].startswith("The event")
 
 
 def test_exclusive_and_breaking_badges(db, sources, articles, settings):

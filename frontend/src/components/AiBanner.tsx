@@ -6,7 +6,9 @@ import { useAppState } from "../state";
 import { Banner } from "./controls";
 import { useToast } from "./Toasts";
 
-const PROBLEM_STATES: AiState[] = ["unreachable", "model_missing", "no_model", "timeout", "gpu_busy"];
+const PROBLEM_STATES: AiState[] = [
+  "unreachable", "model_missing", "no_model", "timeout", "gpu_busy", "no_key", "bad_key", "rate_limited",
+];
 
 /** Explains why new reports are not being grouped into stories. Renders nothing when clustering works. */
 export function StoryBanner() {
@@ -39,7 +41,8 @@ export function AiBanner() {
   const { status, refreshStatus } = useAppState();
   const ai = status?.ai;
   if (!ai || !PROBLEM_STATES.includes(ai.state)) return null;
-  const state = ai.state as "unreachable" | "model_missing" | "no_model" | "timeout" | "gpu_busy";
+  const state = ai.state as (typeof PROBLEM_STATES)[number];
+  const service = t(`ai.service.${ai.provider ?? "ollama"}` as MessageKey);
 
   const retry = async () => {
     try {
@@ -50,14 +53,14 @@ export function AiBanner() {
     }
   };
 
-  const needsSettings = state === "model_missing" || state === "no_model" || state === "gpu_busy";
+  const needsSettings = ["model_missing", "no_model", "gpu_busy", "no_key", "bad_key"].includes(state);
   const model = state === "gpu_busy" ? (ai.busy_with ?? "") : (ai.model ?? "");
   return (
     <Banner
-      kind={state === "unreachable" || state === "model_missing" ? "error" : "warning"}
+      kind={["unreachable", "model_missing", "bad_key"].includes(state) ? "error" : "warning"}
       icon="alert"
-      title={t(`ai.banner.${state}.title` as MessageKey)}
-      body={t(`ai.banner.${state}.body` as MessageKey, { model })}
+      title={t(`ai.banner.${state}.title` as MessageKey, { service })}
+      body={t(`ai.banner.${state}.body` as MessageKey, { model, service })}
       action={
         needsSettings ? (
           <button className="btn btn-sm" onClick={() => navigate("settings")}>{t("ai.openSettings")}</button>

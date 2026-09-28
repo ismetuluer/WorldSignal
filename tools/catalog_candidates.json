@@ -298,11 +298,15 @@
    "paywalled": false,
    "feeds": [
     {
+     "url": "https://www.cnn.com/sitemap/news.xml",
+     "label": "Haber site haritası"
+    },
+    {
      "url": "https://www.bing.com/news/search?q=site%3Acnn.com&format=rss&qft=sortbydate%3d%221%22",
      "label": "Bing Haberler: site:cnn.com"
     }
    ],
-   "note": "CNN'in RSS yayınları 2023'ten beri güncellenmiyor. Başlıklar Bing Haberler'in herkese açık RSS aramasından (site:cnn.com) gelir; bağlantılar doğrudan CNN sayfasına gider."
+   "note": "CNN'in RSS yayınları 2023'ten beri güncellenmiyor. Başlıklar Bing Haberler'in herkese açık RSS aramasından (site:cnn.com) gelir; bağlantılar doğrudan CNN sayfasına gider. Başlıklar ayrıca sitenin robots.txt dosyasında izin verdiği haber site haritasından doğrudan okunur."
   },
   {
    "slug": "npr",
@@ -858,11 +862,15 @@
    "paywalled": false,
    "feeds": [
     {
+     "url": "https://www.timesofisrael.com/news-sitemap.xml",
+     "label": "Haber site haritası"
+    },
+    {
      "url": "https://www.bing.com/news/search?q=site%3Atimesofisrael.com&format=rss&qft=sortbydate%3d%221%22",
      "label": "Bing Haberler: site:timesofisrael.com"
     }
    ],
-   "note": "Sitenin kendi RSS adresi otomatik okuyuculara erişim izni vermiyor (HTTP 403). Engeli aşmaya çalışmıyoruz. Başlıklar Bing Haberler'in herkese açık RSS aramasından (site:timesofisrael.com) gelir; bağlantılar doğrudan The Times of Israel sayfasına gider."
+   "note": "Sitenin kendi RSS adresi otomatik okuyuculara erişim izni vermiyor (HTTP 403). Engeli aşmaya çalışmıyoruz. Başlıklar Bing Haberler'in herkese açık RSS aramasından (site:timesofisrael.com) gelir; bağlantılar doğrudan The Times of Israel sayfasına gider. Başlıklar ayrıca sitenin robots.txt dosyasında izin verdiği haber site haritasından doğrudan okunur."
   },
   {
    "slug": "jpost",
@@ -1642,11 +1650,15 @@
    "paywalled": false,
    "feeds": [
     {
+     "url": "https://www.ekathimerini.com/infeeds/googlenews/nx-googlenews-feed.xml",
+     "label": "Haber site haritası"
+    },
+    {
      "url": "https://www.bing.com/news/search?q=site%3Aekathimerini.com&format=rss&qft=sortbydate%3d%221%22",
      "label": "Bing Haberler: site:ekathimerini.com"
     }
    ],
-   "note": "Sitenin kendi RSS adresi otomatik okuyuculara erişim izni vermiyor (HTTP 403). Engeli aşmaya çalışmıyoruz. Başlıklar Bing Haberler'in herkese açık RSS aramasından (site:ekathimerini.com) gelir; bağlantılar doğrudan Kathimerini (English) sayfasına gider."
+   "note": "Sitenin kendi RSS adresi otomatik okuyuculara erişim izni vermiyor (HTTP 403). Engeli aşmaya çalışmıyoruz. Başlıklar Bing Haberler'in herkese açık RSS aramasından (site:ekathimerini.com) gelir; bağlantılar doğrudan Kathimerini (English) sayfasına gider. Başlıklar ayrıca sitenin robots.txt dosyasında izin verdiği haber site haritasından doğrudan okunur."
   },
   {
    "slug": "cyprusmail",
@@ -2183,11 +2195,15 @@
    "paywalled": false,
    "feeds": [
     {
+     "url": "https://www.bloomberght.com/sitemap_google_news.xml",
+     "label": "Haber site haritası"
+    },
+    {
      "url": "https://www.bing.com/news/search?q=site%3Abloomberght.com&format=rss&qft=sortbydate%3d%221%22",
      "label": "Bing Haberler: site:bloomberght.com"
     }
    ],
-   "note": "Bloomberg HT'nin RSS yayını güncellenmiyor. Başlıklar Bing Haberler'in herkese açık RSS aramasından (site:bloomberght.com) gelir; bağlantılar doğrudan Bloomberg HT sayfasına gider."
+   "note": "Bloomberg HT'nin RSS yayını güncellenmiyor. Başlıklar Bing Haberler'in herkese açık RSS aramasından (site:bloomberght.com) gelir; bağlantılar doğrudan Bloomberg HT sayfasına gider. Başlıklar ayrıca sitenin robots.txt dosyasında izin verdiği haber site haritasından doğrudan okunur."
   },
   {
    "slug": "dunya",

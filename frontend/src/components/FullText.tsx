@@ -5,6 +5,7 @@ import { describeError, useI18n } from "../i18n";
 import { textDirection } from "../lib/hooks";
 import { fulltextErrorKey } from "../lib/fulltext";
 import { useAppState } from "../state";
+import { aiLanguages } from "../lib/aiText";
 import { Dialog, Segmented, Spinner, StateView } from "./controls";
 import { Icon } from "./Icon";
 import { useToast } from "./Toasts";
@@ -67,19 +68,20 @@ export function MemberFullText({ member: m, onRequested }: { member: StoryMember
   );
 }
 
-type Tab = "original" | "tr" | "en";
+/** "original", or a language code of the user's AI languages. */
+type Tab = string;
 
 export const TRANSLATION_POLL_MS = 3000;
 
-/** Reading window: the extracted text, and on request its Turkish and English translations. */
+/** Reading window: the extracted text, and on request its translations into the user's AI languages. */
 export function FullTextReader({ member: m, onClose }: { member: StoryMember; onClose: () => void }) {
   const i18n = useI18n();
   const { t } = i18n;
   const toast = useToast();
-  const { status } = useAppState();
+  const { status, settings } = useAppState();
   const [ft, setFt] = useState<FullText | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const targets = (["tr", "en"] as const).filter((l) => l !== m.language);
+  const targets = aiLanguages(settings).filter((l) => l !== m.language);
   const [tab, setTab] = useState<Tab>(targets.includes(i18n.lang) ? i18n.lang : "original");
 
   const load = useCallback(async () => {
@@ -119,7 +121,7 @@ export function FullTextReader({ member: m, onClose }: { member: StoryMember; on
   } else if (!ft) {
     body = <div className="dialog-loading"><Spinner label={t("common.loading")} /></div>;
   } else {
-    const translated = tab === "tr" ? ft.text_tr : tab === "en" ? ft.text_en : null;
+    const translated = tab === "original" ? null : ft.translations[tab];
     const aiOff = !status || status.ai.state === "disabled" || status.ai.state === "no_model";
     body = (
       <>
@@ -133,7 +135,7 @@ export function FullTextReader({ member: m, onClose }: { member: StoryMember; on
               onChange={setTab}
               options={[
                 { value: "original", label: t("fulltext.tab.original", { lang: i18n.languageName(m.language) }) },
-                ...targets.map((l) => ({ value: l as Tab, label: t(`fulltext.tab.${l}`) })),
+                ...targets.map((l) => ({ value: l, label: i18n.languageName(l) })),
               ]}
             />
           ) : null}

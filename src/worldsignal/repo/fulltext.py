@@ -6,7 +6,8 @@ stories picked automatically. Within a tier newer articles come first.
 
 from __future__ import annotations
 
-from collections.abc import Callable
+import json
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from typing import Any
@@ -123,7 +124,7 @@ class FullTextRepository:
         with self.db.transaction() as c:
             c.execute(
                 """UPDATE article_fulltext SET status = 'done', method = ?, text = ?, chars = ?, error_code = NULL,
-                       fetched_at = ?, attempts = attempts + 1, translate_status = NULL, text_tr = NULL, text_en = NULL
+                       fetched_at = ?, attempts = attempts + 1, translate_status = NULL, translations = '{}'
                    WHERE article_id = ?""",
                 (method, text, len(text), utc_now_iso(now), article_id),
             )
@@ -145,7 +146,13 @@ class FullTextRepository:
 
     def get(self, article_id: int) -> dict[str, Any] | None:
         row = self.db.conn.execute("SELECT * FROM article_fulltext WHERE article_id = ?", (article_id,)).fetchone()
-        return dict(row) if row else None
+        if row is None:
+            return None
+        d = dict(row)
+        d["translations"] = json.loads(d["translations"] or "{}")
+        for old in ("text_tr", "text_en"):
+            d.pop(old, None)  # before 0.11: replaced by translations
+        return d
 
     def statuses(self, article_ids: list[int]) -> dict[int, dict[str, Any]]:
         """Light status (no text) for a list of articles, for the story view."""
@@ -205,7 +212,7 @@ class FullTextRepository:
                 if verdict.text is None:
                     c.execute(
                         """UPDATE article_fulltext SET status = 'failed', error_code = ?, text = NULL, chars = NULL,
-                               translate_status = NULL, text_tr = NULL, text_en = NULL WHERE article_id = ?""",
+                               translate_status = NULL, translations = '{}' WHERE article_id = ?""",
                         (verdict.error_code, r["article_id"]),
                     )
                     c.execute(
@@ -238,30 +245,42 @@ class FullTextRepository:
             c.execute("UPDATE sources SET fulltext_paused_until = NULL WHERE id = ?", (source_id,))
 
     # -- translations of the full text ------------------------------------------------------------
-    def request_translation(self, article_id: int) -> str:
+    def request_translation(self, article_id: int, languages: Sequence[str] = ()) -> str:
+        """Translate the full text into ``languages`` (except its own language). Already translated: "done",
+        unless a language was added since."""
         with self.db.transaction() as c:
-            row = c.execute("SELECT status, translate_status FROM article_fulltext WHERE article_id = ?", (article_id,)).fetchone()
+            row = c.execute(
+                """SELECT f.status, f.translate_status, f.translations, COALESCE(a.language, s.language) AS language
+                   FROM article_fulltext f JOIN articles a ON a.id = f.article_id JOIN sources s ON s.id = a.source_id
+                   WHERE f.article_id = ?""", (article_id,)).fetchone()
             if row is None or row["status"] != "done":
                 raise LookupError(article_id)
-            if row["translate_status"] == "done":
+            have = json.loads(row["translations"] or "{}")
+            if row["translate_status"] == "done" and all(have.get(l) for l in languages if l != row["language"]):
                 return "done"
             c.execute("UPDATE article_fulltext SET translate_status = 'pending' WHERE article_id = ?", (article_id,))
         return "pending"
 
     def next_translation(self) -> dict[str, Any] | None:
+        """The next full text the user asked to translate, with the translations it already has."""
         row = self.db.conn.execute(
-            """SELECT f.article_id, f.text, COALESCE(a.language, s.language) AS language, s.name AS source_name
+            """SELECT f.article_id, f.text, f.translations, COALESCE(a.language, s.language) AS language,
+                      s.name AS source_name
                FROM article_fulltext f JOIN articles a ON a.id = f.article_id JOIN sources s ON s.id = a.source_id
                WHERE f.translate_status = 'pending' ORDER BY f.fetched_at DESC LIMIT 1"""
         ).fetchone()
-        return dict(row) if row else None
+        if row is None:
+            return None
+        d = dict(row)
+        d["translations"] = json.loads(d["translations"] or "{}")
+        return d
 
-    def store_translation(self, article_id: int, text_tr: str, text_en: str) -> None:
+    def store_translation(self, article_id: int, translations: dict[str, str]) -> None:
         with self.db.transaction() as c:
             c.execute(
-                """UPDATE article_fulltext SET translate_status = 'done', text_tr = ?, text_en = ?, translated_at = ?
+                """UPDATE article_fulltext SET translate_status = 'done', translations = ?, translated_at = ?
                    WHERE article_id = ?""",
-                (text_tr, text_en, utc_now_iso(), article_id),
+                (json.dumps(translations, ensure_ascii=False), utc_now_iso(), article_id),
             )
 
     def store_translation_failure(self, article_id: int) -> None:

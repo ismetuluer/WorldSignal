@@ -66,7 +66,7 @@ def test_defaults_and_user_choices():
     assert TR.related == ("AZ", "KZ", "UZ", "KG", "TM") and TR.topics == TOPICS
     assert set(TR.neighbours) == {"AM", "AZ", "BG", "GE", "GR", "IQ", "IR", "SY", "CY"}
     assert ZA.related == () and ZA.topics == ()
-    mine = profile({"home.country": "ZA", "home.related": ["NG", "ZA", "XX"], "home.topics": ["migration", "bogus"],
+    mine = profile({"home.country": "ZA", "home.related": ["NG", "ZA", "XX"], "home.topics": ["migration", " ", "x"],
                     "home.keywords": ["Springboks", " "]})
     assert mine.related == ("NG",) and mine.topics == ("migration",) and mine.keywords == ("Springboks",)
     assert mine.relevance("Springboks win the final", [], []) == ("direct", ["home_mentioned"])

@@ -36,31 +36,40 @@ def valid_day(day: str) -> bool:
     return True
 
 
-def story_headline(story: dict[str, Any], lang: str = "tr") -> str:
-    """Same order as the UI: story AI title, representative's AI title, original title."""
-    if story.get("ai_status") == "done" and story.get(f"ai_title_{lang}"):
-        return str(story[f"ai_title_{lang}"])
+def _texts(story: dict[str, Any]) -> dict[str, dict[str, str]]:
+    """The story's AI texts by language, the representative report's where the story has none."""
     rep = story.get("representative") or {}
-    return str(rep.get(f"title_{lang}") or rep.get("title") or "")
+    own = story.get("ai_texts") or {} if story.get("ai_status") == "done" else {}
+    out: dict[str, dict[str, str]] = {}
+    for lang, t in (rep.get("ai_texts") or {}).items():
+        out[lang] = {"title": t.get("title", ""), "summary": t.get("summary", ""), "why": ""}
+    for lang, t in own.items():
+        out[lang] = {"title": t.get("title", ""), "summary": t.get("summary", ""), "why": t.get("why", "")}
+    return out
+
+
+def story_headline(story: dict[str, Any], lang: str | None = None) -> str:
+    """Same order as the UI: story AI title, representative's AI title (in ``lang`` if there is one, else any
+    language), original title."""
+    texts = _texts(story)
+    if lang in texts and texts[lang]["title"]:
+        return texts[lang]["title"]
+    for t in texts.values():
+        if t["title"]:
+            return t["title"]
+    rep = story.get("representative") or {}
+    return str(rep.get("title") or "")
 
 
 def story_snapshot(story: dict[str, Any]) -> dict[str, Any]:
-    """What the notebook keeps of a story, in Turkish and English. Only AI text is kept as summary
+    """What the notebook keeps of a story, in every AI language. Only AI text is kept as summary
     (copyright: outputs never carry the publishers' own text), plus one link per source."""
-    rep = story.get("representative") or {}
-    done = story.get("ai_status") == "done"
-    summary = story.get("ai_summary_tr") if done else None
-    summary_en = story.get("ai_summary_en") if done else None
     sources: dict[str, str] = {}
     for m in sorted(story.get("members") or [], key=lambda m: m["sort_at"]):
         sources.setdefault(m["source_name"], m["url"])
     return {
         "title": story_headline(story),
-        "summary": summary or rep.get("summary_tr"),
-        "why": story.get("ai_why") if done else None,
-        "title_en": story_headline(story, "en"),
-        "summary_en": summary_en or rep.get("summary_en"),
-        "why_en": story.get("ai_why_en") if done else None,
+        "texts": _texts(story),
         "category": story.get("category"),
         "sources": [{"name": n, "url": u} for n, u in sources.items()],
     }
@@ -117,12 +126,11 @@ class NotebookRepository:
             if existing is None:
                 pos = c.execute("SELECT COALESCE(MAX(position), -1) + 1 FROM meeting_items WHERE day = ?", (day,)).fetchone()[0]
                 cur = c.execute(
-                    """INSERT INTO meeting_items (day, story_id, position, title, summary, why, title_en, summary_en,
-                                                  why_en, category, sources, created_at, updated_at)
-                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-                    (day, story_id, pos, snap["title"], snap["summary"], snap["why"], snap["title_en"],
-                     snap["summary_en"], snap["why_en"], snap["category"],
-                     json.dumps(snap["sources"], ensure_ascii=False), now, now),
+                    """INSERT INTO meeting_items (day, story_id, position, title, texts, category, sources,
+                                                  created_at, updated_at)
+                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                    (day, story_id, pos, snap["title"], json.dumps(snap["texts"], ensure_ascii=False),
+                     snap["category"], json.dumps(snap["sources"], ensure_ascii=False), now, now),
                 )
                 item_id = cur.lastrowid
             else:
@@ -210,6 +218,9 @@ class NotebookRepository:
     def _item(self, row: sqlite3.Row) -> dict[str, Any]:
         item = dict(row)
         item["sources"] = json.loads(item["sources"] or "[]")
+        item["texts"] = json.loads(item["texts"] or "{}")
+        for old in ("summary", "why", "title_en", "summary_en", "why_en"):
+            item.pop(old, None)  # before 0.11: replaced by texts
         return item
 
     def _get_item(self, item_id: int) -> dict[str, Any]:
@@ -232,13 +243,12 @@ class NotebookRepository:
             if story is None:
                 continue
             snap = story_snapshot(story)
-            updates.append((snap["title"], snap["summary"], snap["why"], snap["title_en"], snap["summary_en"],
-                            snap["why_en"], snap["category"], json.dumps(snap["sources"], ensure_ascii=False), it["id"]))
+            updates.append((snap["title"], json.dumps(snap["texts"], ensure_ascii=False), snap["category"],
+                            json.dumps(snap["sources"], ensure_ascii=False), it["id"]))
         if updates:
             with self.db.transaction() as c:
                 c.executemany(
-                    """UPDATE meeting_items SET title = ?, summary = ?, why = ?, title_en = ?, summary_en = ?, why_en = ?,
-                           category = ?, sources = ? WHERE id = ?""",
+                    """UPDATE meeting_items SET title = ?, texts = ?, category = ?, sources = ? WHERE id = ?""",
                     updates,
                 )
 

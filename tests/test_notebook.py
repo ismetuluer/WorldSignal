@@ -77,17 +77,19 @@ def test_meeting_list_add_order_comment_remove(world):
 def test_todays_list_follows_the_story_but_past_days_keep_their_snapshot(world):
     nb, stories, db = world["nb"], world["stories"], world["db"]
     item = nb.add_to_meeting(world["hormuz"])
-    assert item["summary"] is None  # no Turkish summary yet (original text is never copied)
-    stories.store_story_ai(world["hormuz"], title="Hürmüz'de İHA krizi", summary="Türkçe özet.", why="Enerji için kritik.",
-                           category="conflict_defense", issues=[], model="m", article_count=4,
-                           title_en="Drone crisis in Hormuz", summary_en="English summary.", why_en="Key for energy.")
+    assert item["texts"] == {}  # no AI summary yet (original text is never copied)
+    stories.store_story_ai(world["hormuz"], texts={
+        "tr": {"title": "Hürmüz'de İHA krizi", "summary": "Türkçe özet.", "why": "Enerji için kritik."},
+        "en": {"title": "Drone crisis in Hormuz", "summary": "English summary.", "why": "Key for energy."},
+    }, category="conflict_defense", issues=[], model="m", article_count=4)
     fresh = nb.meeting(TODAY)[0]
-    assert (fresh["title_en"], fresh["summary_en"], fresh["why_en"]) == ("Drone crisis in Hormuz", "English summary.", "Key for energy.")
-    assert (fresh["title"], fresh["summary"], fresh["why"]) == ("Hürmüz'de İHA krizi", "Türkçe özet.", "Enerji için kritik.")
+    assert fresh["texts"]["en"] == {"title": "Drone crisis in Hormuz", "summary": "English summary.", "why": "Key for energy."}
+    assert fresh["texts"]["tr"] == {"title": "Hürmüz'de İHA krizi", "summary": "Türkçe özet.", "why": "Enerji için kritik."}
+    assert fresh["title"] == "Hürmüz'de İHA krizi"
 
     world["day"]["value"] = "2026-09-28"
-    stories.store_story_ai(world["hormuz"], title="Yeni başlık", summary="Yeni özet.", why="w", category="conflict_defense",
-                           issues=[], model="m", article_count=4)
+    stories.store_story_ai(world["hormuz"], texts={"tr": {"title": "Yeni başlık", "summary": "Yeni özet.", "why": "w"}},
+                           category="conflict_defense", issues=[], model="m", article_count=4)
     assert nb.meeting(TODAY)[0]["title"] == "Hürmüz'de İHA krizi"  # that morning's proposal as it was
     with db.transaction() as c:
         c.execute("DELETE FROM stories WHERE id = ?", (world["hormuz"],))
@@ -132,10 +134,10 @@ def test_day_notes_and_calendar(world):
     assert nb.day("2020-01-01") == {"day": "2020-01-01", "today": "2026-10-01", "day_note": None, "meeting": [], "notes": []}
 
 
-def test_snapshot_uses_only_turkish_ai_text():
+def test_snapshot_uses_only_ai_text():
     story = {
-        "ai_status": None, "ai_title_tr": None, "ai_summary_tr": None, "ai_why": None, "category": "politics",
-        "representative": {"title": "Original headline", "title_tr": None, "summary_tr": None, "summary": "Publisher text"},
+        "ai_status": None, "ai_texts": {}, "category": "politics",
+        "representative": {"title": "Original headline", "ai_texts": {}, "summary": "Publisher text"},
         "members": [
             {"source_name": "A", "url": "https://a/2", "sort_at": "2026-09-27T02:00:00Z"},
             {"source_name": "A", "url": "https://a/1", "sort_at": "2026-09-27T01:00:00Z"},
@@ -143,5 +145,9 @@ def test_snapshot_uses_only_turkish_ai_text():
         ],
     }
     snap = story_snapshot(story)
-    assert snap["title"] == "Original headline" and snap["summary"] is None and snap["why"] is None
+    assert snap["title"] == "Original headline" and snap["texts"] == {}
+    # The representative report's AI text stands in for a story without its own summary.
+    story["representative"]["ai_texts"] = {"pt": {"title": "Manchete", "summary": "Resumo."}}
+    snap = story_snapshot(story)
+    assert snap["title"] == "Manchete" and snap["texts"] == {"pt": {"title": "Manchete", "summary": "Resumo.", "why": ""}}
     assert snap["sources"] == [{"name": "A", "url": "https://a/1"}, {"name": "B", "url": "https://b/1"}]

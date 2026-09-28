@@ -37,7 +37,7 @@ const SETTINGS: Settings = {
   "ui.language": "tr",
   "ui.theme": "light",
   "feed.window_hours": 24,
-  "feed.view": "stories", "feed.filters": { regions: [], groups: [], langs: [], sources: [], categories: [], turkey: false }, "update.auto_check": true, "update.auto_download": true, "home.country": "", "home.related": null, "home.topics": null, "home.keywords": [],
+  "feed.view": "stories", "feed.filters": { regions: [], groups: [], langs: [], sources: [], categories: [], turkey: false }, "update.auto_check": true, "update.auto_download": true, "home.country": "", "home.related": null, "home.topics": null, "home.keywords": [], "ai.languages": null,
   "ai.enabled": true,
   "ai.url": "http://localhost:11434",
   "ai.model": "gemma4-26b-a4b",
@@ -47,7 +47,7 @@ const SETTINGS: Settings = {
 };
 const META: Meta = {
   regions: ["turkey", "europe"], groups: ["turkey", "western"], languages: ["en", "tr"], categories: ["politics"],
-  ui_languages: ["tr", "en"], home_country: "TR", system_country: "TR", data_dir: "C:\\data", version: "0.6.0",
+  ui_languages: ["tr", "en"], home_country: "TR", system_country: "TR", ai_output_languages: ["tr", "en", "pt", "ar"], data_dir: "C:\\data", version: "0.6.0",
 };
 const AI: AiStatus = {
   running: true, state: "idle", busy_with: null, model: "gemma4-26b-a4b", url: "http://localhost:11434", current_article_id: null,
@@ -64,7 +64,7 @@ function member(id: number, name: string): StoryMember {
   return {
     id, url: `https://x.example/${id}`, title: `Report ${id}`, summary: "", sort_at: "2026-09-26T08:00:00Z", language: "en",
     source_id: id, source_name: name, paywalled: false, exclusive: false, region: "europe", similarity: 1, assigned_by: "auto",
-    title_tr: null, summary_tr: null, title_en: null, summary_en: null, ...NO_FULLTEXT,
+    ai_texts: {}, ...NO_FULLTEXT,
   };
 }
 
@@ -73,8 +73,8 @@ function story(id: number, title: string, extra: Partial<Story> = {}): Story {
   return {
     id, breaking: false, exclusive: false, first_seen_at: "2026-09-26T06:00:00Z", last_seen_at: "2026-09-26T08:00:00Z", article_count: 2, source_count: 2,
     score: 61, score_parts: { tags: [{ kind: "sources", count: 2 }] }, turkey_relevance: "none", category: "politics",
-    representative_id: members[0]!.id, representative: members[0]!, ai_status: "done", ai_title_tr: title, ai_summary_tr: "Özet.",
-    ai_why: null, ai_title_en: null, ai_summary_en: null, ai_why_en: null, ai_issues: [], ai_article_count: 2, ai_model: "m",
+    representative_id: members[0]!.id, representative: members[0]!, ai_status: "done", ai_texts: { tr: { title: title, summary: "Özet.", why: "" } },
+     ai_issues: [], ai_article_count: 2, ai_model: "m",
     sources: ["BBC", "Reuters"], members, timeline: [], ...extra,
   };
 }

@@ -1,0 +1,276 @@
+# World Signal
+
+**[Türkçe](README.md) · English**
+
+**A Windows desktop app that gathers the world's news on one screen, merges reports of the same event, ranks them by
+importance and summarises them in the languages you choose.**
+
+It was built to prepare the morning editorial meeting in a newsroom. It scans the RSS feeds of hundreds of sources all
+day and gathers reports of the same event into one "story" card ("in 9 sources"). It then ranks the stories by
+importance and, if you wish, uses AI to write headlines and summaries in the languages you pick, for example English and
+Portuguese. It also has a meeting list, a notebook, past days and printable outputs.
+
+---
+
+## Contents
+
+- [What it does](#what-it-does)
+- [Installation](#installation)
+- [Updates](#updates)
+- [Artificial intelligence (optional)](#artificial-intelligence-optional)
+  - [Summary languages](#summary-languages) · [Cloud AI](#cloud-ai)
+- [Using it](#using-it)
+- [Copyright and subscriptions](#copyright-and-subscriptions)
+- [Privacy and security](#privacy-and-security)
+- [Troubleshooting](#troubleshooting)
+- [Development](#development)
+
+---
+
+## What it does
+
+| | |
+|---|---|
+| **News gathering** | About 140 sources come ready: Western press, agencies, Middle East, Russia/Ukraine, Asia, Europe, Turkish press and sports. Every feed enters the catalogue only after it was tested and worked. You can add your own RSS addresses. |
+| **Stories** | Reports of the same event are merged into one card, even across languages. You can split off a wrongly merged report or merge two stories. |
+| **Importance** | The ranking weighs independent sources, freshness, **links to your country** and your own interests. Every card says **why** its score is high. Reports the publisher marks as "Exclusive" get a badge, and so do fast-spreading **Breaking** stories. |
+| **Summaries** | In 1–4 languages you choose, the AI writes a headline, a 3–5 sentence summary, a category and a "why it matters" line. It can run in Ollama on your computer or in a cloud service with your own key. Summaries rely only on the source text, and the original headline and link are always one click away. |
+| **Meeting and notes** | Add a story to the meeting list with one key, reorder it by dragging, add notes to stories and keep a notebook by day. |
+| **Outputs** | Meeting list, story detail, morning briefing and notes. Copy formatted (Word/Outlook), copy plain text (WhatsApp), print/PDF or **send by e-mail**. |
+| **History** | Pick a day in the calendar to see that morning's ranking, search all days, and follow a story day by day. |
+| **Full text** | Read and translate whole articles inside the app, from open sites and from sites **you subscribe to**. |
+| **In the background** | The app keeps scanning from the system tray after the window closes. If an important story spreads fast, it sends a Windows notification. |
+
+## Installation
+
+**Requirements:** Windows 10 or 11 (64-bit). No installer, administrator rights or other software is needed. Microsoft
+Edge WebView2 ships with Windows.
+
+1. Download the newest `WorldSignal-<version>-windows.zip` from the [Releases](../../releases/latest) page.
+2. Right-click the zip → **Extract All**. Choose **a writable folder on your own computer**, e.g.
+   `Documents\WorldSignal`.
+   - Protected folders such as `Program Files` and network folders are **not recommended**. The app runs from them but
+     cannot update itself.
+3. Double-click **`WorldSignal.exe`** in the extracted `WorldSignal` folder.
+   - On the first start Windows may say "Windows protected your PC". This is normal because the app is not signed.
+     Choose **More info → Run anyway**. The warning appears only once.
+4. To add a desktop shortcut, right-click `WorldSignal.exe` → **Show more options → Send to → Desktop (create shortcut)**.
+
+On the first start the sources are scanned at once. Articles appear within seconds and stories within minutes.
+
+**Your data** (database, notes, settings, backups, logs) is never kept in the program folder but always in
+`%LOCALAPPDATA%\WorldSignal` (Settings → Data → **Open folder**). Deleting or updating the program folder does not
+touch your data. The database is backed up automatically every day.
+
+## Updates
+
+The app finds new versions by itself:
+
+1. Shortly after start-up and every 6 hours, it checks the latest release on this page.
+2. If there is a new version, it downloads it in the background and verifies the file with its **SHA-256 checksum**.
+3. A **"World Signal x.y.z is ready — Restart and update"** bar appears at the top. **What's new** shows what changed
+   in that version.
+4. When you press the button, the app closes, replaces its folder with the new version and starts again. If something
+   goes wrong, the old version is put back and you are told so.
+
+Under Settings → **Updates** you can turn off automatic checking or downloading, or press **Check now**. An app
+running from a network folder or a read-only folder cannot update itself. In that case, download the new zip from this
+page and extract it over the old folder; your data stays in place.
+
+## Artificial intelligence (optional)
+
+World Signal also works without AI: articles are gathered, listed in their original language, searched and noted.
+The AI does two jobs:
+
+| Feature | Where it runs | Hardware |
+|---|---|---|
+| **Story merging** (finding reports of the same event) | Always in [Ollama](https://ollama.com) on your computer, model `bge-m3` (1.2 GB) | No graphics card needed; runs on the processor. |
+| **Headlines and summaries** | A language model in Ollama **or** a cloud service (see [Cloud AI](#cloud-ai)) | For Ollama a strong graphics card is recommended; a cloud service needs none. |
+
+Ollama is free and needs no administrator rights. **With Ollama everything runs on your computer and no text leaves
+it.**
+
+### Setting up Ollama
+
+1. Install Ollama from [ollama.com/download](https://ollama.com/download).
+2. Open a Command Prompt and download the story-merging model:
+   ```
+   ollama pull bge-m3
+   ```
+3. If your graphics card can handle it, also download a language model and choose it in World Signal under
+   **Settings → Artificial intelligence → Model**:
+
+   | Graphics memory | Recommended model | Note |
+   |---|---|---|
+   | 16 GB or more | Gemma 4 26B-A4B | Best results in our tests |
+   | 8–12 GB | `gemma4:12b` or `qwen3.5:9b` | Good, faster |
+   | 6–8 GB | `gemma4` (8B) | Acceptable; short summaries |
+   | No dedicated graphics card | — | Choose a [cloud service](#cloud-ai) or turn summaries off; story merging still works |
+
+   The models were compared on real news (see `tools/benchmark_models.py`).
+4. If Ollama runs on another computer, enter its address under **Settings → Artificial intelligence → Ollama address**.
+
+### Summary languages
+
+Under **Settings → Artificial intelligence → Summary languages** you choose 1–4 languages from more than 30. The
+default is the interface language plus English. Headlines and summaries are written in all of them. The language
+button on the cards switches between them, and outputs can be made in any of them. If you add a language later, older
+articles are filled in the background. Every language adds work: in Ollama four languages take about three times as
+long as one.
+
+### Cloud AI
+
+If you have no graphics card, or yours is not strong enough, a cloud service can write the headlines and summaries.
+Choose it under **Settings → Artificial intelligence → Where the AI runs**:
+
+| Service | Where to get a key | Note |
+|---|---|---|
+| **Google Gemini** | [aistudio.google.com/apikey](https://aistudio.google.com/apikey) | Has a free quota. |
+| **OpenAI-compatible** | [platform.openai.com/api-keys](https://platform.openai.com/api-keys) | Other services with the same interface also work (OpenRouter, Groq, Mistral, DeepSeek…): enter their address under **Service address**. LM Studio on your own computer works this way too, without a key. |
+| **Anthropic Claude** | [console.anthropic.com](https://console.anthropic.com/settings/keys) | |
+
+1. Choose the service, paste the **API key** from your own account and press **Save**.
+2. **Test connection** lists the service's models. Pick one in the **Model** box.
+3. Free plans accept few requests per minute, so set **Requests per minute (max.)** to match your plan. If the limit is
+   exceeded, the app waits and continues by itself.
+
+> **Note:** With a cloud service, the text of the articles is sent to that service, **including full texts you read
+> with your subscriptions**. The service's terms, its cost and the copyright of these texts are your responsibility.
+> If you do not want that, use Ollama.
+
+The key is stored only on this computer, encrypted with Windows encryption tied to your user account (DPAPI). It is
+never shown again and never goes into logs or backups. Even with a cloud service, story merging is done on your
+computer by `bge-m3` in Ollama.
+
+### Problems
+
+If Ollama is closed or a model is missing, the app does not crash. A warning at the top of the screen gives the
+reason, and articles are shown in their original languages. To keep summaries reliable, the numbers in each summary are
+checked against the source. If a number does not appear in the source, a "Check" warning is shown.
+
+## Using it
+
+- **Feed.** The *Stories* view shows reports of the same event on one card, in order of importance. The labels under
+  each card say why ("5 sources", "4 sources in 3 hours", "Related to Brazil"). The *Articles* view lists single
+  reports, newest first. At the top are search, a time range and filters: region, source group, language, category,
+  source and "Related to (your country)". **Your filters are remembered.**
+- **My country.** The "Related to (your country)" filter and labels follow the country chosen under Settings → **My
+  country**. The default is Windows' region setting. A report is rated after the AI has read it:
+  - it is *directly* related if your country appears in it;
+  - it is *indirectly* related if it mentions a neighbour, one of the related countries you chose, or one of your topics.
+
+  You can add topics from the suggestions, remove them, or write your own.
+- **Story detail.** Summary, a breakdown of the score, day-by-day development, all reports with links, and your notes.
+  Use **Remove from this story** for a wrongly grouped report and **Merge with another story** for two stories about
+  the same event.
+- **Meeting.** Today's list of proposals. Use **Add to meeting** (or `T`) on a story, reorder by dragging, and write a
+  short reason for each proposal.
+- **Notebook.** Pick a day in the calendar to see that day's free note, meeting list and story notes.
+- **Outputs.** Every output window offers:
+  - **Copy formatted**: pastes cleanly into Word and Outlook;
+  - **Copy plain text**: for apps such as WhatsApp;
+  - **Send by e-mail**: opens a formatted draft if desktop Outlook is installed. Otherwise it opens a plain-text draft
+    in the computer's default mail app; long text is shortened there, and the full text is also copied to the
+    clipboard. The app never **sends** the e-mail itself; you add the recipient and send it;
+  - **Print / PDF**: for a PDF, choose "Microsoft Print to PDF" as the printer.
+
+  You also choose the output language from your summary languages. The **morning briefing** lists the most important
+  stories of the chosen time range by category.
+- **History.** Pick a day in the calendar. *Morning 09:00* shows that morning's ranking and *Whole day* the ranking at
+  the end of the day. Search covers all days and ignores case and Turkish-specific letters.
+- **Sources.** Turn sources on and off, and give them a reliability weight and a media group; sources of the same group
+  count as one. Use **Add source** to test and add your own RSS address. If you do not know the RSS address, type the
+  site's address: the app suggests the site's RSS links and the news sitemaps it is allowed to read. Broken feeds are
+  shown in red with the reason.
+- **Settings.** Theme (system / light / dark), interface language, AI, story and score settings, your interest
+  profile (keywords, categories, regions), my country, full text, retention, notifications and quiet hours, backups
+  and updates.
+
+**Keyboard shortcuts:** `J` / `K` next / previous, `Enter` or `O` open, `T` add to meeting, `/` search.
+
+## Copyright and subscriptions
+
+World Signal republishes nobody's content; it shows it only on **your** screen.
+
+- Articles come from publishers' public RSS feeds: headline, short summary and link. For a few sources without RSS,
+  Bing News' public RSS search is used, and the links lead straight to the publisher. The Reuters and AP websites are
+  closed to automated readers, so these agencies are followed section by section through Bing search.
+- Some sites without RSS are read from the **news sitemap** they publish for search engines. This is done only if the
+  site's robots.txt allows automated readers.
+- **Paid sites:** you can read a whole article only if **you** subscribe to that site. Open the site from
+  **Settings → Full text → Subscription sites** and sign in once with your own account. The session is kept only on this
+  computer, in a separate browser profile that belongs to World Signal. Without a subscription you see only the
+  headline, the short summary and the link.
+- The app does not get around paywalls, does not solve robot checks (CAPTCHAs), and does not use archive or
+  paywall-bypass sites. It opens pages at a human pace: a few pages per site per hour, one page at a time.
+- **Full texts never go into any output.** Copies, prints, PDFs and e-mails contain only the summaries, source names
+  and links.
+- If you choose a [cloud AI](#cloud-ai) service, you are responsible for the texts sent to it for summarising,
+  including full texts.
+- Feeds you add yourself, such as the private RSS address of an agency your organisation subscribes to, stay only in
+  your database. They are sent nowhere and are not part of this repository.
+
+## Privacy and security
+
+The app talks only to:
+
+- the sources' RSS feeds and, when you ask for a full text, the article pages;
+- the Ollama address (by default your own computer: `localhost`);
+- **only if you choose one**, a cloud AI service (Google Gemini, an OpenAI-compatible service or Anthropic Claude),
+  which receives the article texts to summarise, full texts included;
+- GitHub, only for new-version information and downloads (can be turned off).
+
+No usage data, statistics or personal information is collected or sent. The app's interface is a local server that is
+reachable only from this computer (`127.0.0.1`) and only with a secret key that changes at every start. The database,
+notes, browser profile and session cookies stay only under `%LOCALAPPDATA%\WorldSignal`. Cloud API keys are kept in
+the same folder (`secrets.json`), encrypted with Windows encryption tied to your user account (DPAPI). They do not go
+into backups.
+
+## Troubleshooting
+
+| Problem | What to do |
+|---|---|
+| The app does not start | A message window gives the reason and the location of the log file: `%LOCALAPPDATA%\WorldSignal\logs\worldsignal.log`. |
+| Nothing happens on a second double-click | The app is already running in the tray, and the existing window comes to the front. To quit completely, right-click the tray icon → **Exit**. |
+| Headlines and summaries are not in my language | They are written by the AI (Ollama or a cloud service). Without either, articles appear in their original languages (see [AI](#artificial-intelligence-optional)). Also check that your language is selected under **Summary languages**. |
+| "Summaries unavailable: Ollama cannot be reached" | Ollama is closed or not installed. Start it, choose a cloud service, or turn summaries off under Settings → Artificial intelligence. |
+| "The API key was not accepted" / "rate limit reached" | If the key is invalid or expired, enter a new one under Settings → Artificial intelligence. At a rate limit the app waits and continues. If it happens often, lower **Requests per minute (max.)**. |
+| Summaries are very slow and the graphics card gets hot | Choose a smaller model (see the [table](#setting-up-ollama)). |
+| A source is shown in red | The Sources page gives the reason: site down, address changed, closed to automated readers… |
+| Full text says "paywall" | Sign in to that site under Settings → Full text → Subscription sites. Without a subscription, no full text can be fetched. |
+| "The update failed" | A file in the program folder was in use, and the next attempt will try again. If it keeps failing, download the new zip and extract it. |
+| Something went wrong | Under Settings → **Backups**, restore the backup of an earlier day; the app restarts. |
+
+## Development
+
+Stack: Python 3.12 (FastAPI, SQLite + FTS5, feedparser, trafilatura, patchright) · React 19 + TypeScript + Vite ·
+pywebview/WebView2 · PyInstaller. The project documents are in Turkish:
+- architecture: [ARCHITECTURE.md](ARCHITECTURE.md);
+- version history: [CHANGELOG.md](CHANGELOG.md);
+- source verification report: [docs/KAYNAK_DOGRULAMA.md](docs/KAYNAK_DOGRULAMA.md).
+
+Country data (`src/worldsignal/catalog/countries.json`): country names from [Wikidata](https://www.wikidata.org) (CC0),
+land borders from [GeoNames](https://www.geonames.org) (CC BY 4.0).
+
+```
+uv sync --python 3.12                        # Python environment
+cd frontend && npm ci && npm run build       # build the interface
+.venv\Scripts\python -m worldsignal          # run with a window
+.venv\Scripts\python -m pytest               # backend and end-to-end tests
+cd frontend && npm test                      # interface tests
+.venv\Scripts\python tools\verify_catalog.py # re-verify the source catalogue
+```
+
+The source catalogue is edited in `tools/catalog_candidates.json`. `tools/verify_catalog.py` tries every feed and
+writes `src/worldsignal/catalog/sources.json`; do not edit that file by hand.
+
+**Publishing a release** (project owner):
+
+1. Raise the version number (`pyproject.toml`, `src/worldsignal/__init__.py`, `frontend/package.json`) and write that
+   version's section in `CHANGELOG.md`. This text becomes the release note on GitHub.
+2. Run `scripts\clean-build-release.bat`. It cleans up, runs all tests, backs up the source, builds the app, and
+   prepares and checks the zip, `.sha256` and notes under `release\<version>\`. It stops if a part is missing or user
+   data slipped in.
+3. Run `scripts\publish.bat`. It scans the source for personal data, pushes it to the repository and creates the GitHub
+   release tagged `v<version>`. Every installed World Signal sees the release at its next check. To try it first:
+   `scripts\publish.bat --dry-run`.

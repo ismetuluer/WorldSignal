@@ -136,7 +136,7 @@ def test_milestones_mark_the_turning_points(db, sources, articles):
     assert kinds == [
         ("first", None, "Alpha News"),
         ("sources", 3, "Beta Sister"),
-        ("turkish_source", None, "Beta Sister"),
+        ("own_language_source", None, "Beta Sister"),
         ("turkey", None, "Beta Haber"),
         ("latest", None, "Beta Haber"),
     ]

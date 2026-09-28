@@ -90,8 +90,9 @@ class Notifier:
     def candidates(self, prefs: dict[str, Any]) -> list[dict[str, Any]]:
         since = utc_now_iso(self.clock() - RECENT)
         rows = self.db.conn.execute(
-            """SELECT st.id, st.score, st.score_parts, st.ai_title_tr, st.ai_title_en, a.title AS rep_title
+            """SELECT st.id, st.score, st.score_parts, st.ai_texts, x.texts AS rep_texts, a.title AS rep_title
                FROM stories st LEFT JOIN articles a ON a.id = st.representative_id
+               LEFT JOIN article_ai x ON x.article_id = st.representative_id AND x.status = 'done'
                WHERE st.notified_at IS NULL AND st.last_seen_at >= ? AND st.score >= ?
                ORDER BY st.score DESC""",
             (since, float(prefs["notify.min_score"])),
@@ -108,8 +109,13 @@ class Notifier:
         text = TEXTS.get(lang, TEXTS["tr"])
 
         def title_of(s: dict[str, Any]) -> str:
-            ai = (s["ai_title_en"] or s["ai_title_tr"]) if lang == "en" else (s["ai_title_tr"] or s["ai_title_en"])
-            return str(ai or s["rep_title"] or "")
+            # The interface language if the AI wrote it, else any AI language, else the original headline.
+            for texts in (json.loads(s["ai_texts"] or "{}"), json.loads(s["rep_texts"] or "{}")):
+                title = (texts.get(lang) or {}).get("title") or next(
+                    (t.get("title") for t in texts.values() if t.get("title")), None)
+                if title:
+                    return str(title)
+            return str(s["rep_title"] or "")
 
         top = stories[0]
         if len(stories) == 1:

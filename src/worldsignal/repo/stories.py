@@ -16,6 +16,7 @@ from ..db import Database, utc_now_iso
 from ..flags import is_breaking, is_exclusive
 from ..stories.score import Interest, Member, score_story
 from ..textnorm import build_fts_query
+from .ai import lacking_sql
 
 DTYPE = np.float32
 
@@ -26,16 +27,16 @@ def parse_iso(value: str) -> datetime:
 
 def pick_representative(rows: Sequence[sqlite3.Row]) -> int:
     """The member that best stands for the story: closest to the story's mean vector (its most
-    typical report, never an outlier), with a small bonus for a Turkish AI title and a reliable source.
-    Without vectors: the most reliable member with a Turkish title, else the earliest."""
+    typical report, never an outlier), with a small bonus for an AI title and a reliable source.
+    Without vectors: the most reliable member with an AI title, else the earliest."""
     with_vec = [r for r in rows if r["vector"] is not None]
     if not with_vec:
-        return min(rows, key=lambda r: (r["title_tr"] is None, -r["reliability"], r["sort_at"]))["id"]
+        return min(rows, key=lambda r: (not r["ai_titles"], -r["reliability"], r["sort_at"]))["id"]
     matrix = np.stack([from_blob(r["vector"]) for r in with_vec])
     centroid = matrix.mean(axis=0)
     centroid /= np.linalg.norm(centroid) or 1.0
     typical = matrix @ centroid
-    scores = typical + np.array([0.05 * (r["title_tr"] is not None) + 0.02 * r["reliability"] for r in with_vec])
+    scores = typical + np.array([0.05 * bool(r["ai_titles"]) + 0.02 * r["reliability"] for r in with_vec])
     return with_vec[int(scores.argmax())]["id"]
 
 
@@ -193,7 +194,8 @@ class StoryRepository:
         return self.db.conn.execute(
             """SELECT a.id, a.sort_at, a.title, s.id AS source_id, s.region, s.reliability,
                       COALESCE(NULLIF(s.owner, ''), s.slug) AS owner_key,
-                      x.title_tr, x.category, a.home_relevance AS turkey_relevance, e.vector
+                      (SELECT group_concat(json_extract(j.value, '$.title'), ' ') FROM json_each(x.texts) j) AS ai_titles,
+                      x.category, a.home_relevance AS turkey_relevance, e.vector
                FROM story_articles sa
                JOIN articles a ON a.id = sa.article_id
                JOIN sources s ON s.id = a.source_id
@@ -217,7 +219,7 @@ class StoryRepository:
                     continue
                 members = [
                     Member(r["id"], r["owner_key"], r["reliability"], parse_iso(r["sort_at"]), r["region"],
-                           f"{r['title']} {r['title_tr'] or ''}", r["category"], r["turkey_relevance"])
+                           f"{r['title']} {r['ai_titles'] or ''}", r["category"], r["turkey_relevance"])
                     for r in rows
                 ]
                 categories = Counter(r["category"] for r in rows if r["category"])
@@ -239,13 +241,14 @@ class StoryRepository:
 
     # -- story AI queue -----------------------------------------------------------------------------
     def next_story_job(
-        self, since_iso: str, min_sources: int, max_attempts: int = 3, *, automatic: bool = True
+        self, since_iso: str, min_sources: int, max_attempts: int = 3, *, automatic: bool = True,
+        languages: Sequence[str] = ("tr", "en"),
     ) -> dict[str, Any] | None:
         """The highest-scoring story that needs a (new) summary.
 
         A story needs one when it has at least ``min_sources`` independent sources and either
         has no summary yet, has grown by half (and at least two articles) since it was written, or its
-        summary predates the English text.
+        summary lacks one of ``languages`` (the user added a language).
         Stories the user asked for (ai_status = 'pending') come first, whatever their size.
         ``automatic=False``: only those.
         """
@@ -261,11 +264,12 @@ class StoryRepository:
                  AND (ai_status = 'pending'
                       OR (last_seen_at >= ? AND source_count >= ?
                           AND (ai_status IS NULL
-                               OR (ai_status = 'done' AND ai_title_en IS NULL)  -- written before English existed
+                               OR (ai_status = 'done' AND {lacking})
                                OR (ai_status = 'done' AND article_count >= ai_article_count * 1.5
                                    AND article_count >= ai_article_count + 2))))
-               ORDER BY ai_status = 'pending' DESC, score DESC LIMIT 1""",
-            (max_attempts, since_iso, min_sources),
+               ORDER BY ai_status = 'pending' DESC, score DESC LIMIT 1""".format(
+                lacking=lacking_sql("ai_texts", languages)),
+            (max_attempts, since_iso, min_sources, *languages),
         ).fetchone()
         return self.get(row["id"], member_limit=12) if row else None
 
@@ -274,17 +278,16 @@ class StoryRepository:
             if c.execute("UPDATE stories SET ai_status = 'pending', ai_attempts = 0 WHERE id = ?", (story_id,)).rowcount == 0:
                 raise KeyError(story_id)
 
-    def store_story_ai(self, story_id: int, *, title: str, summary: str, why: str, category: str | None,
-                       issues: list[str], model: str, article_count: int,
-                       title_en: str | None = None, summary_en: str | None = None, why_en: str | None = None) -> None:
+    def store_story_ai(self, story_id: int, *, texts: dict[str, dict[str, str]], category: str | None,
+                       issues: list[str], model: str, article_count: int) -> None:
+        """``texts``: {"tr": {"title": …, "summary": …, "why": …}, …}"""
         with self.db.transaction() as c:
             c.execute(
-                """UPDATE stories SET ai_status = 'done', ai_title_tr = ?, ai_summary_tr = ?, ai_why = ?,
-                       ai_title_en = ?, ai_summary_en = ?, ai_why_en = ?,
+                """UPDATE stories SET ai_status = 'done', ai_texts = ?,
                        category = COALESCE(?, category), ai_issues = ?, ai_article_count = ?, ai_model = ?,
                        ai_error = NULL, ai_attempts = 0, ai_completed_at = ?
                    WHERE id = ?""",
-                (title, summary, why, title_en, summary_en, why_en, category, json.dumps(issues), article_count, model,
+                (json.dumps(texts, ensure_ascii=False), category, json.dumps(issues), article_count, model,
                  utc_now_iso(), story_id),
             )
 
@@ -347,15 +350,15 @@ class StoryRepository:
         story = dict(row)
         story["score_parts"] = json.loads(story["score_parts"] or "{}")
         story["ai_issues"] = json.loads(story["ai_issues"] or "[]")
+        story["ai_texts"] = json.loads(story["ai_texts"] or "{}") if story["ai_status"] == "done" else {}
+        for old in ("ai_title_tr", "ai_summary_tr", "ai_why", "ai_title_en", "ai_summary_en", "ai_why_en"):
+            story.pop(old, None)  # before 0.11: replaced by ai_texts
         members = self.db.conn.execute(
             """SELECT a.id, a.url, a.title, a.summary, a.sort_at, COALESCE(a.language, s.language) AS language,
                       s.id AS source_id, s.name AS source_name, s.paywalled, s.region,
                       COALESCE(NULLIF(s.owner, ''), s.slug) AS owner_key,
                       sa.similarity, sa.assigned_by,
-                      CASE WHEN x.status = 'done' THEN x.title_tr END AS title_tr,
-                      CASE WHEN x.status = 'done' THEN x.summary_tr END AS summary_tr,
-                      CASE WHEN x.status = 'done' THEN x.title_en END AS title_en,
-                      CASE WHEN x.status = 'done' THEN x.summary_en END AS summary_en,
+                      CASE WHEN x.status = 'done' THEN x.texts END AS ai_texts,
                       ft.status AS fulltext_status, ft.error_code AS fulltext_error, ft.chars AS fulltext_chars,
                       ft.translate_status AS fulltext_translate_status
                FROM story_articles sa
@@ -370,6 +373,7 @@ class StoryRepository:
         items = [dict(m) for m in members]
         for m in items:
             m["paywalled"] = bool(m["paywalled"])
+            m["ai_texts"] = json.loads(m["ai_texts"] or "{}")
             m["exclusive"] = is_exclusive(m["title"])
         story["exclusive"] = any(m["exclusive"] for m in items)
         story["breaking"] = is_breaking(((m["owner_key"], parse_iso(m["sort_at"]), m["title"]) for m in items),

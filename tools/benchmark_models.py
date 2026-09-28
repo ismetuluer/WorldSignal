@@ -26,11 +26,12 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
-from worldsignal.ai.enrich import SCHEMA, SYSTEM_PROMPT, EnrichInput, validate  # noqa: E402
+from worldsignal.ai.enrich import EnrichInput, EnrichTask, validate  # noqa: E402
 from worldsignal.ai.ollama import OllamaClient, OllamaError  # noqa: E402
 from worldsignal.country import profile  # noqa: E402
 
 HOME = profile({"home.country": "TR"})  # the report rates relevance to Türkiye, as the benchmark did
+TASK = EnrichTask(("tr", "en"), HOME.topics)  # Turkish and English, the benchmark's languages
 
 DEFAULT_MODELS = [
     "qwen3:14b",
@@ -110,11 +111,12 @@ async def run_model(client: OllamaClient, model: str, sample: list[dict]) -> dic
             inp = EnrichInput(art["source"], art["lang"], art["title"], art["summary"])
             item = {"article_id": art["id"]}
             try:
-                r = await client.chat_json(model, SYSTEM_PROMPT, inp.render(), SCHEMA)
-                v = validate(r.data, inp)
+                r = await client.chat_json(model, TASK.system_prompt, inp.render(), TASK.schema)
+                v = validate(r.data, inp, TASK)
                 item.update(
                     ok=True, seconds=round(r.total_ms / 1000, 2), tps=round(r.tokens_per_second, 1),
-                    out_tokens=r.output_tokens, **v.__dict__,
+                    out_tokens=r.output_tokens, **v.__dict__, title_tr=v.texts["tr"]["title"],
+                    summary_tr=v.texts["tr"]["summary"],
                 )
             except (OllamaError, ValueError) as exc:
                 item.update(ok=False, error=str(exc)[:300])

@@ -32,6 +32,7 @@ import { App } from "../App";
 import { ToastProvider } from "../components/Toasts";
 import { I18nProvider } from "../i18n";
 import { FeedPage } from "../pages/FeedPage";
+import { AddSourceDialog } from "../pages/AddSourceDialog";
 import { SourcesPage } from "../pages/SourcesPage";
 import { AppStateProvider } from "../state";
 import { FULLTEXT_WORKER, MAINTENANCE, NOTIFY, STORY_SETTINGS, STORY_WORKER, UPDATE_IDLE } from "./fixtures";
@@ -47,7 +48,7 @@ const SETTINGS: Settings = {
   "ai.model": "qwen3:14b",
   "ai.max_age_hours": 24,
   "ai.yield_gpu": true,
-  "feed.view": "articles", "feed.filters": { regions: [], groups: [], langs: [], sources: [], categories: [], turkey: false }, "update.auto_check": true, "update.auto_download": true, "home.country": "", "home.related": null, "home.topics": null, "home.keywords": [],
+  "feed.view": "articles", "feed.filters": { regions: [], groups: [], langs: [], sources: [], categories: [], turkey: false }, "update.auto_check": true, "update.auto_download": true, "home.country": "", "home.related": null, "home.topics": null, "home.keywords": [], "ai.languages": null,
   ...STORY_SETTINGS,
 };
 const META: Meta = {
@@ -55,7 +56,7 @@ const META: Meta = {
   groups: ["turkey", "western"],
   languages: ["en", "tr"],
   categories: ["politics", "economy"],
-  ui_languages: ["tr", "en"], home_country: "TR", system_country: "TR",
+  ui_languages: ["tr", "en"], home_country: "TR", system_country: "TR", ai_output_languages: ["tr", "en", "pt", "ar"],
   data_dir: "D:\\Veri\\WorldSignal",
   version: "0.1.0",
 };
@@ -76,7 +77,7 @@ function article(id: number, title: string, extra: Partial<Article> = {}): Artic
     id, title, url: `https://x.example/${id}`, summary: `${title} özeti`, author: null,
     published_at: new Date().toISOString(), first_seen_at: new Date().toISOString(), sort_at: new Date().toISOString(),
     language: "tr", source_id: 1, source_name: "Beta Haber", region: "turkey", catalog_group: "turkey", paywalled: false, exclusive: false, breaking: false,
-    ai_status: null, title_tr: null, summary_tr: null, title_en: null, summary_en: null, category: null, countries: [], turkey_relevance: null, turkey_links: [],
+    ai_status: null, ai_texts: {}, category: null, countries: [], turkey_relevance: null, turkey_links: [],
     ai_issues: [], ai_model: null, ai_error: null,
     ...extra,
   };
@@ -270,6 +271,45 @@ describe("SourcesPage", () => {
     await userEvent.click(toggle);
     await waitFor(() => expect(toggle).toHaveAttribute("aria-checked", "false"));
     expect(mocked.updateSource).toHaveBeenLastCalledWith(1, { enabled: false });
+  });
+});
+
+describe("AddSourceDialog", () => {
+  it("offers the feeds a web page has and tests the chosen one", async () => {
+    mocked.testFeed
+      .mockResolvedValueOnce({
+        ok: false, error_code: "not_a_feed",
+        suggestions: [
+          { url: "https://site.example/feed", kind: "rss", title: "Son dakika" },
+          { url: "https://site.example/news-sitemap.xml", kind: "sitemap", title: "" },
+        ],
+      })
+      .mockResolvedValueOnce({
+        ok: true, error_code: null, title: null, language: "tr", item_count: 40, newest_at: null,
+        sample_titles: ["Başlık"], final_url: "https://site.example/news-sitemap.xml",
+      });
+    wrap(<AddSourceDialog onClose={() => undefined} onAdded={() => undefined} />);
+    await userEvent.type(screen.getByRole("textbox"), "https://site.example/");
+    await userEvent.click(screen.getByRole("button", { name: "Test et" }));
+    expect(await screen.findByText("Bu sitede bulunan akışlar:")).toBeInTheDocument();
+    expect(screen.getByText("Son dakika")).toBeInTheDocument();
+    expect(screen.getByText("Haber site haritası")).toBeInTheDocument();
+    await userEvent.click(screen.getAllByRole("button", { name: "Dene" })[1]!);
+    expect(mocked.testFeed).toHaveBeenLastCalledWith("https://site.example/news-sitemap.xml");
+    expect(await screen.findByText("Akış çalışıyor: 40 haber bulundu.")).toBeInTheDocument();
+    expect(screen.getByDisplayValue("https://site.example/news-sitemap.xml")).toBeInTheDocument();
+  });
+
+  it("says so when a page offers nothing, and explains robots.txt refusals", async () => {
+    mocked.testFeed
+      .mockResolvedValueOnce({ ok: false, error_code: "not_a_feed", suggestions: [] })
+      .mockResolvedValueOnce({ ok: false, error_code: "robots_disallow" });
+    wrap(<AddSourceDialog onClose={() => undefined} onAdded={() => undefined} />);
+    await userEvent.type(screen.getByRole("textbox"), "https://empty.example/");
+    await userEvent.click(screen.getByRole("button", { name: "Test et" }));
+    expect(await screen.findByText(/izin verilen bir haber site haritası bulunamadı/)).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Test et" }));
+    expect(await screen.findByText(/robots.txt dosyasında otomatik okuyuculara/)).toBeInTheDocument();
   });
 });
 

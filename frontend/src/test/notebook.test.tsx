@@ -44,12 +44,12 @@ const mocked = vi.mocked(api, true);
 const TODAY = localDay();
 
 const SETTINGS: Settings = {
-  "ui.language": "tr", "ui.theme": "light", "feed.window_hours": 24, "feed.view": "stories", "feed.filters": { regions: [], groups: [], langs: [], sources: [], categories: [], turkey: false }, "update.auto_check": true, "update.auto_download": true, "home.country": "", "home.related": null, "home.topics": null, "home.keywords": [],
+  "ui.language": "tr", "ui.theme": "light", "feed.window_hours": 24, "feed.view": "stories", "feed.filters": { regions: [], groups: [], langs: [], sources: [], categories: [], turkey: false }, "update.auto_check": true, "update.auto_download": true, "home.country": "", "home.related": null, "home.topics": null, "home.keywords": [], "ai.languages": null,
   "ai.enabled": true, "ai.url": "http://localhost:11434", "ai.model": "m", "ai.max_age_hours": 24, "ai.yield_gpu": true,
   ...STORY_SETTINGS,
 };
 const META: Meta = {
-  regions: ["turkey"], groups: ["turkey"], languages: ["tr"], categories: ["politics"], ui_languages: ["tr", "en"], home_country: "TR", system_country: "TR",
+  regions: ["turkey"], groups: ["turkey"], languages: ["tr"], categories: ["politics"], ui_languages: ["tr", "en"], home_country: "TR", system_country: "TR", ai_output_languages: ["tr", "en", "pt", "ar"],
   data_dir: "C:\\data", version: "0.4.0",
 };
 const AI: AiStatus = {
@@ -63,8 +63,8 @@ const STATUS: Status = {
 
 function item(id: number, extra: Partial<MeetingItem> = {}): MeetingItem {
   return {
-    id, day: TODAY, story_id: id * 10, position: id - 1, comment: "", title: `Öneri ${id}`, summary: `Özet ${id}`, why: `Gerekçe ${id}`,
-    category: "politics", sources: [{ name: "AA", url: "https://aa.example/1" }], created_at: TODAY, updated_at: TODAY, title_en: null, summary_en: null, why_en: null, ...extra,
+    id, day: TODAY, story_id: id * 10, position: id - 1, comment: "", title: `Öneri ${id}`, texts: { tr: { title: `Öneri ${id}`, summary: `Özet ${id}`, why: `Gerekçe ${id}` } },
+    category: "politics", sources: [{ name: "AA", url: "https://aa.example/1" }], created_at: TODAY, updated_at: TODAY, ...extra,
   };
 }
 
@@ -72,12 +72,12 @@ function story(id: number): Story {
   const m = {
     id: id * 100, url: "https://x.example/1", title: "Orig", summary: "", sort_at: "2026-09-27T08:00:00Z", language: "tr",
     source_id: 1, source_name: "AA", paywalled: false, exclusive: false, region: "turkey" as const, similarity: 1, assigned_by: "auto" as const,
-    title_tr: null, summary_tr: null, title_en: null, summary_en: null, ...NO_FULLTEXT,
+    ai_texts: {}, ...NO_FULLTEXT,
   };
   return {
     id, breaking: false, exclusive: false, first_seen_at: m.sort_at, last_seen_at: m.sort_at, article_count: 1, source_count: 1, score: 40, score_parts: { tags: [] },
     turkey_relevance: "none", category: "politics", representative_id: m.id, representative: m, ai_status: "done",
-    ai_title_tr: `Hikâye ${id}`, ai_summary_tr: "Özet.", ai_why: null, ai_title_en: null, ai_summary_en: null, ai_why_en: null, ai_issues: [], ai_article_count: 1, ai_model: "m",
+    ai_texts: { tr: { title: `Hikâye ${id}`, summary: "Özet.", why: "" } }, ai_issues: [], ai_article_count: 1, ai_model: "m",
     sources: ["AA"], members: [m], timeline: [],
   };
 }

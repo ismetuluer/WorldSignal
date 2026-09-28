@@ -14,6 +14,8 @@ import type {
   FeedTestResult,
   MeetingItem,
   MeetingList,
+  CloudProvider,
+  CloudTestResult,
   HomeInfo,
   Meta,
   NotebookDay,
@@ -121,6 +123,12 @@ export const api = {
     request<ArticlePage>("GET", `/articles${query({ ...q, turkey: q.turkey ? "true" : undefined })}`),
   requestAi: (articleId: number) => request<{ status: string }>("POST", `/articles/${articleId}/ai`),
   testOllama: (url: string) => request<OllamaTestResult>("POST", "/ai/test", { url }),
+  /** Which cloud services have an API key (the keys themselves are never sent back). */
+  aiKeys: () => request<Record<CloudProvider, boolean>>("GET", "/ai/keys"),
+  setAiKey: (provider: CloudProvider, key: string) => request<Record<CloudProvider, boolean>>("PUT", `/ai/keys/${provider}`, { key }),
+  deleteAiKey: (provider: CloudProvider) => request<Record<CloudProvider, boolean>>("DELETE", `/ai/keys/${provider}`),
+  testCloud: (provider: CloudProvider, url?: string) =>
+    request<CloudTestResult>("POST", "/ai/cloud/test", url ? { provider, url } : { provider }),
   retryAi: () => request<{ requeued: number }>("POST", "/ai/retry"),
 
   stories: (q: StoryQuery) =>

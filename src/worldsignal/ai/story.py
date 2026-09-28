@@ -1,4 +1,4 @@
-"""Story-level AI: one headline, a 3-5 sentence summary and a meeting pitch, in Turkish and English,
+"""Story-level AI: one headline, a 3-5 sentence summary and a meeting pitch in each of the user's languages,
 written from several reports of the same event.
 
 As with single articles, the model may only use the given texts; numbers in the
@@ -11,40 +11,48 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from .enrich import CATEGORIES, clean_title, fidelity_issues
+from .languages import DEFAULT_LANGUAGES
+from .languages import name as lang_name
 
-STORY_PROMPT_VERSION = 2  # 2: English next to Turkish
+STORY_PROMPT_VERSION = 3  # 3: the user's languages
 MAX_REPORTS = 8
 REPORT_CHARS = 700
 
-STORY_SCHEMA: dict[str, Any] = {
-    "type": "object",
-    "properties": {
-        "title_tr": {"type": "string"},
-        "summary_tr": {"type": "string"},
-        "category": {"type": "string", "enum": list(CATEGORIES)},
-        "why_meeting_tr": {"type": "string"},
-        "title_en": {"type": "string"},
-        "summary_en": {"type": "string"},
-        "why_meeting_en": {"type": "string"},
-    },
-    "required": ["title_tr", "summary_tr", "category", "why_meeting_tr", "title_en", "summary_en", "why_meeting_en"],
-}
 
-STORY_SYSTEM_PROMPT = """You are the foreign news editor of a Turkish television newsroom preparing the morning editorial meeting.
+def story_schema(languages: tuple[str, ...]) -> dict[str, Any]:
+    props: dict[str, Any] = {}
+    for lang in languages:
+        props[f"title_{lang}"] = {"type": "string"}
+        props[f"summary_{lang}"] = {"type": "string"}
+        props[f"why_meeting_{lang}"] = {"type": "string"}
+    props["category"] = {"type": "string", "enum": list(CATEGORIES)}
+    return {"type": "object", "properties": props, "required": list(props)}
+
+
+def story_prompt(languages: tuple[str, ...]) -> str:
+    first, name = languages[0], lang_name(languages[0])
+    fields = [
+        f"- title_{first}: a natural {name} headline for the event in sentence case, max 110 characters.",
+        f"- summary_{first}: 3 to 5 {name} sentences: what happened, where, who, the latest development. "
+        "Fewer sentences if the reports contain little information.",
+        f"- why_meeting_{first}: ONE {name} sentence for the meeting: why this event deserves airtime, based only "
+        "on what the reports show (e.g. how widely it is covered, what is new).",
+    ]
+    for lang in languages[1:]:
+        fields.append(f"- title_{lang}, summary_{lang}, why_meeting_{lang}: the same three texts in natural "
+                      f"{lang_name(lang)} (same facts, nothing more).")
+    fields.append("- category: one of " + ", ".join(CATEGORIES) + ".")
+    return f"""You are the foreign news editor of a newsroom preparing the morning editorial meeting.
 You receive several reports from different outlets, in different languages, about ONE news event.
-Write Turkish and English output as JSON.
+Write output in {", ".join(lang_name(lang) for lang in languages)} as JSON.
 
 Strict rules:
 - Use ONLY information present in the reports. Never add facts, numbers, names, dates, causes or background from your own knowledge.
-- When reports disagree, say so briefly ("X'e göre ..., Y ise ... bildirdi") instead of choosing one.
+- When reports disagree, say so briefly (according to X ..., while Y reported ...) instead of choosing one.
 - Keep numbers and names exactly as in the reports. Neutral news language, no exclamation marks.
 
 Fields:
-- title_tr: a natural Turkish headline for the event in sentence case, max 110 characters.
-- summary_tr: 3 to 5 Turkish sentences: what happened, where, who, the latest development. Fewer sentences if the reports contain little information.
-- category: one of diplomacy, conflict_defense, politics, economy, energy, technology, science_health, environment, disaster, society, justice, sports, culture, other.
-- why_meeting_tr: ONE Turkish sentence for the meeting: why this event deserves airtime, based only on what the reports show (e.g. how widely it is covered, what is new).
-- title_en, summary_en, why_meeting_en: the same three texts in natural English (same facts, nothing more)."""
+""" + "\n".join(fields)
 
 
 @dataclass
@@ -57,13 +65,8 @@ class StoryReport:
 
 @dataclass
 class StoryResult:
-    title_tr: str
-    summary_tr: str
+    texts: dict[str, dict[str, str]]  # {"tr": {"title": …, "summary": …, "why": …}, …}
     category: str
-    why_tr: str
-    title_en: str
-    summary_en: str
-    why_en: str
     issues: list[str] = field(default_factory=list)
 
 
@@ -88,17 +91,17 @@ def pick_reports(members: list[dict[str, Any]]) -> list[StoryReport]:
     return (first + rest)[:MAX_REPORTS]
 
 
-def validate_story(data: dict[str, Any], reports: list[StoryReport], source_count: int) -> StoryResult:
-    title = clean_title(data.get("title_tr"))
-    summary = str(data.get("summary_tr", "")).strip()
-    why = str(data.get("why_meeting_tr", "")).strip()
-    title_en = clean_title(data.get("title_en"))
-    summary_en = str(data.get("summary_en", "")).strip()
-    why_en = str(data.get("why_meeting_en", "")).strip()
-    if not title or not summary or not title_en or not summary_en:
-        raise ValueError("empty_story_text")
+def validate_story(data: dict[str, Any], reports: list[StoryReport], source_count: int,
+                   languages: tuple[str, ...] = tuple(DEFAULT_LANGUAGES)) -> StoryResult:
+    texts: dict[str, dict[str, str]] = {}
+    for lang in languages:
+        title = clean_title(data.get(f"title_{lang}"))
+        summary = str(data.get(f"summary_{lang}", "")).strip()
+        if not title or not summary:
+            raise ValueError("empty_story_text")
+        texts[lang] = {"title": title, "summary": summary, "why": str(data.get(f"why_meeting_{lang}", "")).strip()}
     category = data.get("category") if data.get("category") in CATEGORIES else "other"
     # The rendered input also contains the source count, which the model may legitimately quote.
     source_text = render_reports(reports, source_count)
-    issues = fidelity_issues(source_text, f"{title}\n{summary}\n{why}\n{title_en}\n{summary_en}\n{why_en}")
-    return StoryResult(title, summary, category, why, title_en, summary_en, why_en, issues)
+    written = "\n".join("\n".join(t.values()) for t in texts.values())
+    return StoryResult(texts, category, fidelity_issues(source_text, written))

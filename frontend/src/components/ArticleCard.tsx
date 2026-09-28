@@ -1,7 +1,8 @@
 import { useState } from "react";
 import type { Article } from "../api/types";
 import { useI18n } from "../i18n";
-import { articleSummary, articleTitle, type AiLang } from "../lib/aiText";
+import { aiLanguages, articleSummary, articleTitle, languagesOf, type AiLang } from "../lib/aiText";
+import { useAppState } from "../state";
 import { textDirection } from "../lib/hooks";
 import { Icon } from "./Icon";
 import { LangToggle } from "./StoryCard";
@@ -30,12 +31,14 @@ export function ArticleCard({
   const [showOriginal, setShowOriginal] = useState(false);
 
   const [lang, setLang] = useState<AiLang>(i18n.lang);
-  const hasAi = a.ai_status === "done" && !!(a.title_tr || a.title_en);
+  const { settings } = useAppState();
+  const languages = a.ai_status === "done" ? languagesOf(a.ai_texts, aiLanguages(settings)) : [];
+  const hasAi = languages.length > 0;
   const useAi = hasAi && !showOriginal;
   const shown = articleTitle(a, lang);
   const headline = useAi ? shown.text : a.title;
   const summary = useAi ? articleSummary(a, lang) : a.summary;
-  const dir = useAi ? "ltr" : textDirection(a.language);
+  const dir = textDirection(useAi ? shown.lang : a.language);
   const showOriginalTitle = useAi && a.language !== shown.lang && a.title !== headline;
   const numbers = a.ai_issues
     .filter((i) => i.startsWith("number_not_in_source:"))
@@ -59,7 +62,7 @@ export function ArticleCard({
           </span>
         ) : null}
         {hasAi && a.category ? <span className="badge">{t(`category.${a.category}`)}</span> : null}
-        {useAi ? <LangToggle lang={lang} onChange={setLang} available={!!a.title_tr && !!a.title_en} /> : null}
+        {useAi ? <LangToggle current={shown.lang} languages={languages} onChange={setLang} /> : null}
         {hasAi && a.turkey_relevance && a.turkey_relevance !== "none" ? (
           <span
             className={`badge ${a.turkey_relevance === "direct" ? "badge-danger" : "badge-accent"}`}

@@ -322,7 +322,8 @@ def test_chunks_follow_paragraphs_and_split_long_ones():
     assert all(len(p) <= 520 for p in parts)
     assert parts[0].startswith("Kısa paragraf.") and parts[-1].endswith("Son paragraf.")
     assert "".join(parts).count("Uzun cümle burada.") == 200
-    assert translate.targets("tr") == ["en"] and translate.targets("en") == ["tr"] and translate.targets("ar") == ["tr", "en"]
+    assert translate.targets(["tr", "en"], "tr") == ["en"] and translate.targets(["tr", "en"], "ar") == ["tr", "en"]
+    assert translate.targets(["pt", "ar"], "ar") == ["pt"]
 
 
 def test_translation_job_on_request(world, tmp_path):
@@ -356,9 +357,18 @@ def test_translation_job_on_request(world, tmp_path):
                       fulltext=repo)
     run(worker.step())
     ft = repo.get(ids["a1"])
-    assert ft["translate_status"] == "done" and "Çeviri parçası." in ft["text_tr"]
-    assert ft["text_en"] == ft["text"]  # the source (alpha) is English: nothing to translate into English
+    assert ft["translate_status"] == "done" and "Çeviri parçası." in ft["translations"]["tr"]
+    assert "en" not in ft["translations"]  # the source (alpha) is English: nothing to translate into English
     assert all("Turkish" in s for s in seen)
+    assert repo.request_translation(ids["a1"], ["tr", "en"]) == "done"
+
+    # A language added later: only it is translated, the Turkish text is kept.
+    world["settings"].set("ai.languages", ["tr", "pt"])
+    assert repo.request_translation(ids["a1"], ["tr", "pt"]) == "pending"
+    seen.clear()
+    run(worker.step())
+    ft = repo.get(ids["a1"])
+    assert set(ft["translations"]) == {"tr", "pt"} and seen and all("Portuguese" in s for s in seen)
 
 
 def test_a_finished_summary_is_redone_when_the_full_text_arrives(world, tmp_path):
@@ -367,8 +377,8 @@ def test_a_finished_summary_is_redone_when_the_full_text_arrives(world, tmp_path
     ai, ids = AiRepository(world["db"]), world["ids"]
     with world["db"].transaction() as c:
         c.execute(
-            """INSERT INTO article_ai (article_id, status, queued_at, completed_at, title_tr, title_en, attempts)
-               VALUES (?, 'done', ?, ?, 'Eski', 'Old', 1)""",
+            """INSERT INTO article_ai (article_id, status, queued_at, completed_at, texts, attempts)
+               VALUES (?, 'done', ?, ?, '{"tr": {"title": "Eski", "summary": ""}, "en": {"title": "Old", "summary": ""}}', 1)""",
             (ids["b1"], "2026-01-01T00:00:00Z", "2026-01-01T00:00:00Z"),
         )
     assert ai.next_job("2000-01-01T00:00:00Z") is None
@@ -417,7 +427,8 @@ def test_stored_texts_are_rechecked_with_the_current_rules(world):
         for key, text in (("a1", FT_TEASER), ("a2", "Abone ol\n" + ARTICLE_TEXT), ("b1", ARTICLE_TEXT)):
             c.execute("""INSERT INTO article_fulltext (article_id, status, text, chars, queued_at, fetched_at)
                          VALUES (?, 'done', ?, ?, ?, ?)""", (ids[key], text, len(text), now_iso, now_iso))
-        c.execute("INSERT INTO article_ai (article_id, status, title_tr, queued_at) VALUES (?, 'done', 'Başlık', ?)",
+        c.execute("""INSERT INTO article_ai (article_id, status, texts, queued_at)
+                     VALUES (?, 'done', '{"tr": {"title": "Başlık", "summary": ""}}', ?)""",
                   (ids["a1"], now_iso))
     assert repo.recheck(judge, SHORT_TEXT + 500) == {"rejected": 1, "cleaned": 1}
     teaser = repo.get(ids["a1"])

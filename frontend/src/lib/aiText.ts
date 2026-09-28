@@ -1,18 +1,32 @@
 /**
- * Which AI language to show. Every AI text exists in Turkish and English (prompt v5); the UI
- * shows the interface language and the other one is a click away. Texts written before English
- * existed fall back to the other AI language, then to the original.
+ * Which AI text to show. The AI writes every text in the user's languages (setting "ai.languages"); the UI
+ * shows the requested language (at first the interface language) and the others are a click away. A text the
+ * AI has not written in that language falls back to another AI language, then to the original.
  */
-import type { Article, MeetingItem, Story } from "../api/types";
+import type { AiText, AiTexts, Article, MeetingItem, Settings, Story } from "../api/types";
 
-export type AiLang = "tr" | "en";
+/** A language code the AI writes in ("tr", "pt", …). */
+export type AiLang = string;
 
-export const otherLang = (l: AiLang): AiLang => (l === "tr" ? "en" : "tr");
+/** The languages the AI writes in: the setting, or the interface language and English. */
+export function aiLanguages(settings: Pick<Settings, "ai.languages" | "ui.language">): string[] {
+  const chosen = settings["ai.languages"];
+  if (chosen && chosen.length) return chosen;
+  return [...new Set([settings["ui.language"], "en"])];
+}
 
-function pick<T>(lang: AiLang, tr: T | null | undefined, en: T | null | undefined): T | null {
-  const first = lang === "tr" ? tr : en;
-  const second = lang === "tr" ? en : tr;
-  return first || second || null;
+/** The AI languages this text exists in, in the order of the user's languages. */
+export function languagesOf(texts: AiTexts | null | undefined, order: string[] = []): string[] {
+  const have = Object.keys(texts ?? {}).filter((l) => texts?.[l]?.title);
+  return [...order.filter((l) => have.includes(l)), ...have.filter((l) => !order.includes(l))];
+}
+
+function pick(texts: AiTexts | null | undefined, lang: AiLang): { lang: string; text: AiText } | null {
+  if (!texts) return null;
+  const own = texts[lang];
+  if (own?.title) return { lang, text: own };
+  const other = Object.keys(texts).find((l) => texts[l]?.title);
+  return other ? { lang: other, text: texts[other]! } : null;
 }
 
 export interface ShownText {
@@ -23,41 +37,48 @@ export interface ShownText {
 }
 
 export function articleTitle(a: Article, lang: AiLang): ShownText {
-  if (a.ai_status === "done") {
-    const t = pick(lang, a.title_tr, a.title_en);
-    if (t) return { text: t, lang: t === (lang === "tr" ? a.title_tr : a.title_en) ? lang : otherLang(lang), translated: true };
-  }
-  return { text: a.title, lang: a.language, translated: false };
+  const p = a.ai_status === "done" ? pick(a.ai_texts, lang) : null;
+  return p ? { text: p.text.title, lang: p.lang, translated: true } : { text: a.title, lang: a.language, translated: false };
 }
 
 export function articleSummary(a: Article, lang: AiLang): string {
-  return (a.ai_status === "done" && pick(lang, a.summary_tr, a.summary_en)) || a.summary;
+  return (a.ai_status === "done" && pick(a.ai_texts, lang)?.text.summary) || a.summary;
 }
 
 export function storyTitle(s: Story, lang: AiLang): ShownText {
-  const done = s.ai_status === "done";
-  const own = done ? pick(lang, s.ai_title_tr, s.ai_title_en) : null;
-  if (own) return { text: own, lang: own === (lang === "tr" ? s.ai_title_tr : s.ai_title_en) ? lang : otherLang(lang), translated: true };
+  const own = s.ai_status === "done" ? pick(s.ai_texts, lang) : null;
+  if (own) return { text: own.text.title, lang: own.lang, translated: true };
   const rep = s.representative;
-  const repAi = rep ? pick(lang, rep.title_tr, rep.title_en) : null;
-  if (repAi) return { text: repAi, lang: repAi === (lang === "tr" ? rep!.title_tr : rep!.title_en) ? lang : otherLang(lang), translated: true };
+  const repAi = rep ? pick(rep.ai_texts, lang) : null;
+  if (repAi) return { text: repAi.text.title, lang: repAi.lang, translated: true };
   return { text: rep?.title ?? "", lang: rep?.language ?? "und", translated: false };
 }
 
 export function storySummaryText(s: Story, lang: AiLang): string {
-  const done = s.ai_status === "done";
   const rep = s.representative;
-  return (done && pick(lang, s.ai_summary_tr, s.ai_summary_en)) || (rep && pick(lang, rep.summary_tr, rep.summary_en)) || rep?.summary || "";
+  return (
+    (s.ai_status === "done" && pick(s.ai_texts, lang)?.text.summary) ||
+    (rep && pick(rep.ai_texts, lang)?.text.summary) ||
+    rep?.summary ||
+    ""
+  );
 }
 
 export function storyWhy(s: Story, lang: AiLang): string | null {
-  return s.ai_status === "done" ? pick(lang, s.ai_why, s.ai_why_en) : null;
+  return (s.ai_status === "done" && pick(s.ai_texts, lang)?.text.why) || null;
+}
+
+/** The AI languages a story can be shown in (its own texts, else its representative report's). */
+export function storyLanguages(s: Story, order: string[] = []): string[] {
+  const own = s.ai_status === "done" ? languagesOf(s.ai_texts, order) : [];
+  return own.length ? own : languagesOf(s.representative?.ai_texts, order);
 }
 
 export function meetingText(item: MeetingItem, lang: AiLang) {
+  const p = pick(item.texts, lang);
   return {
-    title: pick(lang, item.title, item.title_en) ?? item.title,
-    summary: pick(lang, item.summary, item.summary_en),
-    why: pick(lang, item.why, item.why_en),
+    title: p?.text.title || item.title,
+    summary: p?.text.summary || null,
+    why: p?.text.why || null,
   };
 }

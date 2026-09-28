@@ -7,6 +7,7 @@ import { OutputDialog } from "../components/OutputDialog";
 import { StoryDetail } from "../components/StoryDetail";
 import { describeError, useI18n } from "../i18n";
 import { useAutosave } from "../lib/autosave";
+import { meetingText } from "../lib/aiText";
 import { meetingOutput } from "../lib/outputs";
 
 /** Today's meeting list: order by drag (or the arrow buttons), a short reason per proposal, output. */
@@ -132,8 +133,9 @@ export function MeetingPage() {
 }
 
 function MeetingRow({ item, onOpen }: { item: MeetingItem; onOpen: (storyId: number) => void }) {
-  const { t, plural } = useI18n();
+  const { t, plural, lang } = useI18n();
   const meeting = useMeeting();
+  const text = meetingText(item, lang);
   return (
     <div className="meeting-body">
       <div className="article-meta">
@@ -143,14 +145,14 @@ function MeetingRow({ item, onOpen }: { item: MeetingItem; onOpen: (storyId: num
       </div>
       {item.story_id !== null ? (
         <button type="button" className="meeting-title story-open-inline" onClick={() => onOpen(item.story_id!)} title={t("meeting.openStory")}>
-          {item.title}
+          {text.title}
         </button>
       ) : (
-        <p className="meeting-title">{item.title}</p>
+        <p className="meeting-title">{text.title}</p>
       )}
-      {item.summary ? <p className="article-summary">{item.summary}</p> : null}
+      {text.summary ? <p className="article-summary">{text.summary}</p> : null}
       <CommentField key={item.id} item={item} save={(c) => meeting.setComment(item.id, c)} />
-      {item.why ? <p className="field-hint">{t("meeting.aiWhy", { why: item.why })}</p> : null}
+      {text.why ? <p className="field-hint">{t("meeting.aiWhy", { why: text.why })}</p> : null}
     </div>
   );
 }

@@ -43,7 +43,7 @@ const SETTINGS: Settings = {
   "ui.language": "tr",
   "ui.theme": "light",
   "feed.window_hours": 24,
-  "feed.view": "stories", "feed.filters": { regions: [], groups: [], langs: [], sources: [], categories: [], turkey: false }, "update.auto_check": true, "update.auto_download": true, "home.country": "", "home.related": null, "home.topics": null, "home.keywords": [],
+  "feed.view": "stories", "feed.filters": { regions: [], groups: [], langs: [], sources: [], categories: [], turkey: false }, "update.auto_check": true, "update.auto_download": true, "home.country": "", "home.related": null, "home.topics": null, "home.keywords": [], "ai.languages": null,
   "ai.enabled": true,
   "ai.url": "http://localhost:11434",
   "ai.model": "qwen3:14b",
@@ -56,7 +56,7 @@ const META: Meta = {
   groups: ["turkey", "western"],
   languages: ["en", "tr"],
   categories: ["politics", "diplomacy"],
-  ui_languages: ["tr", "en"], home_country: "TR", system_country: "TR",
+  ui_languages: ["tr", "en"], home_country: "TR", system_country: "TR", ai_output_languages: ["tr", "en", "pt", "ar"],
   data_dir: "C:\\data",
   version: "0.3.0",
 };
@@ -78,7 +78,7 @@ function member(id: number, source: string, extra: Partial<StoryMember> = {}): S
   return {
     id, url: `https://x.example/${id}`, title: `Report ${id}`, summary: "", sort_at: NOW, language: "en",
     source_id: id, source_name: source, paywalled: false, exclusive: false, region: "europe", similarity: 0.8, assigned_by: "auto",
-    title_tr: null, summary_tr: null, title_en: null, summary_en: null, ...NO_FULLTEXT, ...extra,
+    ai_texts: {}, ...NO_FULLTEXT, ...extra,
   };
 }
 
@@ -91,7 +91,7 @@ function story(id: number, extra: Partial<Story> = {}): Story {
       tags: [{ kind: "sources", count: 5 }, { kind: "age", hours: 0.5 }, { kind: "spreading", count: 4, hours: 3 }, { kind: "turkey", level: "direct" }],
     },
     turkey_relevance: "direct", category: "diplomacy", representative_id: members[0]!.id, representative: members[0]!,
-    ai_status: "done", ai_title_tr: `Hikâye ${id}`, ai_summary_tr: "Türkçe özet.", ai_why: "Türkiye'yi doğrudan ilgilendiriyor.", ai_title_en: null, ai_summary_en: null, ai_why_en: null,
+    ai_status: "done", ai_texts: { tr: { title: `Hikâye ${id}`, summary: "Türkçe özet.", why: "Türkiye'yi doğrudan ilgilendiriyor." } },
     ai_issues: [], ai_article_count: members.length, ai_model: "qwen3:14b",
     sources: [...new Set(members.map((m) => m.source_name))].sort(), members, timeline: [],
     ...extra,
@@ -118,7 +118,7 @@ beforeEach(() => {
 
 describe("Stories view", () => {
   it("shows ranked story cards with the reasons behind the score", async () => {
-    mocked.stories.mockResolvedValue({ items: [story(1), story(2, { ai_status: null, ai_title_tr: null, ai_why: null })], total: 2 });
+    mocked.stories.mockResolvedValue({ items: [story(1), story(2, { ai_status: null, ai_texts: {} })], total: 2 });
     wrap(<FeedPage />);
     const card = (await screen.findByText("Hikâye 1")).closest("li")!;
     expect(screen.getByText("2 hikâye · 24 saat")).toBeInTheDocument();
@@ -192,7 +192,7 @@ describe("Stories view", () => {
 describe("Story detail", () => {
   const full = story(1, {
     members: [
-      member(10, "Reuters", { title_tr: "Reuters başlığı", language: "en" }),
+      member(10, "Reuters", { ai_texts: { tr: { title: "Reuters başlığı", summary: "" } }, language: "en" }),
       member(11, "BBC", { assigned_by: "user" }),
       member(12, "Al Jazeera", { language: "ar", title: "قمة" }),
     ],
@@ -200,7 +200,7 @@ describe("Story detail", () => {
   });
 
   async function open() {
-    mocked.stories.mockResolvedValue({ items: [story(1), story(2, { ai_title_tr: "Başka olay" })], total: 2 });
+    mocked.stories.mockResolvedValue({ items: [story(1), story(2, { ai_texts: { tr: { title: "Başka olay", summary: "Türkçe özet." } } })], total: 2 });
     mocked.story.mockResolvedValue(full);
     wrap(<FeedPage />);
     await userEvent.click(await screen.findByRole("button", { name: "Hikâye 1" }));
@@ -257,8 +257,8 @@ describe("Story detail", () => {
   });
 
   it("opens the selected story with the keyboard", async () => {
-    mocked.stories.mockResolvedValue({ items: [story(1), story(2, { ai_title_tr: "Başka olay" })], total: 2 });
-    mocked.story.mockResolvedValue(story(2, { ai_title_tr: "Başka olay" }));
+    mocked.stories.mockResolvedValue({ items: [story(1), story(2, { ai_texts: { tr: { title: "Başka olay", summary: "Türkçe özet." } } })], total: 2 });
+    mocked.story.mockResolvedValue(story(2, { ai_texts: { tr: { title: "Başka olay", summary: "Türkçe özet." } } }));
     wrap(<FeedPage />);
     await screen.findByText("Hikâye 1");
     await userEvent.keyboard("jj{Enter}");
@@ -291,18 +291,40 @@ describe("First stories", () => {
   });
 });
 
+describe("The user's AI languages", () => {
+  it("steps a card through Turkish, Portuguese and Arabic, right to left for Arabic", async () => {
+    const s = story(1, { ai_texts: {
+      tr: { title: "Hikâye 1", summary: "Türkçe özet.", why: "" },
+      pt: { title: "História 1", summary: "Resumo em português.", why: "" },
+      ar: { title: "القصة 1", summary: "ملخص عربي.", why: "" },
+    } });
+    mocked.stories.mockResolvedValue({ items: [s], total: 1 });
+    wrap(<FeedPage />, { ...SETTINGS, "ai.languages": ["tr", "pt", "ar"] });
+    const card = (await screen.findByText("Hikâye 1")).closest("li")!;
+    await userEvent.click(within(card).getByRole("button", { name: "Göster: Portekizce" }));
+    expect(within(card).getByText("Resumo em português.")).toBeInTheDocument();
+    await userEvent.click(within(card).getByRole("button", { name: "Göster: Arapça" }));
+    expect(within(card).getByText("القصة 1").closest("h2")).toHaveAttribute("dir", "rtl");
+    await userEvent.click(within(card).getByRole("button", { name: "Göster: Türkçe" }));
+    expect(within(card).getByText("Hikâye 1")).toBeInTheDocument();
+  });
+});
+
 describe("Turkish and English", () => {
   const bilingual = () =>
-    story(1, { ai_title_en: "Story one", ai_summary_en: "English summary.", ai_why_en: "Directly concerns Türkiye." });
+    story(1, { ai_texts: {
+      tr: { title: "Hikâye 1", summary: "Türkçe özet.", why: "Türkiye'yi doğrudan ilgilendiriyor." },
+      en: { title: "Story one", summary: "English summary.", why: "Directly concerns Türkiye." },
+    } });
 
   it("shows the interface language and switches a card to the other one", async () => {
     mocked.stories.mockResolvedValue({ items: [bilingual()], total: 1 });
     wrap(<FeedPage />);
     const card = (await screen.findByText("Hikâye 1")).closest("li")!;
-    await userEvent.click(within(card).getByRole("button", { name: "İngilizcesini göster" }));
+    await userEvent.click(within(card).getByRole("button", { name: "Göster: İngilizce" }));
     expect(within(card).getByText("Story one")).toBeInTheDocument();
     expect(within(card).getByText("English summary.")).toBeInTheDocument();
-    await userEvent.click(within(card).getByRole("button", { name: "Türkçesini göster" }));
+    await userEvent.click(within(card).getByRole("button", { name: "Göster: Türkçe" }));
     expect(within(card).getByText("Hikâye 1")).toBeInTheDocument();
   });
 
@@ -310,7 +332,7 @@ describe("Turkish and English", () => {
     mocked.stories.mockResolvedValue({ items: [bilingual(), story(2)], total: 2 });
     wrap(<FeedPage />, { ...SETTINGS, "ui.language": "en" });
     expect(await screen.findByText("Story one")).toBeInTheDocument();
-    expect(screen.getByText("Hikâye 2")).toBeInTheDocument(); // written before English existed
-    expect(screen.getAllByRole("button", { name: "Show in Turkish" })).toHaveLength(1);
+    expect(screen.getByText("Hikâye 2")).toBeInTheDocument(); // no English text: the Turkish one is shown
+    expect(screen.getAllByRole("button", { name: "Show: Turkish" })).toHaveLength(1);
   });
 });

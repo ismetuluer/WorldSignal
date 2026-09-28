@@ -1,6 +1,6 @@
 {
  "version": 1,
- "checked_at": "2026-09-28T13:36:49Z",
+ "checked_at": "2026-09-28T16:40:43Z",
  "sources": [
   {
    "slug": "nytimes",
@@ -19,9 +19,9 @@
      "verified": true,
      "check": {
       "ok": true,
-      "items": 57,
-      "dated_items": 57,
-      "newest_age_h": 0.2,
+      "items": 58,
+      "dated_items": 58,
+      "newest_age_h": 0.0,
       "feed_language": "en",
       "final_url": "https://rss.nytimes.com/services/xml/rss/nyt/World.xml"
      }
@@ -34,7 +34,7 @@
       "ok": true,
       "items": 21,
       "dated_items": 21,
-      "newest_age_h": 0.2,
+      "newest_age_h": 0.0,
       "feed_language": "en",
       "final_url": "https://rss.nytimes.com/services/xml/rss/nyt/HomePage.xml"
      }
@@ -60,7 +60,7 @@
       "ok": true,
       "items": 71,
       "dated_items": 71,
-      "newest_age_h": 0.0,
+      "newest_age_h": 0.3,
       "feed_language": "en",
       "final_url": "https://feeds.content.dowjones.io/public/rss/RSSWorldNews"
      }
@@ -86,7 +86,7 @@
       "ok": true,
       "items": 25,
       "dated_items": 25,
-      "newest_age_h": 0.4,
+      "newest_age_h": 0.0,
       "feed_language": "en",
       "final_url": "https://www.ft.com/world?format=rss"
      }
@@ -99,7 +99,7 @@
       "ok": true,
       "items": 11,
       "dated_items": 11,
-      "newest_age_h": 0.7,
+      "newest_age_h": 0.5,
       "feed_language": "en",
       "final_url": "https://www.ft.com/rss/home/international"
      }
@@ -125,7 +125,7 @@
       "ok": true,
       "items": 45,
       "dated_items": 45,
-      "newest_age_h": 0.2,
+      "newest_age_h": 0.3,
       "feed_language": "en",
       "final_url": "https://www.theguardian.com/world/rss"
      }
@@ -149,9 +149,9 @@
      "verified": true,
      "check": {
       "ok": true,
-      "items": 6,
-      "dated_items": 6,
-      "newest_age_h": 3.1,
+      "items": 7,
+      "dated_items": 7,
+      "newest_age_h": 1.1,
       "feed_language": null,
       "final_url": "https://feeds.washingtonpost.com/rss/world"
      }
@@ -175,9 +175,9 @@
      "verified": true,
      "check": {
       "ok": true,
-      "items": 25,
-      "dated_items": 25,
-      "newest_age_h": 0.8,
+      "items": 27,
+      "dated_items": 27,
+      "newest_age_h": 0.3,
       "feed_language": "en",
       "final_url": "https://feeds.bbci.co.uk/news/world/rss.xml"
      }
@@ -203,7 +203,7 @@
       "ok": true,
       "items": 300,
       "dated_items": 300,
-      "newest_age_h": 64.8,
+      "newest_age_h": 67.9,
       "feed_language": null,
       "final_url": "https://www.economist.com/international/rss.xml"
      }
@@ -216,7 +216,7 @@
       "ok": true,
       "items": 300,
       "dated_items": 300,
-      "newest_age_h": 96.2,
+      "newest_age_h": 99.3,
       "feed_language": null,
       "final_url": "https://www.economist.com/the-world-this-week/rss.xml"
      }
@@ -242,7 +242,7 @@
       "ok": true,
       "items": 20,
       "dated_items": 20,
-      "newest_age_h": 0.6,
+      "newest_age_h": 0.2,
       "feed_language": "fr",
       "final_url": "https://www.lemonde.fr/international/rss_full.xml"
      }
@@ -268,7 +268,7 @@
       "ok": true,
       "items": 20,
       "dated_items": 20,
-      "newest_age_h": 2.7,
+      "newest_age_h": 0.8,
       "feed_language": "en",
       "final_url": "https://www.lemonde.fr/en/international/rss_full.xml"
      }
@@ -294,7 +294,7 @@
       "ok": true,
       "items": 20,
       "dated_items": 20,
-      "newest_age_h": 1.7,
+      "newest_age_h": 1.3,
       "feed_language": "de",
       "final_url": "https://www.spiegel.de/ausland/index.rss"
      }
@@ -320,7 +320,7 @@
       "ok": true,
       "items": 20,
       "dated_items": 20,
-      "newest_age_h": 118.1,
+      "newest_age_h": 121.2,
       "feed_language": "de",
       "final_url": "https://www.spiegel.de/international/index.rss"
      }
@@ -344,9 +344,9 @@
      "verified": true,
      "check": {
       "ok": true,
-      "items": 41,
-      "dated_items": 41,
-      "newest_age_h": 1.6,
+      "items": 42,
+      "dated_items": 42,
+      "newest_age_h": 0.8,
       "feed_language": "de",
       "final_url": "https://www.faz.net/rss/aktuell/politik/ausland/"
      }
@@ -372,7 +372,7 @@
       "ok": true,
       "items": 20,
       "dated_items": 20,
-      "newest_age_h": 0.3,
+      "newest_age_h": 0.4,
       "feed_language": "fr",
       "final_url": "https://www.lefigaro.fr/rss/figaro_international.xml"
      }
@@ -398,7 +398,7 @@
       "ok": true,
       "items": 23,
       "dated_items": 23,
-      "newest_age_h": 0.9,
+      "newest_age_h": 0.3,
       "feed_language": "es",
       "final_url": "https://feeds.elpais.com/mrss-s/pages/ep/site/elpais.com/section/internacional/portada"
      }
@@ -423,9 +423,9 @@
      "verified": true,
      "check": {
       "ok": true,
-      "items": 11,
-      "dated_items": 11,
-      "newest_age_h": 1.4,
+      "items": 8,
+      "dated_items": 8,
+      "newest_age_h": 0.2,
       "feed_language": null,
       "final_url": "https://www.bing.com/news/search?q=site%3Acorriere.it&format=rss&qft=sortbydate%3d%221%22"
      }
@@ -450,9 +450,9 @@
      "verified": true,
      "check": {
       "ok": true,
-      "items": 11,
-      "dated_items": 11,
-      "newest_age_h": 0.6,
+      "items": 10,
+      "dated_items": 10,
+      "newest_age_h": 0.1,
       "feed_language": null,
       "final_url": "https://www.bing.com/news/search?q=site%3Atelegraph.co.uk&format=rss&qft=sortbydate%3d%221%22"
      }
@@ -476,9 +476,9 @@
      "verified": true,
      "check": {
       "ok": true,
-      "items": 46,
-      "dated_items": 46,
-      "newest_age_h": 0.1,
+      "items": 52,
+      "dated_items": 52,
+      "newest_age_h": 0.2,
       "feed_language": "en",
       "final_url": "https://www.independent.co.uk/news/world/rss"
      }
@@ -494,18 +494,31 @@
    "region": "north_america",
    "language": "en",
    "paywalled": false,
-   "note": "CNN'in RSS yayınları 2023'ten beri güncellenmiyor. Başlıklar Bing Haberler'in herkese açık RSS aramasından (site:cnn.com) gelir; bağlantılar doğrudan CNN sayfasına gider.",
+   "note": "CNN'in RSS yayınları 2023'ten beri güncellenmiyor. Başlıklar Bing Haberler'in herkese açık RSS aramasından (site:cnn.com) gelir; bağlantılar doğrudan CNN sayfasına gider. Başlıklar ayrıca sitenin robots.txt dosyasında izin verdiği haber site haritasından doğrudan okunur.",
    "verified": true,
    "feeds": [
+    {
+     "url": "https://www.cnn.com/sitemap/news.xml",
+     "label": "Haber site haritası",
+     "verified": true,
+     "check": {
+      "ok": true,
+      "items": 106,
+      "dated_items": 106,
+      "newest_age_h": 0.3,
+      "feed_language": "en",
+      "final_url": "https://edition.cnn.com/sitemap/news.xml"
+     }
+    },
     {
      "url": "https://www.bing.com/news/search?q=site%3Acnn.com&format=rss&qft=sortbydate%3d%221%22",
      "label": "Bing Haberler: site:cnn.com",
      "verified": true,
      "check": {
       "ok": true,
-      "items": 10,
-      "dated_items": 10,
-      "newest_age_h": 0.1,
+      "items": 9,
+      "dated_items": 9,
+      "newest_age_h": 0.3,
       "feed_language": null,
       "final_url": "https://www.bing.com/news/search?q=site%3Acnn.com&format=rss&qft=sortbydate%3d%221%22"
      }
@@ -531,7 +544,7 @@
       "ok": true,
       "items": 10,
       "dated_items": 10,
-      "newest_age_h": 1.4,
+      "newest_age_h": 4.4,
       "feed_language": "en",
       "final_url": "https://feeds.npr.org/1004/rss.xml"
      }
@@ -557,7 +570,7 @@
       "ok": true,
       "items": 25,
       "dated_items": 25,
-      "newest_age_h": 13.0,
+      "newest_age_h": 0.9,
       "feed_language": "en",
       "final_url": "https://moxie.foxnews.com/google-publisher/world.xml"
      }
@@ -583,7 +596,7 @@
       "ok": true,
       "items": 25,
       "dated_items": 25,
-      "newest_age_h": 2.0,
+      "newest_age_h": 5.0,
       "feed_language": "en",
       "final_url": "https://feeds.nbcnews.com/nbcnews/public/world"
      }
@@ -609,7 +622,7 @@
       "ok": true,
       "items": 30,
       "dated_items": 30,
-      "newest_age_h": 0.2,
+      "newest_age_h": 0.3,
       "feed_language": null,
       "final_url": "https://www.cbsnews.com/latest/rss/world"
      }
@@ -635,7 +648,7 @@
       "ok": true,
       "items": 25,
       "dated_items": 25,
-      "newest_age_h": 0.5,
+      "newest_age_h": 2.1,
       "feed_language": null,
       "final_url": "https://abcnews.com/abcnews/internationalheadlines"
      }
@@ -661,7 +674,7 @@
       "ok": true,
       "items": 10,
       "dated_items": 10,
-      "newest_age_h": 5.2,
+      "newest_age_h": 8.3,
       "feed_language": "en",
       "final_url": "https://feeds.skynews.com/feeds/rss/world.xml"
      }
@@ -687,7 +700,7 @@
       "ok": true,
       "items": 30,
       "dated_items": 30,
-      "newest_age_h": 23.6,
+      "newest_age_h": 26.7,
       "feed_language": "en",
       "final_url": "https://rss.politico.com/politics-news.xml"
      }
@@ -713,7 +726,7 @@
       "ok": true,
       "items": 100,
       "dated_items": 100,
-      "newest_age_h": 0.2,
+      "newest_age_h": 0.3,
       "feed_language": "en",
       "final_url": "https://api.axios.com/feed/"
      }
@@ -739,7 +752,7 @@
       "ok": true,
       "items": 25,
       "dated_items": 25,
-      "newest_age_h": 9.6,
+      "newest_age_h": 2.3,
       "feed_language": "en",
       "final_url": "https://foreignpolicy.com/feed/"
      }
@@ -765,7 +778,7 @@
       "ok": true,
       "items": 30,
       "dated_items": 30,
-      "newest_age_h": 0.1,
+      "newest_age_h": 0.0,
       "feed_language": "en",
       "final_url": "https://www.cnbc.com/id/100727362/device/rss/rss.html"
      }
@@ -791,7 +804,7 @@
       "ok": true,
       "items": 12,
       "dated_items": 12,
-      "newest_age_h": 2.7,
+      "newest_age_h": 0.1,
       "feed_language": null,
       "final_url": "https://rss.dw.com/rdf/rss-en-world"
      }
@@ -817,7 +830,7 @@
       "ok": true,
       "items": 23,
       "dated_items": 23,
-      "newest_age_h": 1.1,
+      "newest_age_h": 0.9,
       "feed_language": "en",
       "final_url": "https://www.france24.com/en/rss"
      }
@@ -842,9 +855,9 @@
      "verified": true,
      "check": {
       "ok": true,
-      "items": 11,
-      "dated_items": 11,
-      "newest_age_h": 0.2,
+      "items": 9,
+      "dated_items": 9,
+      "newest_age_h": 0.3,
       "feed_language": null,
       "final_url": "https://www.bing.com/news/search?q=site%3Areuters.com&format=rss&qft=sortbydate%3d%221%22"
      }
@@ -855,9 +868,9 @@
      "verified": true,
      "check": {
       "ok": true,
-      "items": 12,
-      "dated_items": 12,
-      "newest_age_h": 0.2,
+      "items": 10,
+      "dated_items": 10,
+      "newest_age_h": 0.6,
       "feed_language": null,
       "final_url": "https://www.bing.com/news/search?q=site%3Areuters.com%2Fworld&format=rss&qft=sortbydate%3d%221%22"
      }
@@ -868,9 +881,9 @@
      "verified": true,
      "check": {
       "ok": true,
-      "items": 12,
-      "dated_items": 12,
-      "newest_age_h": 0.5,
+      "items": 9,
+      "dated_items": 9,
+      "newest_age_h": 0.7,
       "feed_language": null,
       "final_url": "https://www.bing.com/news/search?q=site%3Areuters.com%2Fbusiness&format=rss&qft=sortbydate%3d%221%22"
      }
@@ -883,7 +896,7 @@
       "ok": true,
       "items": 11,
       "dated_items": 11,
-      "newest_age_h": 3.5,
+      "newest_age_h": 6.6,
       "feed_language": null,
       "final_url": "https://www.bing.com/news/search?q=site%3Areuters.com%2Fmarkets&format=rss&qft=sortbydate%3d%221%22"
      }
@@ -896,7 +909,7 @@
       "ok": true,
       "items": 12,
       "dated_items": 12,
-      "newest_age_h": 0.6,
+      "newest_age_h": 3.6,
       "feed_language": null,
       "final_url": "https://www.bing.com/news/search?q=site%3Areuters.com%2Ftechnology&format=rss&qft=sortbydate%3d%221%22"
      }
@@ -907,9 +920,9 @@
      "verified": true,
      "check": {
       "ok": true,
-      "items": 10,
-      "dated_items": 10,
-      "newest_age_h": 0.4,
+      "items": 8,
+      "dated_items": 8,
+      "newest_age_h": 0.3,
       "feed_language": null,
       "final_url": "https://www.bing.com/news/search?q=site%3Areuters.com%2Flegal&format=rss&qft=sortbydate%3d%221%22"
      }
@@ -922,7 +935,7 @@
       "ok": true,
       "items": 11,
       "dated_items": 11,
-      "newest_age_h": 2.7,
+      "newest_age_h": 0.3,
       "feed_language": null,
       "final_url": "https://www.bing.com/news/search?q=site%3Areuters.com%2Fsustainability&format=rss&qft=sortbydate%3d%221%22"
      }
@@ -933,9 +946,9 @@
      "verified": true,
      "check": {
       "ok": true,
-      "items": 11,
-      "dated_items": 11,
-      "newest_age_h": 2.0,
+      "items": 12,
+      "dated_items": 12,
+      "newest_age_h": 0.9,
       "feed_language": null,
       "final_url": "https://www.bing.com/news/search?q=site%3Areuters.com%2Fsports&format=rss&qft=sortbydate%3d%221%22"
      }
@@ -948,7 +961,7 @@
       "ok": true,
       "items": 12,
       "dated_items": 12,
-      "newest_age_h": 7.0,
+      "newest_age_h": 10.1,
       "feed_language": null,
       "final_url": "https://www.bing.com/news/search?q=site%3Areuters.com%2Fscience&format=rss&qft=sortbydate%3d%221%22"
      }
@@ -961,7 +974,7 @@
       "ok": true,
       "items": 12,
       "dated_items": 12,
-      "newest_age_h": 0.5,
+      "newest_age_h": 2.9,
       "feed_language": null,
       "final_url": "https://www.bing.com/news/search?q=site%3Areuters.com%2Fworld%2Fmiddle-east&format=rss&qft=sortbydate%3d%221%22"
      }
@@ -972,9 +985,9 @@
      "verified": true,
      "check": {
       "ok": true,
-      "items": 12,
-      "dated_items": 12,
-      "newest_age_h": 3.7,
+      "items": 11,
+      "dated_items": 11,
+      "newest_age_h": 0.9,
       "feed_language": null,
       "final_url": "https://www.bing.com/news/search?q=site%3Areuters.com%2Fworld%2Feurope&format=rss&qft=sortbydate%3d%221%22"
      }
@@ -987,7 +1000,7 @@
       "ok": true,
       "items": 10,
       "dated_items": 10,
-      "newest_age_h": 1.1,
+      "newest_age_h": 0.9,
       "feed_language": null,
       "final_url": "https://www.bing.com/news/search?q=site%3Areuters.com%2Fworld%2Fasia-pacific&format=rss&qft=sortbydate%3d%221%22"
      }
@@ -1000,7 +1013,7 @@
       "ok": true,
       "items": 11,
       "dated_items": 11,
-      "newest_age_h": 19.0,
+      "newest_age_h": 2.3,
       "feed_language": null,
       "final_url": "https://www.bing.com/news/search?q=site%3Areuters.com%2Fworld%2Fus&format=rss&qft=sortbydate%3d%221%22"
      }
@@ -1013,7 +1026,7 @@
       "ok": true,
       "items": 12,
       "dated_items": 12,
-      "newest_age_h": 1.2,
+      "newest_age_h": 2.5,
       "feed_language": null,
       "final_url": "https://www.bing.com/news/search?q=site%3Areuters.com%2Fworld%2Fafrica&format=rss&qft=sortbydate%3d%221%22"
      }
@@ -1026,7 +1039,7 @@
       "ok": true,
       "items": 12,
       "dated_items": 12,
-      "newest_age_h": 0.6,
+      "newest_age_h": 3.7,
       "feed_language": null,
       "final_url": "https://www.bing.com/news/search?q=site%3Areuters.com%2Fworld%2Famericas&format=rss&qft=sortbydate%3d%221%22"
      }
@@ -1039,7 +1052,7 @@
       "ok": true,
       "items": 12,
       "dated_items": 12,
-      "newest_age_h": 0.2,
+      "newest_age_h": 1.5,
       "feed_language": null,
       "final_url": "https://www.bing.com/news/search?q=site%3Areuters.com%2Fworld%2Fchina&format=rss&qft=sortbydate%3d%221%22"
      }
@@ -1052,7 +1065,7 @@
       "ok": true,
       "items": 12,
       "dated_items": 12,
-      "newest_age_h": 1.1,
+      "newest_age_h": 0.9,
       "feed_language": null,
       "final_url": "https://www.bing.com/news/search?q=site%3Areuters.com%2Fbusiness%2Fenergy&format=rss&qft=sortbydate%3d%221%22"
      }
@@ -1065,7 +1078,7 @@
       "ok": true,
       "items": 12,
       "dated_items": 12,
-      "newest_age_h": 1.3,
+      "newest_age_h": 1.4,
       "feed_language": null,
       "final_url": "https://www.bing.com/news/search?q=site%3Areuters.com%2Fbusiness%2Ffinance&format=rss&qft=sortbydate%3d%221%22"
      }
@@ -1090,8 +1103,8 @@
      "verified": true,
      "check": {
       "ok": true,
-      "items": 10,
-      "dated_items": 10,
+      "items": 9,
+      "dated_items": 9,
       "newest_age_h": 0.2,
       "feed_language": null,
       "final_url": "https://www.bing.com/news/search?q=site%3Aapnews.com&format=rss&qft=sortbydate%3d%221%22"
@@ -1105,7 +1118,7 @@
       "ok": true,
       "items": 12,
       "dated_items": 12,
-      "newest_age_h": 15.5,
+      "newest_age_h": 18.5,
       "feed_language": null,
       "final_url": "https://www.bing.com/news/search?q=site%3Aapnews.com%20world&format=rss&qft=sortbydate%3d%221%22"
      }
@@ -1118,7 +1131,7 @@
       "ok": true,
       "items": 11,
       "dated_items": 11,
-      "newest_age_h": 1.1,
+      "newest_age_h": 4.2,
       "feed_language": null,
       "final_url": "https://www.bing.com/news/search?q=site%3Aapnews.com%20politics&format=rss&qft=sortbydate%3d%221%22"
      }
@@ -1129,9 +1142,9 @@
      "verified": true,
      "check": {
       "ok": true,
-      "items": 12,
-      "dated_items": 12,
-      "newest_age_h": 9.5,
+      "items": 11,
+      "dated_items": 11,
+      "newest_age_h": 12.5,
       "feed_language": null,
       "final_url": "https://www.bing.com/news/search?q=site%3Aapnews.com%20business&format=rss&qft=sortbydate%3d%221%22"
      }
@@ -1142,9 +1155,9 @@
      "verified": true,
      "check": {
       "ok": true,
-      "items": 9,
-      "dated_items": 9,
-      "newest_age_h": 7.5,
+      "items": 11,
+      "dated_items": 11,
+      "newest_age_h": 0.5,
       "feed_language": null,
       "final_url": "https://www.bing.com/news/search?q=site%3Aapnews.com%20sports&format=rss&qft=sortbydate%3d%221%22"
      }
@@ -1157,7 +1170,7 @@
       "ok": true,
       "items": 11,
       "dated_items": 11,
-      "newest_age_h": 2.7,
+      "newest_age_h": 5.8,
       "feed_language": null,
       "final_url": "https://www.bing.com/news/search?q=site%3Aapnews.com%20technology&format=rss&qft=sortbydate%3d%221%22"
      }
@@ -1170,7 +1183,7 @@
       "ok": true,
       "items": 10,
       "dated_items": 10,
-      "newest_age_h": 49.6,
+      "newest_age_h": 52.6,
       "feed_language": null,
       "final_url": "https://www.bing.com/news/search?q=site%3Aapnews.com%20science&format=rss&qft=sortbydate%3d%221%22"
      }
@@ -1183,7 +1196,7 @@
       "ok": true,
       "items": 12,
       "dated_items": 12,
-      "newest_age_h": 25.7,
+      "newest_age_h": 1.0,
       "feed_language": null,
       "final_url": "https://www.bing.com/news/search?q=site%3Aapnews.com%20health&format=rss&qft=sortbydate%3d%221%22"
      }
@@ -1194,8 +1207,8 @@
      "verified": true,
      "check": {
       "ok": true,
-      "items": 12,
-      "dated_items": 12,
+      "items": 11,
+      "dated_items": 11,
       "newest_age_h": 3.7,
       "feed_language": null,
       "final_url": "https://www.bing.com/news/search?q=site%3Aapnews.com%20entertainment&format=rss&qft=sortbydate%3d%221%22"
@@ -1207,9 +1220,9 @@
      "verified": true,
      "check": {
       "ok": true,
-      "items": 12,
-      "dated_items": 12,
-      "newest_age_h": 46.3,
+      "items": 10,
+      "dated_items": 10,
+      "newest_age_h": 49.3,
       "feed_language": null,
       "final_url": "https://www.bing.com/news/search?q=site%3Aapnews.com%20climate&format=rss&qft=sortbydate%3d%221%22"
      }
@@ -1222,7 +1235,7 @@
       "ok": true,
       "items": 11,
       "dated_items": 11,
-      "newest_age_h": 118.6,
+      "newest_age_h": 66.2,
       "feed_language": null,
       "final_url": "https://www.bing.com/news/search?q=site%3Aapnews.com%20Middle%20East&format=rss&qft=sortbydate%3d%221%22"
      }
@@ -1235,7 +1248,7 @@
       "ok": true,
       "items": 12,
       "dated_items": 12,
-      "newest_age_h": 3.5,
+      "newest_age_h": 6.5,
       "feed_language": null,
       "final_url": "https://www.bing.com/news/search?q=site%3Aapnews.com%20Ukraine&format=rss&qft=sortbydate%3d%221%22"
      }
@@ -1248,7 +1261,7 @@
       "ok": true,
       "items": 12,
       "dated_items": 12,
-      "newest_age_h": 44.1,
+      "newest_age_h": 5.2,
       "feed_language": null,
       "final_url": "https://www.bing.com/news/search?q=site%3Aapnews.com%20Europe&format=rss&qft=sortbydate%3d%221%22"
      }
@@ -1261,7 +1274,7 @@
       "ok": true,
       "items": 11,
       "dated_items": 11,
-      "newest_age_h": 5.0,
+      "newest_age_h": 3.1,
       "feed_language": null,
       "final_url": "https://www.bing.com/news/search?q=site%3Aapnews.com%20Asia&format=rss&qft=sortbydate%3d%221%22"
      }
@@ -1274,7 +1287,7 @@
       "ok": true,
       "items": 12,
       "dated_items": 12,
-      "newest_age_h": 4.8,
+      "newest_age_h": 7.9,
       "feed_language": null,
       "final_url": "https://www.bing.com/news/search?q=site%3Aapnews.com%20Africa&format=rss&qft=sortbydate%3d%221%22"
      }
@@ -1285,9 +1298,9 @@
      "verified": true,
      "check": {
       "ok": true,
-      "items": 11,
-      "dated_items": 11,
-      "newest_age_h": 123.6,
+      "items": 10,
+      "dated_items": 10,
+      "newest_age_h": 6.6,
       "feed_language": null,
       "final_url": "https://www.bing.com/news/search?q=site%3Aapnews.com%20Latin%20America&format=rss&qft=sortbydate%3d%221%22"
      }
@@ -1312,8 +1325,8 @@
      "verified": true,
      "check": {
       "ok": true,
-      "items": 12,
-      "dated_items": 12,
+      "items": 9,
+      "dated_items": 9,
       "newest_age_h": 0.7,
       "feed_language": null,
       "final_url": "https://www.bing.com/news/search?q=site%3Aafp.com&format=rss&qft=sortbydate%3d%221%22"
@@ -1327,7 +1340,7 @@
       "ok": true,
       "items": 12,
       "dated_items": 12,
-      "newest_age_h": 4.7,
+      "newest_age_h": 5.1,
       "feed_language": null,
       "final_url": "https://www.bing.com/news/search?q=AFP&format=rss&qft=sortbydate%3d%221%22"
      }
@@ -1353,7 +1366,7 @@
       "ok": true,
       "items": 20,
       "dated_items": 20,
-      "newest_age_h": 0.6,
+      "newest_age_h": 0.1,
       "feed_language": "en",
       "final_url": "https://www.bloomberg.com/feeds/politics/news.rss"
      }
@@ -1417,9 +1430,9 @@
      "verified": true,
      "check": {
       "ok": true,
-      "items": 8,
-      "dated_items": 8,
-      "newest_age_h": 6.2,
+      "items": 9,
+      "dated_items": 9,
+      "newest_age_h": 6.8,
       "feed_language": null,
       "final_url": "https://www.bing.com/news/search?q=site%3Aenglish.news.cn&format=rss&qft=sortbydate%3d%221%22"
      }
@@ -1444,9 +1457,9 @@
      "verified": true,
      "check": {
       "ok": true,
-      "items": 11,
-      "dated_items": 11,
-      "newest_age_h": 0.7,
+      "items": 12,
+      "dated_items": 12,
+      "newest_age_h": 1.3,
       "feed_language": null,
       "final_url": "https://www.bing.com/news/search?q=site%3Aenglish.kyodonews.net&format=rss&qft=sortbydate%3d%221%22"
      }
@@ -1470,9 +1483,9 @@
      "verified": true,
      "check": {
       "ok": true,
-      "items": 103,
-      "dated_items": 103,
-      "newest_age_h": 0.2,
+      "items": 102,
+      "dated_items": 102,
+      "newest_age_h": 1.0,
       "feed_language": "en",
       "final_url": "https://en.yna.co.kr/RSS/news.xml"
      }
@@ -1498,7 +1511,7 @@
       "ok": true,
       "items": 100,
       "dated_items": 100,
-      "newest_age_h": 0.4,
+      "newest_age_h": 1.3,
       "feed_language": null,
       "final_url": "https://www.ansa.it/english/news/english_nr_rss.xml"
      }
@@ -1523,9 +1536,9 @@
      "verified": true,
      "check": {
       "ok": true,
-      "items": 11,
-      "dated_items": 11,
-      "newest_age_h": 0.4,
+      "items": 8,
+      "dated_items": 8,
+      "newest_age_h": 1.2,
       "feed_language": null,
       "final_url": "https://www.bing.com/news/search?q=site%3Aefe.com&format=rss&qft=sortbydate%3d%221%22"
      }
@@ -1551,7 +1564,7 @@
       "ok": true,
       "items": 25,
       "dated_items": 25,
-      "newest_age_h": 0.4,
+      "newest_age_h": 0.7,
       "feed_language": "en",
       "final_url": "https://www.aljazeera.com/xml/rss/all.xml"
      }
@@ -1602,9 +1615,9 @@
      "verified": true,
      "check": {
       "ok": true,
-      "items": 11,
-      "dated_items": 11,
-      "newest_age_h": 2.4,
+      "items": 9,
+      "dated_items": 9,
+      "newest_age_h": 1.0,
       "feed_language": null,
       "final_url": "https://www.bing.com/news/search?q=site%3Aal-monitor.com&format=rss&qft=sortbydate%3d%221%22"
      }
@@ -1620,18 +1633,31 @@
    "region": "middle_east",
    "language": "en",
    "paywalled": false,
-   "note": "Sitenin kendi RSS adresi otomatik okuyuculara erişim izni vermiyor (HTTP 403). Engeli aşmaya çalışmıyoruz. Başlıklar Bing Haberler'in herkese açık RSS aramasından (site:timesofisrael.com) gelir; bağlantılar doğrudan The Times of Israel sayfasına gider.",
+   "note": "Sitenin kendi RSS adresi otomatik okuyuculara erişim izni vermiyor (HTTP 403). Engeli aşmaya çalışmıyoruz. Başlıklar Bing Haberler'in herkese açık RSS aramasından (site:timesofisrael.com) gelir; bağlantılar doğrudan The Times of Israel sayfasına gider. Başlıklar ayrıca sitenin robots.txt dosyasında izin verdiği haber site haritasından doğrudan okunur.",
    "verified": true,
    "feeds": [
+    {
+     "url": "https://www.timesofisrael.com/news-sitemap.xml",
+     "label": "Haber site haritası",
+     "verified": true,
+     "check": {
+      "ok": true,
+      "items": 170,
+      "dated_items": 170,
+      "newest_age_h": 0.1,
+      "feed_language": "en",
+      "final_url": "https://www.timesofisrael.com/news-sitemap.xml"
+     }
+    },
     {
      "url": "https://www.bing.com/news/search?q=site%3Atimesofisrael.com&format=rss&qft=sortbydate%3d%221%22",
      "label": "Bing Haberler: site:timesofisrael.com",
      "verified": true,
      "check": {
       "ok": true,
-      "items": 10,
-      "dated_items": 10,
-      "newest_age_h": 0.4,
+      "items": 8,
+      "dated_items": 8,
+      "newest_age_h": 1.1,
       "feed_language": null,
       "final_url": "https://www.bing.com/news/search?q=site%3Atimesofisrael.com&format=rss&qft=sortbydate%3d%221%22"
      }
@@ -1657,7 +1683,7 @@
       "ok": true,
       "items": 26,
       "dated_items": 26,
-      "newest_age_h": -2.5,
+      "newest_age_h": -2.1,
       "feed_language": null,
       "final_url": "https://www.jpost.com/rss/rssfeedsfrontpage.aspx"
      }
@@ -1683,7 +1709,7 @@
       "ok": true,
       "items": 100,
       "dated_items": 100,
-      "newest_age_h": 2.0,
+      "newest_age_h": 1.3,
       "feed_language": "en",
       "final_url": "https://www.haaretz.com/srv/haaretz-latest-headlines"
      }
@@ -1709,7 +1735,7 @@
       "ok": true,
       "items": 50,
       "dated_items": 50,
-      "newest_age_h": 0.3,
+      "newest_age_h": 0.1,
       "feed_language": "en",
       "final_url": "https://www.arabnews.com/rss.xml"
      }
@@ -1735,7 +1761,7 @@
       "ok": true,
       "items": 300,
       "dated_items": 300,
-      "newest_age_h": 3.5,
+      "newest_age_h": 6.6,
       "feed_language": "ar",
       "final_url": "https://english.aawsat.com/feed"
      }
@@ -1760,9 +1786,9 @@
      "verified": true,
      "check": {
       "ok": true,
-      "items": 12,
-      "dated_items": 12,
-      "newest_age_h": 0.7,
+      "items": 11,
+      "dated_items": 11,
+      "newest_age_h": 0.2,
       "feed_language": null,
       "final_url": "https://www.bing.com/news/search?q=site%3Aenglish.alarabiya.net&format=rss&qft=sortbydate%3d%221%22"
      }
@@ -1786,9 +1812,9 @@
      "verified": true,
      "check": {
       "ok": true,
-      "items": 99,
-      "dated_items": 99,
-      "newest_age_h": 0.1,
+      "items": 100,
+      "dated_items": 100,
+      "newest_age_h": 0.2,
       "feed_language": "en",
       "final_url": "https://www.thenationalnews.com/arc/outboundfeeds/rss/?outputType=xml"
      }
@@ -1814,7 +1840,7 @@
       "ok": true,
       "items": 20,
       "dated_items": 20,
-      "newest_age_h": 0.1,
+      "newest_age_h": 0.5,
       "feed_language": "en",
       "final_url": "https://www.middleeasteye.net/rss"
      }
@@ -1841,7 +1867,7 @@
       "ok": true,
       "items": 11,
       "dated_items": 11,
-      "newest_age_h": 1.2,
+      "newest_age_h": 0.1,
       "feed_language": null,
       "final_url": "https://www.bing.com/news/search?q=site%3Amiddleeastmonitor.com&format=rss&qft=sortbydate%3d%221%22"
      }
@@ -1867,7 +1893,7 @@
       "ok": true,
       "items": 30,
       "dated_items": 30,
-      "newest_age_h": 0.3,
+      "newest_age_h": 0.7,
       "feed_language": "en",
       "final_url": "https://www.tehrantimes.com/rss"
      }
@@ -1919,7 +1945,7 @@
       "ok": true,
       "items": 50,
       "dated_items": 50,
-      "newest_age_h": 1.8,
+      "newest_age_h": 0.8,
       "feed_language": "en",
       "final_url": "https://www.iranintl.com/en/feed"
      }
@@ -1944,9 +1970,9 @@
      "verified": true,
      "check": {
       "ok": true,
-      "items": 11,
-      "dated_items": 11,
-      "newest_age_h": 0.2,
+      "items": 12,
+      "dated_items": 12,
+      "newest_age_h": 0.6,
       "feed_language": null,
       "final_url": "https://www.bing.com/news/search?q=site%3Arudaw.net&format=rss&qft=sortbydate%3d%221%22"
      }
@@ -1971,9 +1997,9 @@
      "verified": true,
      "check": {
       "ok": true,
-      "items": 11,
-      "dated_items": 11,
-      "newest_age_h": 3.5,
+      "items": 10,
+      "dated_items": 10,
+      "newest_age_h": 6.5,
       "feed_language": null,
       "final_url": "https://www.bing.com/news/search?q=site%3Aenglish.ahram.org.eg&format=rss&qft=sortbydate%3d%221%22"
      }
@@ -2049,8 +2075,8 @@
      "verified": true,
      "check": {
       "ok": true,
-      "items": 97,
-      "dated_items": 97,
+      "items": 95,
+      "dated_items": 95,
       "newest_age_h": 0.0,
       "feed_language": "ru",
       "final_url": "https://ria.ru/export/rss2/archive/index.xml"
@@ -2077,7 +2103,7 @@
       "ok": true,
       "items": 25,
       "dated_items": 25,
-      "newest_age_h": 0.1,
+      "newest_age_h": 0.2,
       "feed_language": null,
       "final_url": "https://www.interfax.ru/rss"
      }
@@ -2101,9 +2127,9 @@
      "verified": true,
      "check": {
       "ok": true,
-      "items": 317,
-      "dated_items": 317,
-      "newest_age_h": 0.1,
+      "items": 354,
+      "dated_items": 354,
+      "newest_age_h": 0.2,
       "feed_language": "ru",
       "final_url": "https://www.kommersant.ru/rss/news.xml"
      }
@@ -2155,7 +2181,7 @@
       "ok": true,
       "items": 100,
       "dated_items": 100,
-      "newest_age_h": 3.9,
+      "newest_age_h": 1.0,
       "feed_language": "en",
       "final_url": "https://www.rt.com/rss/news/"
      }
@@ -2181,7 +2207,7 @@
       "ok": true,
       "items": 30,
       "dated_items": 30,
-      "newest_age_h": 6.1,
+      "newest_age_h": 0.1,
       "feed_language": "en",
       "final_url": "https://meduza.io/rss/en/all"
      }
@@ -2207,7 +2233,7 @@
       "ok": true,
       "items": 50,
       "dated_items": 50,
-      "newest_age_h": 1.6,
+      "newest_age_h": 1.2,
       "feed_language": "en",
       "final_url": "https://www.themoscowtimes.com/rss/news"
      }
@@ -2233,7 +2259,7 @@
       "ok": true,
       "items": 15,
       "dated_items": 15,
-      "newest_age_h": 1.0,
+      "newest_age_h": 0.8,
       "feed_language": null,
       "final_url": "https://kyivindependent.com/news-archive/rss/"
      }
@@ -2259,7 +2285,7 @@
       "ok": true,
       "items": 100,
       "dated_items": 100,
-      "newest_age_h": 0.5,
+      "newest_age_h": 1.5,
       "feed_language": "en",
       "final_url": "https://www.kyivpost.com/feed"
      }
@@ -2285,7 +2311,7 @@
       "ok": true,
       "items": 20,
       "dated_items": 20,
-      "newest_age_h": 0.5,
+      "newest_age_h": 0.7,
       "feed_language": "en",
       "final_url": "https://www.pravda.com.ua/eng/rss/"
      }
@@ -2311,7 +2337,7 @@
       "ok": true,
       "items": 30,
       "dated_items": 30,
-      "newest_age_h": 0.3,
+      "newest_age_h": 1.1,
       "feed_language": "en",
       "final_url": "https://www.ukrinform.net/rss/block-lastnews"
      }
@@ -2363,7 +2389,7 @@
       "ok": true,
       "items": 20,
       "dated_items": 20,
-      "newest_age_h": 1.1,
+      "newest_age_h": 4.2,
       "feed_language": "en",
       "final_url": "https://www.rferl.org/api/epiqq"
      }
@@ -2389,7 +2415,7 @@
       "ok": true,
       "items": 50,
       "dated_items": 50,
-      "newest_age_h": 0.1,
+      "newest_age_h": 0.8,
       "feed_language": "en",
       "final_url": "https://www.scmp.com/rss/91/feed/"
      }
@@ -2402,7 +2428,7 @@
       "ok": true,
       "items": 50,
       "dated_items": 50,
-      "newest_age_h": 0.1,
+      "newest_age_h": 1.7,
       "feed_language": "en",
       "final_url": "https://www.scmp.com/rss/4/feed/"
      }
@@ -2454,7 +2480,7 @@
       "ok": true,
       "items": 60,
       "dated_items": 60,
-      "newest_age_h": 0.6,
+      "newest_age_h": 0.1,
       "feed_language": "en",
       "final_url": "https://www.thehindu.com/news/international/feeder/default.rss"
      }
@@ -2480,7 +2506,7 @@
       "ok": true,
       "items": 20,
       "dated_items": 20,
-      "newest_age_h": 0.4,
+      "newest_age_h": 0.5,
       "feed_language": "en",
       "final_url": "https://timesofindia.indiatimes.com/rssfeeds/296589292.cms"
      }
@@ -2506,7 +2532,7 @@
       "ok": true,
       "items": 100,
       "dated_items": 100,
-      "newest_age_h": 0.4,
+      "newest_age_h": 0.2,
       "feed_language": "en",
       "final_url": "https://www.hindustantimes.com/feeds/rss/world-news/rssfeed.xml"
      }
@@ -2532,7 +2558,7 @@
       "ok": true,
       "items": 30,
       "dated_items": 30,
-      "newest_age_h": 1.9,
+      "newest_age_h": 4.9,
       "feed_language": "en",
       "final_url": "https://www.japantimes.co.jp/feed/"
      }
@@ -2558,7 +2584,7 @@
       "ok": true,
       "items": 50,
       "dated_items": 50,
-      "newest_age_h": 0.1,
+      "newest_age_h": 0.6,
       "feed_language": "en",
       "final_url": "https://www.straitstimes.com/news/world/rss.xml"
      }
@@ -2584,7 +2610,7 @@
       "ok": true,
       "items": 20,
       "dated_items": 20,
-      "newest_age_h": 4.0,
+      "newest_age_h": 1.4,
       "feed_language": null,
       "final_url": "https://www.channelnewsasia.com/api/v1/rss-outbound-feed?_format=xml&category=6311"
      }
@@ -2610,7 +2636,7 @@
       "ok": true,
       "items": 25,
       "dated_items": 25,
-      "newest_age_h": 0.3,
+      "newest_age_h": 0.5,
       "feed_language": "en",
       "final_url": "https://www.dawn.com/feeds/home"
      }
@@ -2635,9 +2661,9 @@
      "verified": true,
      "check": {
       "ok": true,
-      "items": 11,
-      "dated_items": 11,
-      "newest_age_h": 1.6,
+      "items": 10,
+      "dated_items": 10,
+      "newest_age_h": 0.1,
       "feed_language": null,
       "final_url": "https://www.bing.com/news/search?q=site%3Achinadaily.com.cn&format=rss&qft=sortbydate%3d%221%22"
      }
@@ -2664,7 +2690,7 @@
       "ok": true,
       "items": 12,
       "dated_items": 12,
-      "newest_age_h": 0.6,
+      "newest_age_h": 0.5,
       "feed_language": null,
       "final_url": "https://www.bing.com/news/search?q=site%3Aglobaltimes.cn&format=rss&qft=sortbydate%3d%221%22"
      }
@@ -2690,7 +2716,7 @@
       "ok": true,
       "items": 50,
       "dated_items": 50,
-      "newest_age_h": 0.1,
+      "newest_age_h": 3.2,
       "feed_language": "the korea herald",
       "final_url": "https://www.koreaherald.com/rss/newsAll"
      }
@@ -2716,7 +2742,7 @@
       "ok": true,
       "items": 96,
       "dated_items": 96,
-      "newest_age_h": 10.6,
+      "newest_age_h": 1.9,
       "feed_language": "en",
       "final_url": "https://thediplomat.com/feed/"
      }
@@ -2742,7 +2768,7 @@
       "ok": true,
       "items": 25,
       "dated_items": 25,
-      "newest_age_h": 0.1,
+      "newest_age_h": 0.4,
       "feed_language": "ru",
       "final_url": "https://www.trend.az/feeds/index.rss"
      }
@@ -2768,7 +2794,7 @@
       "ok": true,
       "items": 50,
       "dated_items": 50,
-      "newest_age_h": 0.1,
+      "newest_age_h": 0.2,
       "feed_language": "az",
       "final_url": "https://apa.az/rss"
      }
@@ -2794,7 +2820,7 @@
       "ok": true,
       "items": 50,
       "dated_items": 50,
-      "newest_age_h": 1.0,
+      "newest_age_h": 0.7,
       "feed_language": "en",
       "final_url": "https://www.euronews.com/rss?level=theme&name=news"
      }
@@ -2820,7 +2846,7 @@
       "ok": true,
       "items": 10,
       "dated_items": 10,
-      "newest_age_h": 1.2,
+      "newest_age_h": 0.2,
       "feed_language": "en",
       "final_url": "https://www.politico.eu/feed/"
      }
@@ -2845,9 +2871,9 @@
      "verified": true,
      "check": {
       "ok": true,
-      "items": 11,
-      "dated_items": 11,
-      "newest_age_h": 1.0,
+      "items": 8,
+      "dated_items": 8,
+      "newest_age_h": 0.7,
       "feed_language": null,
       "final_url": "https://www.bing.com/news/search?q=site%3Aeuractiv.com&format=rss&qft=sortbydate%3d%221%22"
      }
@@ -2873,7 +2899,7 @@
       "ok": true,
       "items": 20,
       "dated_items": 20,
-      "newest_age_h": 4.1,
+      "newest_age_h": 0.3,
       "feed_language": "en",
       "final_url": "https://euobserver.com/feed/"
      }
@@ -2889,9 +2915,22 @@
    "region": "europe",
    "language": "en",
    "paywalled": false,
-   "note": "Sitenin kendi RSS adresi otomatik okuyuculara erişim izni vermiyor (HTTP 403). Engeli aşmaya çalışmıyoruz. Başlıklar Bing Haberler'in herkese açık RSS aramasından (site:ekathimerini.com) gelir; bağlantılar doğrudan Kathimerini (English) sayfasına gider.",
+   "note": "Sitenin kendi RSS adresi otomatik okuyuculara erişim izni vermiyor (HTTP 403). Engeli aşmaya çalışmıyoruz. Başlıklar Bing Haberler'in herkese açık RSS aramasından (site:ekathimerini.com) gelir; bağlantılar doğrudan Kathimerini (English) sayfasına gider. Başlıklar ayrıca sitenin robots.txt dosyasında izin verdiği haber site haritasından doğrudan okunur.",
    "verified": true,
    "feeds": [
+    {
+     "url": "https://www.ekathimerini.com/infeeds/googlenews/nx-googlenews-feed.xml",
+     "label": "Haber site haritası",
+     "verified": true,
+     "check": {
+      "ok": true,
+      "items": 40,
+      "dated_items": 40,
+      "newest_age_h": 0.3,
+      "feed_language": "el",
+      "final_url": "https://www.ekathimerini.com/infeeds/googlenews/nx-googlenews-feed.xml"
+     }
+    },
     {
      "url": "https://www.bing.com/news/search?q=site%3Aekathimerini.com&format=rss&qft=sortbydate%3d%221%22",
      "label": "Bing Haberler: site:ekathimerini.com",
@@ -2900,7 +2939,7 @@
       "ok": true,
       "items": 11,
       "dated_items": 11,
-      "newest_age_h": 0.3,
+      "newest_age_h": 0.2,
       "feed_language": null,
       "final_url": "https://www.bing.com/news/search?q=site%3Aekathimerini.com&format=rss&qft=sortbydate%3d%221%22"
      }
@@ -2926,7 +2965,7 @@
       "ok": true,
       "items": 20,
       "dated_items": 20,
-      "newest_age_h": 0.0,
+      "newest_age_h": 0.1,
       "feed_language": "el",
       "final_url": "https://cyprus-mail.com/feed/"
      }
@@ -2952,7 +2991,7 @@
       "ok": true,
       "items": 90,
       "dated_items": 90,
-      "newest_age_h": 0.2,
+      "newest_age_h": 3.3,
       "feed_language": "en",
       "final_url": "https://balkaninsight.com/feed/"
      }
@@ -2978,7 +3017,7 @@
       "ok": true,
       "items": 50,
       "dated_items": 50,
-      "newest_age_h": 0.9,
+      "newest_age_h": 0.5,
       "feed_language": null,
       "final_url": "https://www.africanews.com/feed/rss"
      }
@@ -3005,7 +3044,7 @@
       "ok": true,
       "items": 33,
       "dated_items": 33,
-      "newest_age_h": 0.0,
+      "newest_age_h": 2.5,
       "feed_language": "en",
       "final_url": "https://allafrica.com/tools/headlines/rdf/latest/headlines.rdf"
      }
@@ -3018,7 +3057,7 @@
       "ok": true,
       "items": 7,
       "dated_items": 7,
-      "newest_age_h": 0.3,
+      "newest_age_h": 0.8,
       "feed_language": null,
       "final_url": "https://www.bing.com/news/search?q=site%3Aallafrica.com&format=rss&qft=sortbydate%3d%221%22"
      }
@@ -3044,7 +3083,7 @@
       "ok": true,
       "items": 10,
       "dated_items": 10,
-      "newest_age_h": 4.1,
+      "newest_age_h": 7.1,
       "feed_language": "en",
       "final_url": "https://en.mercopress.com/rss"
      }
@@ -3070,7 +3109,7 @@
       "ok": true,
       "items": 30,
       "dated_items": 30,
-      "newest_age_h": 0.1,
+      "newest_age_h": 0.0,
       "feed_language": "tr",
       "final_url": "https://www.aa.com.tr/tr/rss/default?cat=guncel"
      }
@@ -3083,7 +3122,7 @@
       "ok": true,
       "items": 30,
       "dated_items": 30,
-      "newest_age_h": 0.8,
+      "newest_age_h": 1.6,
       "feed_language": "tr",
       "final_url": "https://www.aa.com.tr/tr/rss/default?cat=dunya"
      }
@@ -3096,7 +3135,7 @@
       "ok": true,
       "items": 30,
       "dated_items": 30,
-      "newest_age_h": 0.5,
+      "newest_age_h": 0.9,
       "feed_language": "tr",
       "final_url": "https://www.aa.com.tr/tr/rss/default?cat=ekonomi"
      }
@@ -3109,7 +3148,7 @@
       "ok": true,
       "items": 30,
       "dated_items": 30,
-      "newest_age_h": 1.4,
+      "newest_age_h": 1.8,
       "feed_language": "tr",
       "final_url": "https://www.aa.com.tr/tr/rss/default?cat=spor"
      }
@@ -3135,7 +3174,7 @@
       "ok": true,
       "items": 50,
       "dated_items": 50,
-      "newest_age_h": 1.0,
+      "newest_age_h": 0.1,
       "feed_language": "tr",
       "final_url": "https://www.trthaber.com/sondakika.rss"
      }
@@ -3148,7 +3187,7 @@
       "ok": true,
       "items": 60,
       "dated_items": 60,
-      "newest_age_h": 0.1,
+      "newest_age_h": 1.4,
       "feed_language": "tr",
       "final_url": "https://www.trthaber.com/dunya_articles.rss"
      }
@@ -3200,7 +3239,7 @@
       "ok": true,
       "items": 10,
       "dated_items": 10,
-      "newest_age_h": 1.1,
+      "newest_age_h": 0.2,
       "feed_language": "tr",
       "final_url": "https://www.sabah.com.tr/rss/anasayfa.xml"
      }
@@ -3213,7 +3252,7 @@
       "ok": true,
       "items": 10,
       "dated_items": 10,
-      "newest_age_h": 3.8,
+      "newest_age_h": 0.3,
       "feed_language": "tr",
       "final_url": "https://www.sabah.com.tr/rss/dunya.xml"
      }
@@ -3239,7 +3278,7 @@
       "ok": true,
       "items": 100,
       "dated_items": 100,
-      "newest_age_h": 0.4,
+      "newest_age_h": 0.5,
       "feed_language": "tr",
       "final_url": "https://www.ahaber.com.tr/rss/anasayfa.xml"
      }
@@ -3252,7 +3291,7 @@
       "ok": true,
       "items": 100,
       "dated_items": 100,
-      "newest_age_h": 1.2,
+      "newest_age_h": 0.5,
       "feed_language": "tr",
       "final_url": "https://www.ahaber.com.tr/rss/dunya.xml"
      }
@@ -3278,7 +3317,7 @@
       "ok": true,
       "items": 50,
       "dated_items": 50,
-      "newest_age_h": 0.5,
+      "newest_age_h": 0.1,
       "feed_language": "en",
       "final_url": "https://www.anews.com.tr/rss/world.xml"
      }
@@ -3304,7 +3343,7 @@
       "ok": true,
       "items": 42,
       "dated_items": 42,
-      "newest_age_h": 0.5,
+      "newest_age_h": 0.7,
       "feed_language": "en",
       "final_url": "https://www.dailysabah.com/rss/world"
      }
@@ -3317,7 +3356,7 @@
       "ok": true,
       "items": 50,
       "dated_items": 50,
-      "newest_age_h": 4.7,
+      "newest_age_h": 7.7,
       "feed_language": "en",
       "final_url": "https://www.dailysabah.com/rss/turkiye"
      }
@@ -3343,7 +3382,7 @@
       "ok": true,
       "items": 69,
       "dated_items": 69,
-      "newest_age_h": 0.6,
+      "newest_age_h": 2.1,
       "feed_language": null,
       "final_url": "https://www.hurriyet.com.tr/rss/anasayfa"
      }
@@ -3356,7 +3395,7 @@
       "ok": true,
       "items": 99,
       "dated_items": 99,
-      "newest_age_h": 1.0,
+      "newest_age_h": 0.3,
       "feed_language": null,
       "final_url": "https://www.hurriyet.com.tr/rss/dunya"
      }
@@ -3382,7 +3421,7 @@
       "ok": true,
       "items": 100,
       "dated_items": 100,
-      "newest_age_h": 1.8,
+      "newest_age_h": 4.0,
       "feed_language": null,
       "final_url": "https://www.hurriyetdailynews.com/rss/world"
      }
@@ -3395,7 +3434,7 @@
       "ok": true,
       "items": 100,
       "dated_items": 100,
-      "newest_age_h": 0.6,
+      "newest_age_h": 3.7,
       "feed_language": null,
       "final_url": "https://www.hurriyetdailynews.com/rss/turkey"
      }
@@ -3421,7 +3460,7 @@
       "ok": true,
       "items": 50,
       "dated_items": 50,
-      "newest_age_h": 0.1,
+      "newest_age_h": 0.4,
       "feed_language": "tr",
       "final_url": "https://www.milliyet.com.tr/rss/rssnew/dunyarss.xml"
      }
@@ -3447,7 +3486,7 @@
       "ok": true,
       "items": 35,
       "dated_items": 35,
-      "newest_age_h": -2.4,
+      "newest_age_h": -2.7,
       "feed_language": "tr",
       "final_url": "https://www.cnnturk.com/feed/rss/dunya/news"
      }
@@ -3486,7 +3525,7 @@
       "ok": true,
       "items": 20,
       "dated_items": 20,
-      "newest_age_h": 0.1,
+      "newest_age_h": 3.2,
       "feed_language": null,
       "final_url": "https://www.ntv.com.tr/dunya.rss"
      }
@@ -3499,7 +3538,7 @@
       "ok": true,
       "items": 20,
       "dated_items": 20,
-      "newest_age_h": 0.1,
+      "newest_age_h": 0.2,
       "feed_language": null,
       "final_url": "https://www.ntv.com.tr/son-dakika.rss"
      }
@@ -3525,7 +3564,7 @@
       "ok": true,
       "items": 30,
       "dated_items": 30,
-      "newest_age_h": 0.8,
+      "newest_age_h": 0.6,
       "feed_language": "tr",
       "final_url": "https://www.haberturk.com/rss/kategori/dunya.xml"
      }
@@ -3538,7 +3577,7 @@
       "ok": true,
       "items": 100,
       "dated_items": 100,
-      "newest_age_h": 0.4,
+      "newest_age_h": 0.1,
       "feed_language": "tr",
       "final_url": "https://www.haberturk.com/rss"
      }
@@ -3590,7 +3629,7 @@
       "ok": true,
       "items": 50,
       "dated_items": 50,
-      "newest_age_h": 0.5,
+      "newest_age_h": 0.2,
       "feed_language": "tr",
       "final_url": "https://www.sozcu.com.tr/feeds-rss-category-dunya"
      }
@@ -3603,7 +3642,7 @@
       "ok": true,
       "items": 50,
       "dated_items": 50,
-      "newest_age_h": 0.1,
+      "newest_age_h": 0.0,
       "feed_language": "tr",
       "final_url": "https://www.sozcu.com.tr/rss/dunya.xml"
      }
@@ -3654,9 +3693,9 @@
      "verified": true,
      "check": {
       "ok": true,
-      "items": 11,
-      "dated_items": 11,
-      "newest_age_h": 0.2,
+      "items": 9,
+      "dated_items": 9,
+      "newest_age_h": 0.3,
       "feed_language": null,
       "final_url": "https://www.bing.com/news/search?q=site%3At24.com.tr&format=rss&qft=sortbydate%3d%221%22"
      }
@@ -3681,9 +3720,9 @@
      "verified": true,
      "check": {
       "ok": true,
-      "items": 9,
-      "dated_items": 9,
-      "newest_age_h": 2.6,
+      "items": 10,
+      "dated_items": 10,
+      "newest_age_h": 0.1,
       "feed_language": null,
       "final_url": "https://www.bing.com/news/search?q=site%3Adha.com.tr&format=rss&qft=sortbydate%3d%221%22"
      }
@@ -3733,7 +3772,7 @@
       "ok": true,
       "items": 20,
       "dated_items": 20,
-      "newest_age_h": 0.5,
+      "newest_age_h": 0.1,
       "feed_language": "tr",
       "final_url": "https://feeds.bbci.co.uk/turkce/rss.xml"
      }
@@ -3785,7 +3824,7 @@
       "ok": true,
       "items": 50,
       "dated_items": 50,
-      "newest_age_h": 0.4,
+      "newest_age_h": 0.3,
       "feed_language": "tr",
       "final_url": "https://tr.euronews.com/rss"
      }
@@ -3811,7 +3850,7 @@
       "ok": true,
       "items": 10,
       "dated_items": 10,
-      "newest_age_h": 0.8,
+      "newest_age_h": 0.3,
       "feed_language": "tr",
       "final_url": "https://www.indyturk.com/rss.xml"
      }
@@ -3837,7 +3876,7 @@
       "ok": true,
       "items": 100,
       "dated_items": 100,
-      "newest_age_h": 0.4,
+      "newest_age_h": 0.3,
       "feed_language": "tr",
       "final_url": "https://anlatilaninotesi.com.tr/export/rss2/archive/index.xml"
      }
@@ -3853,18 +3892,31 @@
    "region": "turkey",
    "language": "tr",
    "paywalled": false,
-   "note": "Bloomberg HT'nin RSS yayını güncellenmiyor. Başlıklar Bing Haberler'in herkese açık RSS aramasından (site:bloomberght.com) gelir; bağlantılar doğrudan Bloomberg HT sayfasına gider.",
+   "note": "Bloomberg HT'nin RSS yayını güncellenmiyor. Başlıklar Bing Haberler'in herkese açık RSS aramasından (site:bloomberght.com) gelir; bağlantılar doğrudan Bloomberg HT sayfasına gider. Başlıklar ayrıca sitenin robots.txt dosyasında izin verdiği haber site haritasından doğrudan okunur.",
    "verified": true,
    "feeds": [
+    {
+     "url": "https://www.bloomberght.com/sitemap_google_news.xml",
+     "label": "Haber site haritası",
+     "verified": true,
+     "check": {
+      "ok": true,
+      "items": 79,
+      "dated_items": 79,
+      "newest_age_h": 1.1,
+      "feed_language": "tr",
+      "final_url": "https://www.bloomberght.com/sitemap_google_news.xml"
+     }
+    },
     {
      "url": "https://www.bing.com/news/search?q=site%3Abloomberght.com&format=rss&qft=sortbydate%3d%221%22",
      "label": "Bing Haberler: site:bloomberght.com",
      "verified": true,
      "check": {
       "ok": true,
-      "items": 11,
-      "dated_items": 11,
-      "newest_age_h": 0.3,
+      "items": 10,
+      "dated_items": 10,
+      "newest_age_h": 1.5,
       "feed_language": null,
       "final_url": "https://www.bing.com/news/search?q=site%3Abloomberght.com&format=rss&qft=sortbydate%3d%221%22"
      }
@@ -3890,7 +3942,7 @@
       "ok": true,
       "items": 25,
       "dated_items": 25,
-      "newest_age_h": 0.3,
+      "newest_age_h": 0.7,
       "feed_language": "tr",
       "final_url": "https://www.dunya.com/rss"
      }
@@ -3917,7 +3969,7 @@
       "ok": true,
       "items": 12,
       "dated_items": 12,
-      "newest_age_h": 0.5,
+      "newest_age_h": 1.4,
       "feed_language": null,
       "final_url": "https://www.bing.com/news/search?q=site%3Aturkiyetoday.com&format=rss&qft=sortbydate%3d%221%22"
      }
@@ -3943,7 +3995,7 @@
       "ok": true,
       "items": 50,
       "dated_items": 50,
-      "newest_age_h": 0.4,
+      "newest_age_h": 0.5,
       "feed_language": "tr",
       "final_url": "https://www.fotomac.com.tr/rss/anasayfa.xml"
      }
@@ -3969,7 +4021,7 @@
       "ok": true,
       "items": 100,
       "dated_items": 100,
-      "newest_age_h": 0.1,
+      "newest_age_h": 0.7,
       "feed_language": "tr",
       "final_url": "https://www.aspor.com.tr/rss/anasayfa.xml"
      }
@@ -4045,9 +4097,9 @@
      "verified": true,
      "check": {
       "ok": true,
-      "items": 76,
-      "dated_items": 76,
-      "newest_age_h": 0.3,
+      "items": 75,
+      "dated_items": 75,
+      "newest_age_h": 0.6,
       "feed_language": "en",
       "final_url": "https://feeds.bbci.co.uk/sport/rss.xml"
      }
@@ -4060,7 +4112,7 @@
       "ok": true,
       "items": 73,
       "dated_items": 73,
-      "newest_age_h": 0.1,
+      "newest_age_h": 1.2,
       "feed_language": "en",
       "final_url": "https://feeds.bbci.co.uk/sport/football/rss.xml"
      }
@@ -4086,7 +4138,7 @@
       "ok": true,
       "items": 46,
       "dated_items": 46,
-      "newest_age_h": 0.6,
+      "newest_age_h": 0.8,
       "feed_language": "en",
       "final_url": "https://www.theguardian.com/uk/sport/rss"
      }
@@ -4099,7 +4151,7 @@
       "ok": true,
       "items": 58,
       "dated_items": 58,
-      "newest_age_h": 0.6,
+      "newest_age_h": 0.8,
       "feed_language": "en",
       "final_url": "https://www.theguardian.com/football/rss"
      }
@@ -4125,7 +4177,7 @@
       "ok": true,
       "items": 20,
       "dated_items": 20,
-      "newest_age_h": -0.5,
+      "newest_age_h": -0.8,
       "feed_language": "en",
       "final_url": "https://www.skysports.com/rss/12040"
      }
@@ -4138,7 +4190,7 @@
       "ok": true,
       "items": 20,
       "dated_items": 20,
-      "newest_age_h": -0.5,
+      "newest_age_h": 0.7,
       "feed_language": "en",
       "final_url": "https://www.skysports.com/rss/11095"
      }
@@ -4162,9 +4214,9 @@
      "verified": true,
      "check": {
       "ok": true,
-      "items": 38,
-      "dated_items": 38,
-      "newest_age_h": -0.8,
+      "items": 42,
+      "dated_items": 42,
+      "newest_age_h": -0.7,
       "feed_language": "en",
       "final_url": "https://www.espn.com/espn/rss/news"
      }
@@ -4175,9 +4227,9 @@
      "verified": true,
      "check": {
       "ok": true,
-      "items": 21,
-      "dated_items": 21,
-      "newest_age_h": 0.1,
+      "items": 22,
+      "dated_items": 22,
+      "newest_age_h": 0.9,
       "feed_language": "en",
       "final_url": "https://www.espn.com/espn/rss/soccer/news"
      }
@@ -4229,7 +4281,7 @@
       "ok": true,
       "items": 50,
       "dated_items": 50,
-      "newest_age_h": 0.8,
+      "newest_age_h": 0.1,
       "feed_language": "es",
       "final_url": "https://e00-marca.uecdn.es/rss/futbol/primera-division.xml"
      }
@@ -4253,8 +4305,8 @@
      "verified": true,
      "check": {
       "ok": true,
-      "items": 69,
-      "dated_items": 69,
+      "items": 68,
+      "dated_items": 68,
       "newest_age_h": 0.1,
       "feed_language": "es",
       "final_url": "https://feeds.as.com/mrss-s/pages/as/site/as.com/portada"
@@ -4281,7 +4333,7 @@
       "ok": true,
       "items": 50,
       "dated_items": 50,
-      "newest_age_h": 0.3,
+      "newest_age_h": 0.5,
       "feed_language": "fr",
       "final_url": "https://dwh.lequipe.fr/api/edito/rss?path=/"
      }
@@ -4307,7 +4359,7 @@
       "ok": true,
       "items": 20,
       "dated_items": 20,
-      "newest_age_h": 0.3,
+      "newest_age_h": 0.6,
       "feed_language": "de",
       "final_url": "https://newsfeed.kicker.de/news/aktuell"
      }
@@ -4320,7 +4372,7 @@
       "ok": true,
       "items": 20,
       "dated_items": 20,
-      "newest_age_h": 0.3,
+      "newest_age_h": 0.6,
       "feed_language": "de",
       "final_url": "https://newsfeed.kicker.de/news/fussball"
      }
@@ -4345,8 +4397,8 @@
      "verified": true,
      "check": {
       "ok": true,
-      "items": 11,
-      "dated_items": 11,
+      "items": 10,
+      "dated_items": 10,
       "newest_age_h": 0.1,
       "feed_language": null,
       "final_url": "https://www.bing.com/news/search?q=site%3Agazzetta.it&format=rss&qft=sortbydate%3d%221%22"
@@ -4372,9 +4424,9 @@
      "verified": true,
      "check": {
       "ok": true,
-      "items": 10,
-      "dated_items": 10,
-      "newest_age_h": 1.5,
+      "items": 8,
+      "dated_items": 8,
+      "newest_age_h": 2.5,
       "feed_language": null,
       "final_url": "https://www.bing.com/news/search?q=site%3Auefa.com&format=rss&qft=sortbydate%3d%221%22"
      }
