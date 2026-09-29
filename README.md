@@ -14,8 +14,45 @@ Arayüz Türkçe ve İngilizcedir.
 
 ---
 
+## Ekran görüntüleri
+
+Aşağıdakiler programın gerçek ekranlarıdır (herkese açık haber akışlarından gelen verilerle).
+
+<p align="center"><img src="docs/screenshots/feed-tr.png" alt="Akış: önem sırasına dizilmiş hikâye kartları" width="860"></p>
+
+**Akış.** Aynı olayı anlatan haberler tek kartta, önem sırasıyla. Kartın altındaki etiketler skorun nedenini söyler
+("43 kaynak", "3 saatte 3 kaynak", "Türkiye bağlantısı"); "İlk veren" olayı ilk yayımlayan kaynağı gösterir.
+
+<p align="center"><img src="docs/screenshots/story-tr.png" alt="Hikâye ayrıntısı: özet, skorun dökümü, notlar" width="760"></p>
+
+**Hikâye ayrıntısı.** Özet, skorun nasıl hesaplandığı, günlere göre gelişim, tüm haberler ve notlarınız.
+
+<p align="center"><img src="docs/screenshots/meeting-tr.png" alt="Toplantı listesi" width="760"></p>
+
+**Toplantı listesi.** Hikâyeler tek tıkla eklenir, sürükleyerek sıralanır, her öneriye kısa bir not yazılır.
+
+<p align="center"><img src="docs/screenshots/addpage-tr.png" alt="Sayfa ekle penceresi" width="560"></p>
+
+**Sayfa ekle.** Programları içeri almayan siteler (The Economist, WSJ…) için: haberi kendi tarayıcınızda okuyun, yer
+imine tıklayın, buraya yapıştırın. Haber tam metniyle eklenir.
+
+<p align="center"><img src="docs/screenshots/stats-tr.png" alt="İstatistik: konu trendi" width="860"></p>
+
+**İstatistik.** Bir konunun saat saat izi ve gündemdeki payı, kategori ve bölge dağılımı, yükselen hikâyeler.
+
+<p align="center"><img src="docs/screenshots/sources-tr.png" alt="Kaynaklar" width="860"></p>
+
+**Kaynaklar.** Kaynakları açıp kapatın, kendi RSS adresinizi ekleyin; çalışmayan akışlar kırmızıyla ve nedeniyle görünür.
+
+<p align="center"><img src="docs/screenshots/feed-dark-tr.png" alt="Koyu tema" width="860"></p>
+
+**Koyu tema.** Açık, koyu ya da Windows'a uyan tema.
+
+---
+
 ## İçindekiler
 
+- [Ekran görüntüleri](#ekran-görüntüleri)
 - [Neler yapar?](#neler-yapar)
 - [Kurulum](#kurulum)
 - [Güncellemeler](#güncellemeler)
@@ -172,7 +209,7 @@ bir sayı varsa "Dikkat" uyarısı gösterilir.
 - **Akış** — *Hikâyeler* görünümü aynı olayın haberlerini tek kartta, önem sırasıyla gösterir; kartın altındaki
   etiketler nedenini söyler ("5 kaynak", "3 saatte 4 kaynak", "Türkiye bağlantısı"). *Haberler* görünümü tek tek en
   yeni haberlerdir. Üstte arama, zaman aralığı ve filtreler var (bölge, kaynak grubu, dil, kategori, kaynak,
-  "Türkiye bağlantılı"). **Seçtiğiniz filtreler hatırlanır.** Kaynak grubu filtresinde iki özel seçenek daha var:
+  "Türkiye bağlantılı"). Bölge filtresinde **Yerel dışı**, Türkiye dışındaki tüm kaynaklardır. **Seçtiğiniz filtreler hatırlanır.** Kaynak grubu filtresinde iki özel seçenek daha var:
   **Özel haberler** (yayıncının "Özel haber" / "Exclusive" diye işaretledikleri) ve **Makaleler** (görüş, analiz,
   köşe yazısı); ikisi de her kaynaktan toplanır.
 - **Ülkem** — "(Ülkeniz) bağlantılı" filtresi ve etiketleri Ayarlar → **Ülkem**'de seçtiğiniz ülkeye göre çalışır
@@ -190,7 +227,9 @@ bir sayı varsa "Dikkat" uyarısı gösterilir.
 - **Çalışma saatleri** — Ayarlar → Arka plan. Varsayılan gece gündüz sürekli çalışmadır (programı hep açık
   bırakabilirsiniz); isterseniz bir saat aralığı seçersiniz, dışında haber toplama, yapay zekâ ve tam metin dinlenir.
   Elle istedikleriniz (Özetle, tam metni getir, Şimdi tara) yine yapılır.
-- **Hikâye ayrıntısı** — özet, skorun dökümü, günlere göre gelişim, tüm haberler ve bağlantıları, notlarınız.
+- **Hikâye ayrıntısı** — özet, skorun dökümü, günlere göre gelişim, tüm haberler ve bağlantıları, notlarınız. Kartta
+  **İlk veren** olayı ilk yayımlayan kaynağı gösterir; kaynaklar bir olguda birbirini yalanlıyorsa yapay zekâ
+  **Kaynaklar çelişiyor** notuyla farkı yazar (yalnızca yeni yazılan özetlerde).
   Yanlış gruplanmış haberi **Bu hikâyeden ayır**, aynı olayı anlatan iki hikâyeyi **Başka hikâyeyle birleştir**.
 - **Toplantı** — bugünün öneri listesi. Hikâyeyi **Toplantıya ekle** (ya da `T`), sürükleyerek sırala, her öneriye kısa
   gerekçe yaz.

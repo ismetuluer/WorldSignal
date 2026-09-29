@@ -12,8 +12,45 @@ Portuguese. It also has a meeting list, a notebook, past days and printable outp
 
 ---
 
+## Screenshots
+
+These are real screens of the program (with data from public news feeds).
+
+<p align="center"><img src="docs/screenshots/feed-en.png" alt="Feed: story cards in order of importance" width="860"></p>
+
+**Feed.** Reports of the same event on one card, in order of importance. The labels under each card say why the score
+is high ("43 sources", "3 sources in 3 h", "Türkiye link"); "First to report" names the outlet that published first.
+
+<p align="center"><img src="docs/screenshots/story-en.png" alt="Story detail: summary, score breakdown, notes" width="760"></p>
+
+**Story detail.** The summary, how the score was calculated, day-by-day development, all reports and your notes.
+
+<p align="center"><img src="docs/screenshots/meeting-en.png" alt="Meeting list" width="760"></p>
+
+**Meeting list.** Add stories in one click, drag to reorder, write a short note on each suggestion.
+
+<p align="center"><img src="docs/screenshots/addpage-en.png" alt="Add a page window" width="560"></p>
+
+**Add a page.** For sites that do not let programs in (The Economist, WSJ…): read the report in your own browser,
+click the bookmark and paste it here. The report is added with its full text.
+
+<p align="center"><img src="docs/screenshots/stats-en.png" alt="Statistics: topic trend" width="860"></p>
+
+**Statistics.** The trace of a topic hour by hour and its share of the news, category and region shares, rising stories.
+
+<p align="center"><img src="docs/screenshots/sources-en.png" alt="Sources" width="860"></p>
+
+**Sources.** Switch sources on and off, add your own RSS address; feeds that do not work are shown with the reason.
+
+<p align="center"><img src="docs/screenshots/feed-dark-en.png" alt="Dark theme" width="860"></p>
+
+**Dark theme.** Light, dark, or following Windows.
+
+---
+
 ## Contents
 
+- [Screenshots](#screenshots)
 - [What it does](#what-it-does)
 - [Installation](#installation)
 - [Updates](#updates)
@@ -172,7 +209,7 @@ checked against the source. If a number does not appear in the source, a "Check"
 - **Feed.** The *Stories* view shows reports of the same event on one card, in order of importance. The labels under
   each card say why ("5 sources", "4 sources in 3 hours", "Related to Brazil"). The *Articles* view lists single
   reports, newest first. At the top are search, a time range and filters: region, source group, language, category,
-  source and "Related to (your country)". **Your filters are remembered.** The source-group filter has two more
+  source and "Related to (your country)". **Outside my region** in the region filter means every source outside Türkiye. **Your filters are remembered.** The source-group filter has two more
   choices: **Exclusives** (reports the publisher marks "Exclusive") and **Articles** (opinion, analysis, columns),
   both gathered from every source.
 - **My country.** The "Related to (your country)" filter and labels follow the country chosen under Settings → **My
@@ -195,6 +232,8 @@ checked against the source. If a number does not appear in the source, a "Check"
   the time); you can pick a time window, and outside it collecting news, the AI and full texts rest. What you ask for
   by hand (Summarise, fetch the full text, Scan now) is still done.
 - **Story detail.** Summary, a breakdown of the score, day-by-day development, all reports with links, and your notes.
+  **First to report** on the card names the outlet that published first; where outlets contradict each other on a fact,
+  the AI writes the difference as an **Outlets disagree** note (in newly written summaries only).
   Use **Remove from this story** for a wrongly grouped report and **Merge with another story** for two stories about
   the same event.
 - **Meeting.** Today's list of proposals. Use **Add to meeting** (or `T`) on a story, reorder by dragging, and write a
