@@ -26,6 +26,7 @@ from .repo.stories import StoryRepository
 from .stories.worker import StoryWorker
 from .updater import Updater
 from .country import HomeState, windows_country
+from .clip import ClipService
 from .home_sync import HomeSync
 from .worktime import WorkHours
 from .apikeys import SecretStore
@@ -62,5 +63,6 @@ def build_context(paths: DataPaths, token: str, ui_dir: Path | None, run_collect
         notifier=Notifier(db, settings),
         updater=Updater(settings, paths.root),
         home=home, home_sync=HomeSync(home, articles, stories, settings),
+        clips=ClipService(db, articles, fulltext),
         ui_dir=ui_dir, run_collector=run_collector,
     )

@@ -124,6 +124,18 @@ tests/                   Arka uç + uçtan uca testler
   (`HOME_REGION = "turkey"`) olmayan her haber; kaynağın bölgesine bakar, haberin konusuna değil. `meta.home_region`
   yalnızca ülkesi TR olanlarda dolu, arayüz seçeneği ona göre gösterir. "Küresel" bölgesi (dört ajans) filtreden çıktı,
   kaynak bölgesi olarak durur; ajanslar Kaynak grubu → Ajanslar ile süzülür.
+- **Sayfa ekle** (0.13.3, `clip.py`, `POST /api/clips`): program içeri alınmayan siteler için kullanıcının kendi
+  tarayıcısı köprü olur. Yer imi (arayüz `bookmarkletCode`) açık sayfanın adresini, başlığını (`og:title`), dilini ve
+  HTML'ini panoya JSON olarak yazar; kullanıcı yapıştırır, sunucu `parse_clip` ile doğrular (`ws: 1`, http/https, ≤ 8 MB) ve
+  mevcut `fulltext.extract` ile haber metnini çıkarır (paywall/bot sayfası/haber değil ise nedeniyle reddeder).
+  Kaynak, sayfanın alan adına göre kataloğun kaynağıdır (alt alan adı dahil, benzeyen adlar değil), yoksa "Elle
+  eklenenler" (`slug = manual`, akışsız). Haber `dedupe_key = canonical_url` ile eklenir (RSS'ten gelmişse güncellenir),
+  tam metin `method = 'clip'` ile `article_fulltext`'e yazılır, YZ özeti sıraya alınır. Pano + yapıştırma seçildi:
+  yer imi sitenin sayfasında çalıştığı için CORS/CSP ve sabit port/uzun ömürlü anahtar sorunu yok; sunucuya yeni bir
+  dış yüzey açılmadı (uç nokta oturum anahtarlı).
+- **İlk veren / çelişki** (0.13.3): `stories.get` `first` alanı = en erken `sort_at`'li üye (≥2 kaynak varsa); çelişki
+  ayrı sütun değil, hikâye özetinin dil metnindeki `conflict` anahtarı (`ai/story.py`: `conflict_<dil>` şema alanı,
+  yalnızca kaynaklar bir olguda birbirini yalanlıyorsa dolu) — göç gerekmedi, eski özetlerde anahtar yoktur.
 - **Çalışma saatleri** (0.13.1, `worktime.py`, `work.limited/start/end`, varsayılan sürekli): `WorkHours.resting()`
   toplayıcıya, YZ işçisine ve tam metin işçisine verilir. Dinlenirken toplayıcı döngüyü atlar ("Şimdi tara" bir kez
   aşar), YZ yalnızca kullanıcının istediği işleri (`next_jobs(requested_only=True)`, elle hikâye özeti, çeviri) yapar,

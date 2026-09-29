@@ -67,7 +67,7 @@ class ArticleRepository:
         c: sqlite3.Connection,
         *,
         source_id: int,
-        feed_id: int,
+        feed_id: int | None,
         language: str | None,
         entries: Sequence[ParsedEntry],
         now: datetime,

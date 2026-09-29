@@ -169,6 +169,19 @@ class FullTextRepository:
                 (method, text, len(text), utc_now_iso(now), article_id),
             )
 
+    def store_clip(self, article_id: int, text: str, now: datetime) -> None:
+        """A page the user sent from their own browser: its text is the article's full text."""
+        now_iso = utc_now_iso(now)
+        with self.db.transaction() as c:
+            c.execute(
+                """INSERT INTO article_fulltext (article_id, status, reason, priority, method, text, chars, queued_at,
+                       fetched_at, attempts)
+                   VALUES (?, 'done', 'user', ?, 'clip', ?, ?, ?, ?, 1)
+                   ON CONFLICT(article_id) DO UPDATE SET status = 'done', reason = 'user', method = 'clip', text = ?,
+                       chars = ?, error_code = NULL, fetched_at = ?, translate_status = NULL, translations = '{}'""",
+                (article_id, _priority("user", now_iso), text, len(text), now_iso, now_iso, text, len(text), now_iso),
+            )
+
     def store_failure(self, job: FullTextJob, code: str, now: datetime) -> str:
         """Record a failed attempt; pause the site where that is wise. Returns the new status."""
         attempts = job.attempts + 1

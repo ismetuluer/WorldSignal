@@ -3,6 +3,22 @@
 Sürüm numaraları [Anlamsal Sürümleme](https://semver.org/lang/tr/) izler. 1.0'a kadar her faz bir ara sürümdür.
 İngilizcesi (0.10.0'dan itibaren): [CHANGELOG.en.md](CHANGELOG.en.md).
 
+## [0.13.3] — 2026-09-29 — Sayfa ekle, ilk veren ve kaynaklar arası çelişki
+
+### Eklendi
+- **Sayfa ekle** (Akış → Sayfa ekle): The Economist, WSJ gibi programları içeri almayan siteler için. Haberi kendi
+  tarayıcınızda, aboneliğinizle okursunuz; bir kez yer imleri çubuğuna sürüklediğiniz **World Signal'e kopyala**
+  düğmesine tıklarsınız (sayfa panoya kopyalanır), programa dönüp yapıştırır, **Ekle**'ye basarsınız. Haber, sitenin
+  kaynağının altına (yoksa "Elle eklenenler"e) tam metniyle girer; özeti yapay zekâ yazar, hikâyelere karışır,
+  aranabilir, not defterine eklenebilir. Siteye hiçbir istek gönderilmez, hiçbir koruma aşılmaz: sayfayı siz açmış
+  olursunuz. Aynı sayfa yeniden eklenirse metni yenilenir. Sayfada haber ya da tam metin yoksa nedeni söylenir.
+- **"İlk veren"**: birden çok kaynakta geçen hikâyenin kartında ve ayrıntısında, olayı ilk yayımlayan kaynak ve saati
+  (yayın saatine göre). Birkaç güne yayılan hikâyelerde zincirin ilk haberini gösterir; saat açıkça yazıldığı için
+  yanıltmaz.
+- **"Kaynaklar çelişiyor"**: hikâye özetini yazarken yapay zekâ, kaynaklar bir olguda (rakam, kim ne yaptı, kim
+  sorumlu) birbirini yalanlıyorsa bunu tek cümleyle ve kaynak adlarıyla yazar; kartta turuncu bir notla görünür. Kaynaklar
+  uyuşuyorsa ya da model emin değilse boş bırakır. Bu bilgi yeni yazılan özetlerde çıkar; eski özetlerde görünmez.
+
 ## [0.13.2] — 2026-09-29 — Habere tıklayınca tam metin
 
 ### Değişti

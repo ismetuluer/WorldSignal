@@ -28,6 +28,8 @@ export interface AiText {
   title: string;
   summary: string;
   why?: string;
+  /** Where outlets contradict each other on a fact (empty or missing: they agree). */
+  conflict?: string;
 }
 
 /** AI texts by language code ("tr", "pt", …): the languages of the setting ai.languages. */
@@ -393,6 +395,8 @@ export interface BrowserList {
 
 export interface Story {
   id: number;
+  /** The first outlet to report the event (by publication time); null with a single outlet. */
+  first?: { source: string; at: string } | null;
   first_seen_at: string;
   last_seen_at: string;
   article_count: number;
@@ -514,6 +518,16 @@ export interface Status {
   maintenance: MaintenanceStatus;
   notify: NotifyStatus;
   articles: { total: number; recent: number };
+}
+
+/** A page sent from the user's own browser (clip.py). */
+export interface ClipResult {
+  article_id: number;
+  source: string;
+  title: string;
+  chars: number;
+  /** False: the page was already there and its text was updated. */
+  created: boolean;
 }
 
 export type FeedKind = "exclusive" | "opinion";

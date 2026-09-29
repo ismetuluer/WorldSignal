@@ -10,8 +10,8 @@ import { Icon } from "./Icon";
 import { useMeeting } from "./meeting";
 import { NoteEditor } from "./NoteEditor";
 import { OutputDialog } from "./OutputDialog";
-import { issueNumbers, LangToggle, ScorePill, ScoreTags, storyHeadline, storySummary } from "./StoryCard";
-import { aiLanguages, storyLanguages, storyWhy, type AiLang } from "../lib/aiText";
+import { issueNumbers, LangToggle, ScorePill, ScoreTags, StoryFirstAndConflict, storyHeadline, storySummary } from "./StoryCard";
+import { aiLanguages, storyConflict, storyLanguages, storyWhy, type AiLang } from "../lib/aiText";
 import { useToast } from "./Toasts";
 import { FullTextReader, MemberFullText } from "./FullText";
 import { openableUrl } from "../lib/links";
@@ -243,6 +243,7 @@ function StoryBody({
   const headline = storyHeadline(s, lang);
   const summary = storySummary(s, lang);
   const why = storyWhy(s, lang);
+  const conflict = storyConflict(s, lang);
   const numbers = s.ai_status === "done" ? issueNumbers(s.ai_issues) : "";
   const rep = s.representative;
   const components = s.score_parts.components;
@@ -284,6 +285,7 @@ function StoryBody({
             <span>{t("stories.why")}:</span> {why}
           </p>
         ) : null}
+        <StoryFirstAndConflict story={s} conflict={conflict} i18n={i18n} />
         {numbers ? (
           <p className="article-warning" role="note">
             <Icon name="alert" size={13} />

@@ -27,6 +27,7 @@ def story_schema(languages: tuple[str, ...], facts: EnrichTask | None = None) ->
         props[f"title_{lang}"] = {"type": "string"}
         props[f"summary_{lang}"] = {"type": "string"}
         props[f"why_meeting_{lang}"] = {"type": "string"}
+        props[f"conflict_{lang}"] = {"type": "string"}
     props["category"] = {"type": "string", "enum": list(CATEGORIES)}
     if facts is not None:
         props.update(facts.fact_schema())
@@ -42,9 +43,13 @@ def story_prompt(languages: tuple[str, ...], facts: EnrichTask | None = None) ->
         f"- why_meeting_{first}: ONE {name} sentence for the meeting: why this event deserves airtime, based only "
         "on what the reports show (e.g. how widely it is covered, what is new).",
     ]
+    fields.append(
+        f"- conflict_{first}: ONE {name} sentence, ONLY when outlets contradict each other on a fact (a figure, who "
+        "did what, who is responsible, whether something happened): name the outlets and what each says. An empty "
+        "string when the reports agree, differ only in wording or emphasis, or you are not sure.")
     for lang in languages[1:]:
-        fields.append(f"- title_{lang}, summary_{lang}, why_meeting_{lang}: the same three texts in natural "
-                      f"{lang_name(lang)} (same facts, nothing more).")
+        fields.append(f"- title_{lang}, summary_{lang}, why_meeting_{lang}, conflict_{lang}: the same four texts in "
+                      f"natural {lang_name(lang)} (same facts, nothing more; conflict stays empty when it is empty).")
     fields.append("- category: one of " + ", ".join(CATEGORIES) + ".")
     if facts is not None:
         fields.extend(facts.fact_fields("reports"))
@@ -71,7 +76,7 @@ class StoryReport:
 
 @dataclass
 class StoryResult:
-    texts: dict[str, dict[str, str]]  # {"tr": {"title": …, "summary": …, "why": …}, …}
+    texts: dict[str, dict[str, str]]  # {"tr": {"title": …, "summary": …, "why": …, "conflict": …}, …}
     category: str
     issues: list[str] = field(default_factory=list)
     # The facts for "my country" (None: not asked).
@@ -109,7 +114,8 @@ def validate_story(data: dict[str, Any], reports: list[StoryReport], source_coun
         summary = str(data.get(f"summary_{lang}", "")).strip()
         if not title or not summary:
             raise ValueError("empty_story_text")
-        texts[lang] = {"title": title, "summary": summary, "why": str(data.get(f"why_meeting_{lang}", "")).strip()}
+        texts[lang] = {"title": title, "summary": summary, "why": str(data.get(f"why_meeting_{lang}", "")).strip(),
+                       "conflict": str(data.get(f"conflict_{lang}", "")).strip()}
     category = data.get("category") if data.get("category") in CATEGORIES else "other"
     # The rendered input also contains the source count, which the model may legitimately quote.
     source_text = render_reports(reports, source_count)

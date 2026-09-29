@@ -184,6 +184,8 @@ checked against the source. If a number does not appear in the source, a "Check"
   **Use my country**: the link then does not count in the score, its filter and labels are hidden, and the AI no
   longer asks the country and topic questions (it works faster). **Country labels** can be switched off on their own:
   changing the country then does not rate older reports again.
+- **Add a page.** For protected sites (The Economist, WSJ…): read the report in your own browser, click the bookmark, and
+  paste it in Feed → **Add a page**. The report is added with its full text; the program sends no request to the site.
 - **Full text.** Clicking a report (its headline) opens it inside the program; a text not there yet is asked for, with
   the summary shown meanwhile. **Go to source** opens the site. The **Fetch full text** button on a card also queues it,
   and **Read full text** opens it

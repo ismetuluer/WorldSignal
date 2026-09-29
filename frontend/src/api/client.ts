@@ -4,6 +4,7 @@ import type {
   BackupInfo,
   BackupList,
   BrowserList,
+  ClipResult,
   FullText,
   FullTextSite,
   HistoryDay,
@@ -177,6 +178,7 @@ export const api = {
 
   fulltext: (articleId: number) => request<{ fulltext: FullText | null }>("GET", `/articles/${articleId}/fulltext`),
   requestFulltext: (articleId: number) => request<{ status: string }>("POST", `/articles/${articleId}/fulltext`),
+  addClip: (clip: string) => request<ClipResult>("POST", "/clips", { clip }),
   translateFulltext: (articleId: number) =>
     request<{ status: string }>("POST", `/articles/${articleId}/fulltext/translate`),
   browsers: () => request<BrowserList>("GET", "/fulltext/browsers"),

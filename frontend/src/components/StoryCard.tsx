@@ -1,7 +1,7 @@
 import type { ScoreTag, Story } from "../api/types";
 import { useState } from "react";
 import { useI18n, type I18n, type MessageKey } from "../i18n";
-import { aiLanguages, storyLanguages, storySummaryText, storyTitle, storyWhy, type AiLang, type ShownText } from "../lib/aiText";
+import { aiLanguages, storyLanguages, storySummaryText, storyConflict, storyTitle, storyWhy, type AiLang, type ShownText } from "../lib/aiText";
 import { useAppState } from "../state";
 import { textDirection } from "../lib/hooks";
 import { Icon } from "./Icon";
@@ -110,6 +110,27 @@ export function ScoreTags({ story: s, i18n }: { story: Story; i18n: I18n }) {
   );
 }
 
+/** Who reported it first, and where the outlets contradict each other (the model names the difference). */
+export function StoryFirstAndConflict({ story: s, conflict, i18n }: { story: Story; conflict: string | null; i18n: I18n }) {
+  const { t } = i18n;
+  if (!s.first && !conflict) return null;
+  return (
+    <>
+      {s.first ? (
+        <p className="story-first" dir="ltr">
+          <span>{t("stories.first")}:</span> {s.first.source} · {i18n.relative(s.first.at)}
+        </p>
+      ) : null}
+      {conflict ? (
+        <p className="story-conflict" role="note">
+          <Icon name="alert" size={13} />
+          <span><strong>{t("stories.conflict")}:</strong> {conflict}</span>
+        </p>
+      ) : null}
+    </>
+  );
+}
+
 export function ScorePill({ score, i18n }: { score: number; i18n: I18n }) {
   const level = score >= 60 ? "high" : score >= 35 ? "mid" : "low";
   return (
@@ -144,6 +165,7 @@ export function StoryCard({
   const headline = storyHeadline(s, lang);
   const summary = storySummary(s, lang);
   const why = storyWhy(s, lang);
+  const conflict = storyConflict(s, lang);
   const { settings } = useAppState();
   const languages = storyLanguages(s, aiLanguages(settings));
   const { names, more } = sourceLine(s.sources);
@@ -191,6 +213,7 @@ export function StoryCard({
           <span>{t("stories.why")}:</span> {why}
         </p>
       ) : null}
+      <StoryFirstAndConflict story={s} conflict={conflict} i18n={i18n} />
       {numbers ? (
         <p className="article-warning" role="note">
           <Icon name="alert" size={13} />

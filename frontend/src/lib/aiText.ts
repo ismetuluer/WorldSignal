@@ -68,6 +68,10 @@ export function storyWhy(s: Story, lang: AiLang): string | null {
   return (s.ai_status === "done" && pick(s.ai_texts, lang)?.text.why) || null;
 }
 
+export function storyConflict(s: Story, lang: AiLang): string | null {
+  return (s.ai_status === "done" && pick(s.ai_texts, lang)?.text.conflict) || null;
+}
+
 /** The AI languages a story can be shown in (its own texts, else its representative report's). */
 export function storyLanguages(s: Story, order: string[] = []): string[] {
   const own = s.ai_status === "done" ? languagesOf(s.ai_texts, order) : [];

@@ -262,6 +262,27 @@ textarea {
   flex-shrink: 0;
 }
 
+/* A narrow window: the title and the buttons stack instead of pushing the buttons out of the window. */
+@media (max-width: 760px) {
+  .page-header {
+    flex-wrap: wrap;
+    align-items: flex-start;
+  }
+
+  .header-actions {
+    flex-shrink: 1;
+    max-width: 100%;
+  }
+
+  .header-actions-stack {
+    align-items: flex-start;
+  }
+
+  .header-buttons {
+    justify-content: flex-start;
+  }
+}
+
 /* ---------- Buttons ---------------------------------------------------------- */
 .btn {
   display: inline-flex;
@@ -1563,6 +1584,89 @@ textarea {
   line-height: 1.3;
   letter-spacing: -0.01em;
   overflow-wrap: anywhere;
+}
+
+.header-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.clip-steps {
+  margin: 10px 0 16px;
+  padding-left: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.clip-bookmark {
+  cursor: grab;
+  text-decoration: none;
+  vertical-align: middle;
+}
+
+.clip-paste {
+  font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
+  font-size: 12px;
+  max-height: 140px;
+}
+
+.clip-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 10px 0 4px;
+}
+
+.clip-done {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 8px 0;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  background: rgba(52, 199, 89, 0.12);
+  font-size: 13.5px;
+  line-height: 1.45;
+}
+
+.clip-done svg {
+  flex: none;
+  margin-top: 2px;
+  color: var(--success);
+}
+
+.story-first {
+  margin: 6px 0 0;
+  font-size: 12.5px;
+  color: var(--text-3);
+}
+
+.story-first > span:first-child {
+  font-weight: 600;
+}
+
+.story-conflict {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin: 8px 0 0;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  background: rgba(255, 159, 10, 0.12);
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--text);
+}
+
+.story-conflict svg {
+  flex: none;
+  margin-top: 2px;
+  color: var(--warning);
 }
 
 .story-full-summary {

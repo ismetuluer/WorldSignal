@@ -9,6 +9,7 @@ from worldsignal.api import app as app_module
 from worldsignal.api.app import AppContext, create_app
 from worldsignal.collector.rss import ParsedEntry
 from worldsignal.ai.worker import AiWorker
+from worldsignal.clip import ClipService
 from worldsignal.collector.service import Collector
 from worldsignal.repo.ai import AiRepository
 from worldsignal.fulltext.worker import FullTextWorker
@@ -45,7 +46,7 @@ def ctx(db, data_paths, settings, sources, articles, home, tmp_path):
         history=HistoryRepository(db, StoryRepository(db)), maintenance=Maintenance(HistoryRepository(db, StoryRepository(db)), settings),
         backups=BackupManager(db, data_paths.backups, data_paths.root), notifier=Notifier(db, settings),
         home=home, home_sync=HomeSync(home, articles, StoryRepository(db), settings),
-        ui_dir=ui, run_collector=False,
+        clips=ClipService(db, articles, FullTextRepository(db)), ui_dir=ui, run_collector=False,
     )
 
 

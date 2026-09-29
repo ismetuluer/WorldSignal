@@ -441,6 +441,10 @@ class StoryRepository:
         story["members"] = items if member_limit is None else items[:member_limit]
         rep = next((m for m in items if m["id"] == story["representative_id"]), items[-1] if items else None)
         story["representative"] = rep
+        # The first outlet to report it (by publication time), where several outlets did.
+        earliest = min(items, key=lambda m: m["sort_at"]) if items else None
+        story["first"] = ({"source": earliest["source_name"], "at": earliest["sort_at"]}
+                          if earliest is not None and len(story["sources"]) >= 2 else None)
         # Timeline: articles per day.
         per_day = Counter(m["sort_at"][:10] for m in items)
         story["timeline"] = [{"day": d, "articles": n} for d, n in sorted(per_day.items())]

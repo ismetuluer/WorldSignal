@@ -58,6 +58,7 @@ from ..textnorm import MAX_ALTERNATIVES
 from ..updater import UpdateError, Updater
 from ..apikeys import SecretStore
 from ..ai.cloud import OPENAI_URL, make_client as make_cloud_client
+from ..clip import MAX_CLIP_CHARS, ClipError, ClipService
 from ..flags import KINDS
 from ..country import MAX_TOPIC, MAX_TOPICS, MIN_TOPIC, TOPICS, HomeState, countries as country_data
 from ..country import profile as country_profile
@@ -101,6 +102,7 @@ class AppContext:
     updater: Updater | None = None
     home: HomeState | None = None
     home_sync: HomeSync | None = None
+    clips: ClipService | None = None
     keys: SecretStore | None = None  # API keys of cloud AI services
     extra: dict[str, Any] = field(default_factory=dict)
 
@@ -213,6 +215,10 @@ class RestoreRequest(BaseModel):
 
 class MergeRequest(BaseModel):
     into: int
+
+
+class ClipBody(BaseModel):
+    clip: str = Field(max_length=MAX_CLIP_CHARS)  # what the bookmark copied (clip.py)
 
 
 class LoginRequest(BaseModel):
@@ -714,6 +720,21 @@ def create_app(ctx: AppContext) -> FastAPI:
             raise api_error(404, "not_found") from None
         ctx.fulltext_worker.wake()
         return {"status": status}
+
+    @api.post("/clips")
+    def add_clip(body: ClipBody) -> dict[str, Any]:
+        """A page the user sent from their own browser becomes a report with its full text (clip.py)."""
+        if ctx.clips is None:
+            raise api_error(503, "unavailable")
+        try:
+            added = ctx.clips.add(body.clip)
+        except ClipError as exc:
+            log.info("Sent page not accepted: %s", exc)
+            raise api_error(422, f"clip_{exc.code}") from None
+        ctx.ai.request(added["article_id"], ai_languages(ctx.settings.get_preferences()))
+        ctx.ai_worker.wake()
+        ctx.story_worker.wake()
+        return added
 
     @api.post("/articles/{article_id}/fulltext/translate")
     def translate_fulltext(article_id: int) -> dict[str, str]:

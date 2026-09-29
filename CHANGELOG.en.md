@@ -3,6 +3,23 @@
 English version of [CHANGELOG.md](CHANGELOG.md), from 0.10.0 on. Version numbers follow
 [Semantic Versioning](https://semver.org/).
 
+## [0.13.3] — 2026-09-29 — Add a page, first to report, and outlets that disagree
+
+### Added
+- **Add a page** (Feed → Add a page): for sites that do not let programs in, such as The Economist and WSJ. You read the
+  report in your own browser with your subscription and click the **Copy to World Signal** button you dragged to the
+  bookmarks bar once (the page is copied to the clipboard); back in the program you paste it and press **Add**. The
+  report enters under the site's source (or "Added by hand") with its full text; the AI writes the summary, it joins
+  stories, can be searched and added to the notebook. No request is sent to the site and no protection is bypassed:
+  you opened the page. Sending the same page again refreshes its text. If the page has no report or no full text, the
+  reason is given.
+- **"First to report"**: on the card and in the detail of a story covered by several outlets, the outlet that published
+  the event first and when (by publication time). For stories spread over several days it shows the first report of the
+  chain; the time is written out, so it does not mislead.
+- **"Outlets disagree"**: when writing the story summary the AI names, in one sentence with the outlets' names, a fact on
+  which outlets contradict each other (a figure, who did what, who is responsible); it shows as an orange note on the
+  card. It stays empty when the outlets agree or the model is not sure. New summaries carry it; older ones do not.
+
 ## [0.13.2] — 2026-09-29 — Clicking a report opens its full text
 
 ### Changed

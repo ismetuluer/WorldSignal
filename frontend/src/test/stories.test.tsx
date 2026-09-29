@@ -148,6 +148,21 @@ describe("Stories view", () => {
     expect(within(second).queryByText("Özel haber")).not.toBeInTheDocument();
   });
 
+  it("names who reported first and where the outlets disagree", async () => {
+    const disagree = { tr: { title: "Hikâye 1", summary: "Özet.", why: "", conflict: "Reuters 12 ölü, Al Jazeera 20 ölü bildirdi." } };
+    mocked.stories.mockResolvedValue({
+      items: [story(1, { first: { source: "Reuters", at: NOW }, ai_texts: disagree }), story(2)], total: 2,
+    });
+    wrap(<FeedPage />);
+    const first = (await screen.findByText("Hikâye 1")).closest("li")!;
+    expect(within(first).getByText(/İlk veren:/).closest("p")).toHaveTextContent("Reuters");
+    expect(within(first).getByRole("note")).toHaveTextContent("Kaynaklar çelişiyor: Reuters 12 ölü, Al Jazeera 20 ölü bildirdi.");
+    // No first outlet and no disagreement: nothing is shown.
+    const second = screen.getByText("Hikâye 2").closest("li")!;
+    expect(within(second).queryByText(/İlk veren:/)).not.toBeInTheDocument();
+    expect(within(second).queryByText(/Kaynaklar çelişiyor/)).not.toBeInTheDocument();
+  });
+
   it("switches between stories and articles and remembers the choice", async () => {
     mocked.stories.mockResolvedValue({ items: [story(1)], total: 1 });
     mocked.articles.mockResolvedValue({ items: [], next: null, total: 0 });

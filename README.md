@@ -182,6 +182,8 @@ bir sayı varsa "Dikkat" uyarısı gösterilir.
   kapatın: ülke bağlantısı önem skoruna katılmaz, filtresi ve etiketleri görünmez; yapay zekâ da ülke ve konu
   sorularını hiç sormaz (daha hızlı çalışır). **Ülke etiketleri** ayrıca kapatılabilir: ülkeyi değiştirince eski haberler
   yeniden derecelendirilmez.
+- **Sayfa ekle** — bot korumalı siteler (The Economist, WSJ…) için: haberi kendi tarayıcınızda okuyun, yer imine
+  tıklayın, Akış → **Sayfa ekle** penceresine yapıştırın. Haber tam metniyle eklenir; siteye program hiç istek göndermez.
 - **Tam metin** — habere (başlığa) tıklayınca program içinde açılır; metin henüz yoksa istenir, beklerken özet görünür.
   Siteye gitmek için **Kaynağa git**. Kartlardaki **Tam metni getir** düğmesi de metni sıraya alır; gelince okunur (yalnızca sizin okumanız içindir; çıktılara konmaz). Ayarlar → Tam metin → **Tam metni de çevir** açılırsa gelen
   her tam metin özet dillerinize de çevrilir; varsayılan yalnızca özettir.

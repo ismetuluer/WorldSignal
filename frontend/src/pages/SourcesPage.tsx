@@ -260,7 +260,7 @@ function SourceRow({
               <Icon name="lock" size={11} strokeWidth={2.2} />
             </span>
           ) : null}
-          {!s.verified ? <span className="badge badge-danger">{t("sources.badge.unverified")}</span> : null}
+          {!s.verified && s.feeds.length > 0 ? <span className="badge badge-danger">{t("sources.badge.unverified")}</span> : null}
           {s.origin === "user" ? <span className="badge badge-accent">{t("sources.badge.user")}</span> : null}
         </div>
         <div className="source-sub">
@@ -278,7 +278,11 @@ function SourceRow({
       <div className="source-stats">
         {s.enabled ? <div>{t("sources.articles24h", { count: s.articles_24h })}</div> : null}
         <div>
-          {s.last_success_at ? t("sources.lastSuccess", { time: i18n.relative(s.last_success_at) }) : t("sources.neverSucceeded")}
+          {s.feeds.length === 0
+            ? t("sources.manualOnly")
+            : s.last_success_at
+              ? t("sources.lastSuccess", { time: i18n.relative(s.last_success_at) })
+              : t("sources.neverSucceeded")}
         </div>
       </div>
       <Switch checked={s.enabled} onChange={(v) => onToggle(s, v)} label={t("sources.toggle", { name: s.name })} />
