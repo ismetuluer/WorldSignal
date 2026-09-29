@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { api, ApiError } from "../api/client";
 import type { FullText, StoryMember } from "../api/types";
 import { describeError, useI18n } from "../i18n";
@@ -111,13 +111,31 @@ export function MemberFullText({ member: m, onRequested }: { member: Reportish; 
   );
 }
 
+const EMPTY_FULLTEXT: FullText = {
+  article_id: 0, status: "pending", reason: "user", attempts: 0, method: null, text: null, chars: null,
+  error_code: null, fetched_at: null, translate_status: null, translations: {},
+};
+
 /** "original", or a language code of the user's AI languages. */
 type Tab = string;
 
 export const TRANSLATION_POLL_MS = 3000;
 
-/** Reading window: the extracted text, and on request its translations into the user's AI languages. */
-export function FullTextReader({ member: m, onClose }: { member: Reportish; onClose: () => void }) {
+/**
+ * Reading window: the extracted text, and on request its translations into the user's AI languages.
+ * Opened for a report whose text is not there yet (clicking a headline), it asks for it, shows the summary
+ * meanwhile and looks again until the text has arrived or the site refused.
+ */
+export function FullTextReader({
+  member: m,
+  onClose,
+  summary,
+}: {
+  member: Reportish;
+  onClose: () => void;
+  /** Shown while the full text is on its way or could not be read. */
+  summary?: string;
+}) {
   const i18n = useI18n();
   const { t } = i18n;
   const toast = useToast();
@@ -126,20 +144,53 @@ export function FullTextReader({ member: m, onClose }: { member: Reportish; onCl
   const [error, setError] = useState<string | null>(null);
   const targets = aiLanguages(settings).filter((l) => l !== m.language);
   const [tab, setTab] = useState<Tab>(targets.includes(i18n.lang) ? i18n.lang : "original");
+  // A text without a translation in the interface language opens on the original: the text itself, not "not
+  // translated yet" (translating stays one click away).
+  const firstText = useRef(true);
+  useEffect(() => {
+    if (!firstText.current || ft?.status !== "done") return;
+    firstText.current = false;
+    if (tab !== "original" && !ft.translations[tab]) setTab("original");
+  }, [ft, tab]);
 
-  const load = useCallback(async () => {
+  const [loaded, setLoaded] = useState(false);
+  const fetchText = useCallback(async () => {
     try {
-      const r = await api.fulltext(m.id);
-      setFt(r.fulltext);
-      setError(r.fulltext ? null : "not_found");
+      await api.requestFulltext(m.id);
+      setFt((f) => ({ ...(f ?? EMPTY_FULLTEXT), article_id: m.id, status: "pending", error_code: null }));
     } catch (e) {
       setError(e instanceof ApiError ? e.code : "generic");
     }
   }, [m.id]);
 
+  const load = useCallback(async () => {
+    try {
+      const r = await api.fulltext(m.id);
+      setFt(r.fulltext);
+      setError(null);
+      return r.fulltext;
+    } catch (e) {
+      setError(e instanceof ApiError ? e.code : "generic");
+      return undefined;
+    } finally {
+      setLoaded(true);
+    }
+  }, [m.id]);
+
+  // Opening a report that was never asked for is the request itself.
   useEffect(() => {
-    void load();
-  }, [load]);
+    void load().then((got) => {
+      if (got === null) void fetchText();
+    });
+  }, [load, fetchText]);
+
+  // The text is on its way: look again every few seconds.
+  const waiting = ft?.status === "pending";
+  useEffect(() => {
+    if (!waiting) return;
+    const timer = window.setInterval(() => void load(), TRANSLATION_POLL_MS);
+    return () => window.clearInterval(timer);
+  }, [waiting, load]);
 
   // A translation in progress: look again every few seconds until it is done or failed.
   const translating = ft?.translate_status === "pending";
@@ -158,11 +209,38 @@ export function FullTextReader({ member: m, onClose }: { member: Reportish; onCl
     }
   };
 
+  const summaryBlock = summary ? <p className="reader-summary" dir={textDirection(m.language)}>{summary}</p> : null;
   let body: React.ReactNode;
   if (error) {
     body = <StateView icon="alert" title={t("error.title")} body={describeError(i18n, error)} />;
-  } else if (!ft) {
+  } else if (!loaded || !ft) {
     body = <div className="dialog-loading"><Spinner label={t("common.loading")} /></div>;
+  } else if (ft.status !== "done") {
+    body = (
+      <>
+        <div className="article-meta">
+          <span className="article-source">{m.source_name}</span>
+          <time dateTime={m.sort_at}>{i18n.dateTime(m.sort_at)}</time>
+        </div>
+        <h3 className="story-headline" dir={textDirection(m.language)}>{m.title}</h3>
+        {summaryBlock}
+        {ft.status === "pending" ? (
+          <p className="fulltext-note" role="status">
+            <Spinner />
+            {t("fulltext.fetching")}
+          </p>
+        ) : (
+          <StateView
+            icon="alert"
+            title={t(ft.status === "blocked" ? "fulltext.blocked" : "fulltext.failed", {
+              reason: t(fulltextErrorKey(ft.error_code ?? "")),
+            })}
+            body={t("fulltext.goToSourceHint")}
+            action={<button className="btn" onClick={() => void fetchText()}>{t("fulltext.retry")}</button>}
+          />
+        )}
+      </>
+    );
   } else {
     const translated = tab === "original" ? null : ft.translations[tab];
     const aiOff = !status || status.ai.state === "disabled" || status.ai.state === "no_model";
@@ -224,7 +302,7 @@ export function FullTextReader({ member: m, onClose }: { member: Reportish; onCl
         <>
           <a className="btn btn-sm" href={openableUrl(m.url, m.title)} target="_blank" rel="noopener noreferrer">
             <Icon name="external" size={15} />
-            {t("feed.openOriginal")}
+            {t("feed.goToSource")}
           </a>
           <span className="spacer" />
           <button className="btn btn-primary btn-sm" onClick={onClose}>{t("common.close")}</button>

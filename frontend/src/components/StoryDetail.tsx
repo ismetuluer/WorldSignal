@@ -13,7 +13,7 @@ import { OutputDialog } from "./OutputDialog";
 import { issueNumbers, LangToggle, ScorePill, ScoreTags, storyHeadline, storySummary } from "./StoryCard";
 import { aiLanguages, storyLanguages, storyWhy, type AiLang } from "../lib/aiText";
 import { useToast } from "./Toasts";
-import { MemberFullText } from "./FullText";
+import { FullTextReader, MemberFullText } from "./FullText";
 import { openableUrl } from "../lib/links";
 import { ExclusiveBadge } from "./Badges";
 
@@ -239,6 +239,7 @@ function StoryBody({
   const { t, plural } = i18n;
   const { settings } = useAppState();
   const [lang, setLang] = useState<AiLang>(i18n.lang);
+  const [reading, setReading] = useState<StoryMember | null>(null);
   const headline = storyHeadline(s, lang);
   const summary = storySummary(s, lang);
   const why = storyWhy(s, lang);
@@ -378,10 +379,16 @@ function StoryBody({
                 ) : null}
                 {m.assigned_by === "user" ? <span className="badge badge-accent">{t("stories.userPlaced")}</span> : null}
               </div>
-              <a className="member-title" href={openableUrl(m.url, m.title)} target="_blank" rel="noopener noreferrer" title={t("feed.openOriginal")}>
-                <span dir={textDirection(memberTitle(m, lang).lang)}>{memberTitle(m, lang).text}</span>
-                <Icon name="external" size={12} />
-              </a>
+              {settings["fulltext.enabled"] ? (
+                <button type="button" className="member-title member-open" onClick={() => setReading(m)} title={t("fulltext.openHint")}>
+                  <span dir={textDirection(memberTitle(m, lang).lang)}>{memberTitle(m, lang).text}</span>
+                </button>
+              ) : (
+                <a className="member-title" href={openableUrl(m.url, m.title)} target="_blank" rel="noopener noreferrer" title={t("feed.openOriginal")}>
+                  <span dir={textDirection(memberTitle(m, lang).lang)}>{memberTitle(m, lang).text}</span>
+                  <Icon name="external" size={12} />
+                </a>
+              )}
               {memberTitle(m, lang).text !== m.title && m.language !== memberTitle(m, lang).lang ? (
                 <p className="article-original">
                   <span>{t("ai.original")}:</span> <span dir={textDirection(m.language)}>{m.title}</span>
@@ -389,6 +396,10 @@ function StoryBody({
               ) : null}
               <div className="member-actions">
                 <MemberFullText member={m} onRequested={onFulltext} />
+                <a className="link-btn source-link" href={openableUrl(m.url, m.title)} target="_blank" rel="noopener noreferrer">
+                  <Icon name="external" size={12} />
+                  {t("feed.goToSource")}
+                </a>
                 {s.members.length > 1 ? (
                   <button type="button" className="link-btn" disabled={busy} onClick={() => onDetach(m)}>
                     {t("stories.detach")}
@@ -399,6 +410,15 @@ function StoryBody({
           ))}
         </ul>
       </section>
+      {reading ? (
+        <FullTextReader
+          member={reading}
+          onClose={() => {
+            setReading(null);
+            onFulltext();
+          }}
+        />
+      ) : null}
     </>
   );
 }

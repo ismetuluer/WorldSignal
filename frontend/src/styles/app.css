@@ -1134,6 +1134,13 @@ textarea {
   gap: 12px;
 }
 
+/* Hour pickers (working hours, quiet hours): as wide as "23:00" and the arrow, never squeezed by the hint. */
+.inline-row > .select {
+  flex: none;
+  width: auto;
+  min-width: 92px;
+}
+
 .feed-item {
   display: flex;
   flex-direction: column;
@@ -1655,8 +1662,37 @@ textarea {
   overflow-wrap: anywhere;
 }
 
-a.member-title:hover {
+a.member-title:hover,
+.member-open:hover {
   color: var(--accent);
+}
+
+.member-open {
+  padding: 0;
+  border: 0;
+  background: none;
+  font-family: inherit;
+  text-align: inherit;
+  cursor: pointer;
+}
+
+.source-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--text-3);
+  text-decoration: none;
+}
+
+.source-link:hover {
+  color: var(--accent);
+}
+
+.reader-summary {
+  margin: 0 0 14px;
+  font-size: 14.5px;
+  line-height: 1.55;
+  color: var(--text-2);
 }
 
 a.member-title svg {

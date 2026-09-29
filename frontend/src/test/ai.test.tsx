@@ -127,8 +127,8 @@ describe("AI in the feed", () => {
   it("shows the Turkish AI title with category, relevance and the original one click away", async () => {
     mocked.articles.mockResolvedValue({ items: [enriched(1)], next: null, total: 1 });
     wrap(<FeedPage />);
-    const link = await screen.findByRole("link", { name: "Liderler Brüksel'de bir araya geldi" });
-    const card = link.closest("li")!;
+    const headline = await screen.findByRole("button", { name: "Liderler Brüksel'de bir araya geldi" });
+    const card = headline.closest("li")!;
     expect(within(card).queryByText("YZ")).not.toBeInTheDocument(); // no AI badge (decision 2026-09-27)
     expect(within(card).getByText("Diplomasi")).toBeInTheDocument();
     expect(within(card).getByText("Türkiye (dolaylı)")).toHaveAttribute("title", "Komşu ülke: Yunanistan · Konu: AB genişlemesi");
@@ -136,10 +136,10 @@ describe("AI in the feed", () => {
     expect(within(card).getByText("AB liderleri cumartesi günü toplandı.")).toBeInTheDocument();
 
     await userEvent.click(within(card).getByRole("button", { name: "Orijinal metni göster" }));
-    expect(within(card).getByRole("link", { name: "Leaders meet in Brussels" })).toBeInTheDocument();
+    expect(within(card).getByRole("button", { name: "Leaders meet in Brussels" })).toBeInTheDocument();
     expect(within(card).getByText("EU leaders gathered on Saturday.")).toBeInTheDocument();
     await userEvent.click(within(card).getByRole("button", { name: "Özeti göster" }));
-    expect(within(card).getByRole("link", { name: "Liderler Brüksel'de bir araya geldi" })).toBeInTheDocument();
+    expect(within(card).getByRole("button", { name: "Liderler Brüksel'de bir araya geldi" })).toBeInTheDocument();
   });
 
   it("warns about numbers the AI invented", async () => {
@@ -163,7 +163,7 @@ describe("AI in the feed", () => {
     mocked.articles.mockResolvedValue({ items: [quick], next: null, total: 1 });
     mocked.requestAi.mockResolvedValue({ status: "pending" });
     wrap(<FeedPage />);
-    const card = (await screen.findByRole("link", { name: "Hızlı başlık" })).closest("li")!;
+    const card = (await screen.findByRole("button", { name: "Hızlı başlık" })).closest("li")!;
     expect(within(card).getByText(quick.summary)).toBeInTheDocument();  // the feed's own summary meanwhile
     await userEvent.click(within(card).getByRole("button", { name: "Özetle" }));
     expect(mocked.requestAi).toHaveBeenCalledWith(8);

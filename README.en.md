@@ -184,7 +184,9 @@ checked against the source. If a number does not appear in the source, a "Check"
   **Use my country**: the link then does not count in the score, its filter and labels are hidden, and the AI no
   longer asks the country and topic questions (it works faster). **Country labels** can be switched off on their own:
   changing the country then does not rate older reports again.
-- **Full text.** The **Fetch full text** button on a card queues it, and **Read full text** opens it inside the program
+- **Full text.** Clicking a report (its headline) opens it inside the program; a text not there yet is asked for, with
+  the summary shown meanwhile. **Go to source** opens the site. The **Fetch full text** button on a card also queues it,
+  and **Read full text** opens it
   (for your own reading only; never in outputs). If you switch on Settings → Full text → **Translate the full text
   too**, every full text that arrives is also translated into your summary languages; the default is the summary only.
 - **Working hours.** Settings → Background. The default is to work day and night (you can leave the program open all

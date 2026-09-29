@@ -216,7 +216,8 @@ describe("Story detail", () => {
     expect(within(dialog).getByText("Dikkat: özette kaynaklarda geçmeyen sayı var (12). Haberleri kontrol edin.")).toBeInTheDocument();
     expect(within(dialog).getByText("Bağımsız kaynaklar")).toBeInTheDocument();
     expect(within(dialog).getByText("50 × 45%")).toBeInTheDocument();
-    expect(within(dialog).getByRole("link", { name: /Reuters başlığı/ })).toHaveAttribute("href", "https://x.example/10");
+    const report = within(dialog).getByRole("button", { name: /Reuters başlığı/ }).closest("li")!;
+    expect(within(report).getByRole("link", { name: "Kaynağa git" })).toHaveAttribute("href", "https://x.example/10");
     expect(within(dialog).getByText("Sizin yerleştirdiğiniz")).toBeInTheDocument();
     expect(within(dialog).getByText("قمة").closest("span")).toHaveAttribute("dir", "rtl");
   });

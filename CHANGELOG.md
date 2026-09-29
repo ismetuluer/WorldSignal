@@ -3,6 +3,21 @@
 Sürüm numaraları [Anlamsal Sürümleme](https://semver.org/lang/tr/) izler. 1.0'a kadar her faz bir ara sürümdür.
 İngilizcesi (0.10.0'dan itibaren): [CHANGELOG.en.md](CHANGELOG.en.md).
 
+## [0.13.2] — 2026-09-29 — Habere tıklayınca tam metin
+
+### Değişti
+- **Habere tıklayınca tam metin açılıyor:** akıştaki haber kartında ve hikâye ayrıntısında başlığa basınca kaynak site
+  değil, program içindeki okuma penceresi açılır. Metin henüz yoksa pencere onu ister, beklerken özeti gösterir ve metin
+  gelince kendiliğinden ona geçer; alınamazsa nedenini söyler. Çevirisi yoksa orijinal metin açılır, çeviri bir tık
+  uzakta. Tam metin kapalıysa (Ayarlar → Tam metin) başlık eskisi gibi kaynağı açar.
+- **Kaynağa git** düğmesi: kartlarda, hikâye ayrıntısındaki her haberde ve okuma penceresinde.
+
+### Düzeltildi
+- **Çalışma saatleri ve sessiz saatlerde saat kutuları daralıp "07" yerine "0" gösteriyordu.**
+- **Akıştaki kartlardan açılan tam metin okuma penceresi diğer kartların arkasında kalıyor, okunamıyordu.** Açılır
+  pencereler artık kartın içinde değil sayfanın kendisinde çizildiği için her zaman en üstte açılır (0.13.1'de eklenen
+  akıştaki tam metin düğmesinin hatasıydı).
+
 ## [0.13.1] — 2026-09-29 — Ülkem gerçekten kapanıyor, çalışma saatleri, düzeltmeler
 
 ### Eklendi

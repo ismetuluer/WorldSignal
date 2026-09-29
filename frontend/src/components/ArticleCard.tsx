@@ -8,7 +8,7 @@ import { Icon } from "./Icon";
 import { LangToggle } from "./StoryCard";
 import { openableUrl } from "../lib/links";
 import { BreakingBadge, ExclusiveBadge } from "./Badges";
-import { CardFullText } from "./FullText";
+import { CardFullText, FullTextReader } from "./FullText";
 
 /** One article in the feed. AI output is labelled and the original is always one click away. */
 export function ArticleCard({
@@ -30,6 +30,7 @@ export function ArticleCard({
   const i18n = useI18n();
   const { t } = i18n;
   const [showOriginal, setShowOriginal] = useState(false);
+  const [reading, setReading] = useState(false);
 
   const [lang, setLang] = useState<AiLang>(i18n.lang);
   const { settings } = useAppState();
@@ -75,9 +76,15 @@ export function ArticleCard({
       </div>
 
       <h2 className="article-title">
-        <a href={openableUrl(a.url, a.title)} target="_blank" rel="noopener noreferrer" title={t("feed.openOriginal")}>
-          {headline}
-        </a>
+        {settings["fulltext.enabled"] ? (
+          <button type="button" className="story-open article-open" onClick={() => setReading(true)} title={t("fulltext.openHint")}>
+            {headline}
+          </button>
+        ) : (
+          <a href={openableUrl(a.url, a.title)} target="_blank" rel="noopener noreferrer" title={t("feed.openOriginal")}>
+            {headline}
+          </a>
+        )}
       </h2>
       {showOriginalTitle ? (
         <p className="article-original">
@@ -95,6 +102,10 @@ export function ArticleCard({
 
       <div className="article-actions" dir="ltr">
         {settings["fulltext.enabled"] ? <CardFullText report={a} /> : null}
+        <a className="link-btn source-link" href={openableUrl(a.url, a.title)} target="_blank" rel="noopener noreferrer">
+          <Icon name="external" size={12} />
+          {t("feed.goToSource")}
+        </a>
         {hasAi ? (
           <>
             <button type="button" className="link-btn" onClick={() => setShowOriginal((v) => !v)}>
@@ -117,6 +128,7 @@ export function ArticleCard({
           </>
         ) : null}
       </div>
+      {reading ? <FullTextReader member={a} summary={summary} onClose={() => setReading(false)} /> : null}
     </li>
   );
 }

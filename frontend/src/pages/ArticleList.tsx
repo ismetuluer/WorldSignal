@@ -150,7 +150,7 @@ export function ArticleList({
 
   // J/K move, Enter/O open the original.
   const [selected, setSelected] = useListKeys(listRef, items.length, loadMore, (el) =>
-    el.querySelector<HTMLAnchorElement>("a")?.click(),
+    el.querySelector<HTMLElement>(".article-title button, .article-title a")?.click(),
   );
 
   let content: React.ReactNode;

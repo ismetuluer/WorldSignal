@@ -1,4 +1,5 @@
 import { forwardRef, useEffect, useId, useRef, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { useI18n } from "../i18n";
 import { Icon, type IconName } from "./Icon";
 
@@ -184,7 +185,8 @@ export function Dialog({
     };
   }, []);
 
-  return (
+  // Drawn on the page itself: opened from inside a card (full text), a card's own stacking would hide it.
+  return createPortal(
     <div
       className="backdrop"
       onMouseDown={(e) => {
@@ -203,6 +205,7 @@ export function Dialog({
         <div className="dialog-body">{children}</div>
         {footer ? <div className="dialog-footer">{footer}</div> : null}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

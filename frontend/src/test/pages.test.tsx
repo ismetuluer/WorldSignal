@@ -26,6 +26,8 @@ vi.mock("../api/client", async (importOriginal) => {
       searchTranslations: vi.fn(),
       browsers: vi.fn(),
       fulltextSites: vi.fn(),
+      fulltext: vi.fn(),
+      requestFulltext: vi.fn(),
     },
   };
 });
@@ -136,9 +138,31 @@ describe("FeedPage", () => {
     expect(within(english).getByText("Ücretli")).toBeInTheDocument();
     expect(screen.getByText("قمة عربية").closest("li")).toHaveAttribute("dir", "rtl");
     expect(screen.getByText("Bu aralıktaki tüm haberler gösterildi.")).toBeInTheDocument();
-    const link = screen.getByRole("link", { name: "IRAK'ta seçim" });
+    // The headline opens the full text inside the program; "Go to source" opens the site.
+    const card = screen.getByRole("button", { name: "IRAK'ta seçim" }).closest("li")!;
+    const link = within(card).getByRole("link", { name: "Kaynağa git" });
+    expect(link).toHaveAttribute("href", "https://x.example/1");
     expect(link).toHaveAttribute("target", "_blank");
     expect(link).toHaveAttribute("rel", expect.stringContaining("noopener"));
+  });
+
+  it("opens the full text when the headline is clicked, asking for it first", async () => {
+    mocked.articles.mockResolvedValue({ items: [article(1, "IRAK'ta seçim")], next: null, total: 1 });
+    mocked.fulltext.mockResolvedValue({ fulltext: null });
+    mocked.requestFulltext.mockResolvedValue({ status: "pending" });
+    wrap(<FeedPage />);
+    await userEvent.click(await screen.findByRole("button", { name: "IRAK'ta seçim" }));
+    const reader = await screen.findByRole("dialog");
+    await waitFor(() => expect(mocked.requestFulltext).toHaveBeenCalledWith(1));
+    expect(await within(reader).findByText(/Tam metin getiriliyor/)).toBeInTheDocument();
+    expect(within(reader).getByText("IRAK'ta seçim özeti")).toBeInTheDocument();  // the summary meanwhile
+    expect(within(reader).getByRole("link", { name: "Kaynağa git" })).toHaveAttribute("href", "https://x.example/1");
+  });
+
+  it("opens the original site from the headline when full texts are switched off", async () => {
+    mocked.articles.mockResolvedValue({ items: [article(1, "IRAK'ta seçim")], next: null, total: 1 });
+    wrap(<FeedPage />, { ...SETTINGS, "fulltext.enabled": false });
+    expect(await screen.findByRole("link", { name: "IRAK'ta seçim" })).toHaveAttribute("href", "https://x.example/1");
   });
 
   it("shows the search empty state and passes the query to the API", async () => {

@@ -182,8 +182,8 @@ bir sayı varsa "Dikkat" uyarısı gösterilir.
   kapatın: ülke bağlantısı önem skoruna katılmaz, filtresi ve etiketleri görünmez; yapay zekâ da ülke ve konu
   sorularını hiç sormaz (daha hızlı çalışır). **Ülke etiketleri** ayrıca kapatılabilir: ülkeyi değiştirince eski haberler
   yeniden derecelendirilmez.
-- **Tam metin** — kartlardaki **Tam metni getir** düğmesiyle sıraya alınır, gelince **Tam metni oku** ile program içinde
-  okunur (yalnızca sizin okumanız içindir; çıktılara konmaz). Ayarlar → Tam metin → **Tam metni de çevir** açılırsa gelen
+- **Tam metin** — habere (başlığa) tıklayınca program içinde açılır; metin henüz yoksa istenir, beklerken özet görünür.
+  Siteye gitmek için **Kaynağa git**. Kartlardaki **Tam metni getir** düğmesi de metni sıraya alır; gelince okunur (yalnızca sizin okumanız içindir; çıktılara konmaz). Ayarlar → Tam metin → **Tam metni de çevir** açılırsa gelen
   her tam metin özet dillerinize de çevrilir; varsayılan yalnızca özettir.
 - **Çalışma saatleri** — Ayarlar → Arka plan. Varsayılan gece gündüz sürekli çalışmadır (programı hep açık
   bırakabilirsiniz); isterseniz bir saat aralığı seçersiniz, dışında haber toplama, yapay zekâ ve tam metin dinlenir.

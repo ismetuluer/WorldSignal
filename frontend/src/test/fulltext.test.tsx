@@ -345,7 +345,9 @@ describe("Full text in a story", () => {
     await userEvent.click(await within(dialog).findByRole("button", { name: /Tam metni oku/ }));
     const reader = (await screen.findAllByRole("dialog")).at(-1)!;
     expect(within(reader).getByText("Tam metin yalnızca sizin okumanız içindir; çıktılara konmaz.")).toBeInTheDocument();
-    // The Turkish tab opens first for a Turkish interface; nothing is translated yet.
+    // Nothing is translated yet: the original text opens, translating is one click away.
+    expect(await within(reader).findByText("First paragraph of the article.")).toBeInTheDocument();
+    await userEvent.click(within(reader).getByRole("button", { name: "Türkçe" }));
     expect(await within(reader).findByText("Henüz çevrilmedi")).toBeInTheDocument();
     await userEvent.click(within(reader).getByRole("button", { name: "Çevir" }));
     expect(mocked.translateFulltext).toHaveBeenCalledWith(10);
@@ -377,6 +379,8 @@ describe("Full text in a story", () => {
     const dialog = await openStory();
     await userEvent.click(await within(dialog).findByRole("button", { name: /Tam metni oku/ }));
     const reader = (await screen.findAllByRole("dialog")).at(-1)!;
+    await within(reader).findByText("First paragraph of the article.");
+    await userEvent.click(within(reader).getByRole("button", { name: "Türkçe" }));
     expect(await within(reader).findByText(/özetlemeyi açın/)).toBeInTheDocument();
     expect(within(reader).queryByRole("button", { name: "Çevir" })).not.toBeInTheDocument();
   });
@@ -411,10 +415,13 @@ describe("Full text on a card of the feed", () => {
 
   it("opens the reader for a text that is already there", async () => {
     mocked.fulltext.mockResolvedValue({ fulltext: fulltext({ article_id: 21 }) });
-    wrap(<CardFullText report={report({ fulltext_status: "done", fulltext_chars: 48 })} />);
+    wrap(<ol><li className="article"><CardFullText report={report({ fulltext_status: "done", fulltext_chars: 48 })} /></li></ol>);
     await userEvent.click(screen.getByRole("button", { name: "Tam metni oku (48 karakter)" }));
     const reader = await screen.findByRole("dialog");
     expect(mocked.fulltext).toHaveBeenCalledWith(21);
+    // Drawn on the page, not inside the card: a card's own stacking would hide it behind the other cards.
+    expect(reader.closest("li")).toBeNull();
+    expect(reader.closest(".backdrop")?.parentElement).toBe(document.body);
     await userEvent.click(await within(reader).findByRole("button", { name: /^Orijinal/ }));
     expect(await within(reader).findByText("First paragraph of the article.")).toBeInTheDocument();
   });

@@ -3,6 +3,22 @@
 English version of [CHANGELOG.md](CHANGELOG.md), from 0.10.0 on. Version numbers follow
 [Semantic Versioning](https://semver.org/).
 
+## [0.13.2] — 2026-09-29 — Clicking a report opens its full text
+
+### Changed
+- **Clicking a report opens its full text:** on a report card of the feed and in the story detail, the headline opens
+  the reader inside the program instead of the source site. If the text is not there yet, the reader asks for it, shows
+  the summary meanwhile and switches to the text when it arrives; if it cannot be read, it says why. Without a
+  translation the original text opens, the translation one click away. With full texts switched off (Settings → Full
+  text) the headline opens the source as before.
+- A **Go to source** button on the cards, on every report in the story detail and in the reader.
+
+### Fixed
+- **The hour boxes of working hours and quiet hours were squeezed and showed "0" instead of "07".**
+- **The full-text reader opened from a card of the feed stayed behind the other cards and could not be read.** Dialogs
+  are now drawn on the page itself instead of inside the card, so they always open on top (a bug of the full-text
+  button in the feed, added in 0.13.1).
+
 ## [0.13.1] — 2026-09-29 — "My country" really switches off, working hours, fixes
 
 ### Added
