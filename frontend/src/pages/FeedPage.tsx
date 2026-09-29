@@ -161,7 +161,10 @@ export function FeedPage() {
         <div className="filter-row">
           <MultiSelect
             label={t("filter.region")}
-            options={meta.regions.map((r) => ({ value: r, label: t(`region.${r}`) }))}
+            options={[
+              ...(meta.home_region ? [{ value: "abroad", label: t("region.abroad") }] : []),
+              ...meta.regions.filter((r) => r !== "global").map((r) => ({ value: r, label: t(`region.${r}`) })),
+            ]}
             selected={filters.regions}
             onChange={(regions) => setFilters((f) => ({ ...f, regions }))}
           />

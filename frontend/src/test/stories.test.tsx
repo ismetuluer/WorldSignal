@@ -43,7 +43,7 @@ const SETTINGS: Settings = {
   "ui.language": "tr",
   "ui.theme": "light",
   "feed.window_hours": 24,
-  "feed.view": "stories", "feed.filters": { regions: [], groups: [], langs: [], sources: [], categories: [], turkey: false }, "update.auto_check": true, "update.auto_download": true, "home.enabled": true, "home.country": "", "home.related": null, "home.topics": null, "home.keywords": [], "ai.languages": null,
+  "feed.view": "stories", "feed.filters": { regions: [], groups: [], langs: [], sources: [], categories: [], turkey: false }, "update.auto_check": true, "update.auto_download": true, "home.enabled": true, "home.labels": true, "work.limited": false, "work.start": 7, "work.end": 23, "home.country": "", "home.related": null, "home.topics": null, "home.keywords": [], "ai.languages": null,
   "ai.enabled": true,
   "ai.url": "http://localhost:11434",
   "ai.model": "qwen3:14b",
@@ -53,6 +53,7 @@ const SETTINGS: Settings = {
 };
 const META: Meta = {
   regions: ["turkey", "middle_east"],
+  home_region: "turkey",
   groups: ["turkey", "western"],
   kinds: ["exclusive", "opinion"],
   languages: ["en", "tr"],
@@ -140,7 +141,7 @@ describe("Stories view", () => {
     wrap(<FeedPage />);
     const first = (await screen.findByText("Hikâye 1")).closest("li")!;
     const breaking = within(first).getByText("Son dakika");
-    expect(breaking.querySelector(".signal-pulse")).not.toBeNull();  // the pulsing signal
+    expect(breaking.querySelector(".live-dot")).not.toBeNull();  // the blinking red dot
     expect(within(first).getByText("Özel haber")).toBeInTheDocument();
     const second = screen.getByText("Hikâye 2").closest("li")!;
     expect(within(second).queryByText("Son dakika")).not.toBeInTheDocument();

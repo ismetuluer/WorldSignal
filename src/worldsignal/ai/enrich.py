@@ -74,9 +74,12 @@ class EnrichTask:
     topics: tuple[str, ...] = TOPICS
     ask_turkey: bool = True
     with_summary: bool = True  # False: headline, category and facts only ("fast", read in batches)
+    facts: bool = True  # False ("my country" is off): the country and topic questions are not asked at all
 
     def fact_schema(self) -> dict[str, Any]:
         """The facts for "my country": the same for reports and stories."""
+        if not self.facts:
+            return {}
         props: dict[str, Any] = {"countries": {"type": "array", "items": {"type": "string"}}}
         if self.ask_turkey:
             props["mentions_turkey"] = {"type": "boolean"}
@@ -85,6 +88,8 @@ class EnrichTask:
         return props
 
     def fact_fields(self, what: str = "text") -> list[str]:
+        if not self.facts:
+            return []
         fields = [f"- countries: ISO 3166-1 alpha-2 codes (e.g. \"US\", \"IR\", \"GR\") of the countries the {what} "
                   "is about or explicitly names. Cities and regions count for their country. Empty list if none."]
         if self.ask_turkey:

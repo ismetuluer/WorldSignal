@@ -22,6 +22,9 @@ DEFAULTS: dict[str, Any] = {
     # Off: the country link is left out of the score and the feed hides its filter and badges. The AI still
     # extracts the countries, so switching it back on needs no new work.
     "home.enabled": True,
+    # Rate the reports for "my country" and show the labels. Off: the ratings are not made again when the country
+    # changes (the AI work is unaffected: that is what "home.enabled" is for).
+    "home.labels": True,
     "home.country": "",
     "home.related": None,
     "home.topics": None,
@@ -61,6 +64,9 @@ DEFAULTS: dict[str, Any] = {
     "interest.regions": [],
     # Full text (phase 5). Browser mode uses patchright with a Chromium browser on this computer.
     "fulltext.enabled": True,
+    # Also translate every full text that arrives into the user's languages (a lot of AI work). Off: the summary
+    # only; a full text is translated when the user asks in the reader.
+    "fulltext.translate": False,
     "fulltext.browser_path": "",  # empty: the first of Brave, Chrome, Edge that is installed
     "fulltext.profile": "own",  # own: World Signal's profile | main: the browser's everyday profile
     "fulltext.visible": False,  # show the browser window while it reads pages
@@ -80,6 +86,10 @@ DEFAULTS: dict[str, Any] = {
     "notify.enabled": True,
     "notify.min_score": 60,  # only important stories ...
     "notify.min_sources": 5,  # ... reported by this many independent sources within three hours
+    # Working hours (worktime.py): off = the background work runs all day and night.
+    "work.limited": False,
+    "work.start": 7,
+    "work.end": 23,
     "notify.quiet": True,
     "notify.quiet_start": 23,  # quiet hours, local time
     "notify.quiet_end": 7,

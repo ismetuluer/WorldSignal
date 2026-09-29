@@ -71,6 +71,18 @@ export function FullTextSettings() {
 
         <div className="settings-row">
           <div className="settings-row-text">
+            <div className="settings-row-title">{t("settings.fulltext.translate")}</div>
+            <div className="settings-row-hint">{t("settings.fulltext.translateHint")}</div>
+          </div>
+          <Switch
+            checked={settings["fulltext.translate"]}
+            label={t("settings.fulltext.translate")}
+            onChange={(v) => void change({ "fulltext.translate": v })}
+          />
+        </div>
+
+        <div className="settings-row">
+          <div className="settings-row-text">
             <div className="settings-row-title">{t("settings.fulltext.browser")}</div>
             <div className="settings-row-hint">{t("settings.fulltext.browserHint")}</div>
           </div>

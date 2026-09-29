@@ -51,11 +51,12 @@ const SETTINGS: Settings = {
   "ai.model": "qwen3:14b",
   "ai.max_age_hours": 24,
   "ai.yield_gpu": true,
-  "feed.view": "articles", "feed.filters": { regions: [], groups: [], langs: [], sources: [], categories: [], turkey: false }, "update.auto_check": true, "update.auto_download": true, "home.enabled": true, "home.country": "", "home.related": null, "home.topics": null, "home.keywords": [], "ai.languages": null,
+  "feed.view": "articles", "feed.filters": { regions: [], groups: [], langs: [], sources: [], categories: [], turkey: false }, "update.auto_check": true, "update.auto_download": true, "home.enabled": true, "home.labels": true, "work.limited": false, "work.start": 7, "work.end": 23, "home.country": "", "home.related": null, "home.topics": null, "home.keywords": [], "ai.languages": null,
   ...STORY_SETTINGS,
 };
 const META: Meta = {
   regions: ["turkey", "europe"],
+  home_region: "turkey",
   groups: ["turkey", "western"],
   kinds: ["exclusive", "opinion"],
   languages: ["en", "tr"],

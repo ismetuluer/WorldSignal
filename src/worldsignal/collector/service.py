@@ -57,7 +57,10 @@ class Collector:
         articles: ArticleRepository,
         client_factory: Callable[[], httpx.AsyncClient] = make_client,
         clock: Callable[[], datetime] = lambda: datetime.now(UTC),
+        resting: Callable[[], bool] = lambda: False,
     ) -> None:
+        self.resting = resting  # outside the working hours (worktime.py) feeds are left alone
+        self._forced = False  # "scan now" overrides the rest once
         self.db = db
         self.sources = sources
         self.articles = articles
@@ -71,6 +74,7 @@ class Collector:
             "running": False,
             "busy": False,
             "offline": False,
+            "resting": False,
             "last_cycle_at": None,
             "last_cycle_new": 0,
             "last_cycle_feeds": 0,
@@ -84,6 +88,7 @@ class Collector:
     def request_run(self, source_id: int | None = None) -> int:
         """Mark feeds as due now and wake the loop. Safe to call from any thread."""
         count = self.sources.schedule_all_now(source_id)
+        self._forced = True
         if self._loop is not None and self._wake is not None:
             self._loop.call_soon_threadsafe(self._wake.set)
         return count
@@ -132,6 +137,11 @@ class Collector:
     async def run_cycle(self, client: httpx.AsyncClient) -> int:
         """Fetch all due feeds once. Returns the number of new articles."""
         now = self.clock()
+        resting = not self._forced and await asyncio.to_thread(self.resting)
+        self._state["resting"] = resting
+        if resting:
+            return 0
+        self._forced = False
         due = await asyncio.to_thread(self.sources.due_feeds, utc_now_iso(now))
         if not due:
             return 0

@@ -7,6 +7,7 @@ import { textDirection } from "../lib/hooks";
 import { Icon } from "./Icon";
 import { useMeeting } from "./meeting";
 import { BreakingBadge, ExclusiveBadge } from "./Badges";
+import { CardFullText } from "./FullText";
 
 const MAX_SOURCE_NAMES = 4;
 
@@ -61,7 +62,7 @@ function interestLabel(i18n: I18n, match: string): string {
 export function ScoreTags({ story: s, i18n }: { story: Story; i18n: I18n }) {
   const { t, plural } = i18n;
   const { settings } = useAppState();
-  const homeOn = settings["home.enabled"];
+  const homeOn = settings["home.enabled"] && settings["home.labels"];
   const tags: ScoreTag[] = s.score_parts.tags ?? [];
   return (
     <div className="story-tags" dir="ltr">
@@ -198,6 +199,11 @@ export function StoryCard({
       ) : null}
 
       <ScoreTags story={s} i18n={i18n} />
+      {s.representative && settings["fulltext.enabled"] ? (
+        <div className="article-actions" dir="ltr">
+          <CardFullText report={s.representative} />
+        </div>
+      ) : null}
     </li>
   );
 }

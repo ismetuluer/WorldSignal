@@ -179,7 +179,15 @@ bir sayı varsa "Dikkat" uyarısı gösterilir.
   (varsayılan: Windows'un bölge ayarı). Haber, yapay zekâ onu okuduktan sonra değerlendirilir: ülkeniz haberde
   geçiyorsa *doğrudan*, bir komşunuz, seçtiğiniz yakın ülkeler ya da konular geçiyorsa *dolaylı* bağlantılıdır.
   Konuları listeden ekleyip çıkarabilir, kendi konularınızı yazabilirsiniz. İstemezseniz **Ülkem özelliği**ni
-  kapatın: ülke bağlantısı önem skoruna katılmaz, filtresi ve etiketleri görünmez.
+  kapatın: ülke bağlantısı önem skoruna katılmaz, filtresi ve etiketleri görünmez; yapay zekâ da ülke ve konu
+  sorularını hiç sormaz (daha hızlı çalışır). **Ülke etiketleri** ayrıca kapatılabilir: ülkeyi değiştirince eski haberler
+  yeniden derecelendirilmez.
+- **Tam metin** — kartlardaki **Tam metni getir** düğmesiyle sıraya alınır, gelince **Tam metni oku** ile program içinde
+  okunur (yalnızca sizin okumanız içindir; çıktılara konmaz). Ayarlar → Tam metin → **Tam metni de çevir** açılırsa gelen
+  her tam metin özet dillerinize de çevrilir; varsayılan yalnızca özettir.
+- **Çalışma saatleri** — Ayarlar → Arka plan. Varsayılan gece gündüz sürekli çalışmadır (programı hep açık
+  bırakabilirsiniz); isterseniz bir saat aralığı seçersiniz, dışında haber toplama, yapay zekâ ve tam metin dinlenir.
+  Elle istedikleriniz (Özetle, tam metni getir, Şimdi tara) yine yapılır.
 - **Hikâye ayrıntısı** — özet, skorun dökümü, günlere göre gelişim, tüm haberler ve bağlantıları, notlarınız.
   Yanlış gruplanmış haberi **Bu hikâyeden ayır**, aynı olayı anlatan iki hikâyeyi **Başka hikâyeyle birleştir**.
 - **Toplantı** — bugünün öneri listesi. Hikâyeyi **Toplantıya ekle** (ya da `T`), sürükleyerek sırala, her öneriye kısa

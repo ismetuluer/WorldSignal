@@ -33,11 +33,11 @@ import { FULLTEXT_WORKER, MAINTENANCE, NOTIFY, STORY_SETTINGS, STORY_WORKER } fr
 const mocked = vi.mocked(api, true);
 
 const SETTINGS: Settings = {
-  "ui.language": "tr", "ui.theme": "light", "feed.window_hours": 24, "feed.view": "stories", "feed.filters": { regions: [], groups: [], langs: [], sources: [], categories: [], turkey: false }, "update.auto_check": true, "update.auto_download": true, "home.enabled": true, "home.country": "", "home.related": null, "home.topics": null, "home.keywords": [], "ai.languages": null, "ai.enabled": true,
+  "ui.language": "tr", "ui.theme": "light", "feed.window_hours": 24, "feed.view": "stories", "feed.filters": { regions: [], groups: [], langs: [], sources: [], categories: [], turkey: false }, "update.auto_check": true, "update.auto_download": true, "home.enabled": true, "home.labels": true, "work.limited": false, "work.start": 7, "work.end": 23, "home.country": "", "home.related": null, "home.topics": null, "home.keywords": [], "ai.languages": null, "ai.enabled": true,
   "ai.url": "http://localhost:11434", "ai.model": "m", "ai.max_age_hours": 24, "ai.yield_gpu": true, ...STORY_SETTINGS,
 };
 const META: Meta = {
-  regions: ["turkey"], groups: ["turkey"], kinds: ["exclusive", "opinion"], languages: ["tr"], categories: ["politics"], ui_languages: ["tr", "en"], home_country: "TR", system_country: "TR", ai_output_languages: ["tr", "en", "pt", "ar"],
+  regions: ["turkey"], home_region: "turkey", groups: ["turkey"], kinds: ["exclusive", "opinion"], languages: ["tr"], categories: ["politics"], ui_languages: ["tr", "en"], home_country: "TR", system_country: "TR", ai_output_languages: ["tr", "en", "pt", "ar"],
   data_dir: "C:\\data", version: "0.7.0",
 };
 const AI: AiStatus = {
@@ -89,6 +89,21 @@ describe("Background and notifications", () => {
     expect(mocked.updateSettings).toHaveBeenCalledWith({ "notify.quiet_start": 22 });
     await userEvent.selectOptions(screen.getByRole("combobox", { name: "Sessiz saatlerin bitişi" }), "8");
     expect(mocked.updateSettings).toHaveBeenCalledWith({ "notify.quiet_end": 8 });
+  });
+
+  it("works all day by default and limits the working hours on request", async () => {
+    wrap(<BackgroundSettings />);
+    expect(screen.getByText(/gece gündüz sürekli çalışıyor/)).toBeInTheDocument();
+    expect(screen.queryByRole("combobox", { name: "Çalışmanın başlangıcı" })).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole("switch", { name: "Çalışma saatlerini sınırla" }));
+    expect(mocked.updateSettings).toHaveBeenLastCalledWith({ "work.limited": true });
+  });
+
+  it("saves the working hours", async () => {
+    wrap(<BackgroundSettings />, { ...SETTINGS, "work.limited": true });
+    await userEvent.selectOptions(screen.getByRole("combobox", { name: "Çalışmanın bitişi" }), "20");
+    expect(mocked.updateSettings).toHaveBeenLastCalledWith({ "work.end": 20 });
+    expect(screen.getByText(/dinlenir; elle istedikleriniz/)).toBeInTheDocument();
   });
 
   it("sends a test notification", async () => {

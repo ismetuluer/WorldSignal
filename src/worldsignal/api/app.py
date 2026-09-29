@@ -49,7 +49,7 @@ from ..maintenance import Maintenance
 from ..notify import Notifier
 from ..repo.notebook import MAX_COMMENT, MAX_NOTE, NotebookRepository, valid_day
 from ..repo.settings import DEFAULTS, SettingsRepository
-from ..repo.sources import CATALOG_GROUPS, REGIONS, Conflict, NotFound, SourceRepository
+from ..repo.sources import ABROAD, CATALOG_GROUPS, HOME_REGION, REGIONS, Conflict, NotFound, SourceRepository
 from ..repo.stats import PERIODS, StatsRepository, period as stats_period
 from ..repo.stories import StoryFilter, StoryRepository
 from ..stories.embedding import recommended_settings
@@ -118,12 +118,13 @@ def api_error(status: int, code: str, message: str = "") -> HTTPException:
 Region = Literal[REGIONS]  # type: ignore[valid-type]
 Group = Literal[CATALOG_GROUPS]  # type: ignore[valid-type]
 FeedGroup = Literal[CATALOG_GROUPS + KINDS]  # type: ignore[valid-type]
+FeedRegion = Literal[REGIONS + (ABROAD,)]  # type: ignore[valid-type]
 
 
 class FeedFilters(BaseModel):
     model_config = {"extra": "forbid"}
 
-    regions: list[Region] = Field(default_factory=list)
+    regions: list[FeedRegion] = Field(default_factory=list)
     groups: list[FeedGroup] = Field(default_factory=list)
     langs: list[Annotated[str, Field(min_length=2, max_length=3)]] = Field(default_factory=list, max_length=50)
     sources: list[int] = Field(default_factory=list, max_length=500)
@@ -141,6 +142,7 @@ class SettingsPatch(BaseModel):
     feed_filters: FeedFilters | None = Field(None, alias="feed.filters")
     update_auto_check: bool | None = Field(None, alias="update.auto_check")
     home_enabled: bool | None = Field(None, alias="home.enabled")
+    home_labels: bool | None = Field(None, alias="home.labels")
     home_country: Annotated[str, Field(pattern=r"^([A-Z]{2})?$")] | None = Field(None, alias="home.country")
     home_related: list[Annotated[str, Field(pattern=r"^[A-Z]{2}$")]] | None = Field(None, alias="home.related", max_length=50)
     home_topics: list[Annotated[str, Field(min_length=MIN_TOPIC, max_length=MAX_TOPIC)]] | None = Field(
@@ -170,6 +172,7 @@ class SettingsPatch(BaseModel):
     stories_threshold: float | None = Field(None, alias="stories.threshold", ge=0.5, le=0.95)
     stories_cohesion: float | None = Field(None, alias="stories.cohesion", ge=0, le=0.9)
     fulltext_enabled: bool | None = Field(None, alias="fulltext.enabled")
+    fulltext_translate: bool | None = Field(None, alias="fulltext.translate")
     fulltext_browser_path: str | None = Field(None, alias="fulltext.browser_path", max_length=400)
     fulltext_profile: Literal["own", "main"] | None = Field(None, alias="fulltext.profile")
     fulltext_visible: bool | None = Field(None, alias="fulltext.visible")
@@ -186,6 +189,9 @@ class SettingsPatch(BaseModel):
     notify_enabled: bool | None = Field(None, alias="notify.enabled")
     notify_min_score: float | None = Field(None, alias="notify.min_score", ge=0, le=100)
     notify_min_sources: int | None = Field(None, alias="notify.min_sources", ge=2, le=30)
+    work_limited: bool | None = Field(None, alias="work.limited")
+    work_start: int | None = Field(None, alias="work.start", ge=0, le=23)
+    work_end: int | None = Field(None, alias="work.end", ge=0, le=23)
     notify_quiet: bool | None = Field(None, alias="notify.quiet")
     notify_quiet_start: int | None = Field(None, alias="notify.quiet_start", ge=0, le=23)
     notify_quiet_end: int | None = Field(None, alias="notify.quiet_end", ge=0, le=23)
@@ -311,6 +317,7 @@ def create_app(ctx: AppContext) -> FastAPI:
         if ctx.run_collector:
             # New reports go into stories (and the AI queue) right away instead of at the next poll.
             ctx.collector.on_new_articles[:] = [ctx.story_worker.wake, ctx.ai_worker.wake]
+            ctx.fulltext_worker.on_translation_queued = ctx.ai_worker.wake
             tasks.append(asyncio.create_task(ctx.collector.run_forever(), name="collector"))
             tasks.append(asyncio.create_task(ctx.ai_worker.run_forever(), name="ai-worker"))
             tasks.append(asyncio.create_task(ctx.story_worker.run_forever(), name="story-worker"))
@@ -362,6 +369,8 @@ def create_app(ctx: AppContext) -> FastAPI:
     def meta() -> dict[str, Any]:
         return {
             "regions": list(REGIONS),
+            # "Abroad" (every source outside the local region) is offered only where a local region exists.
+            "home_region": HOME_REGION if ctx.home is None or ctx.home.profile().code == "TR" else None,
             "groups": list(CATALOG_GROUPS),
             # Virtual groups of the feed's filter: exclusives and opinion pieces from any source (flags.py).
             "kinds": list(KINDS),
@@ -438,11 +447,11 @@ def create_app(ctx: AppContext) -> FastAPI:
         if "home.keywords" in values:
             values["home.keywords"] = list(dict.fromkeys(k.strip() for k in values["home.keywords"] if k.strip()))
         ctx.settings.set_many(values)
-        if any(k.startswith("home.") and k != "home.enabled" for k in values) and ctx.home_sync is not None:
+        if any(k.startswith("home.") for k in values) and ctx.home_sync is not None:
             ctx.home_sync.wake()
         if any(k.startswith("ai.") for k in values):
             ctx.ai_worker.wake()
-        if any(k.split(".")[0] in ("stories", "score", "interest") or k == "home.enabled" for k in values):
+        if any(k.split(".")[0] in ("stories", "score", "interest") or k in ("home.enabled", "home.labels") for k in values):
             ctx.story_worker.request_rescore()
         if any(k.startswith("fulltext.") for k in values):
             ctx.fulltext_worker.wake()

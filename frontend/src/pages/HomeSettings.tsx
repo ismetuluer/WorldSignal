@@ -86,6 +86,18 @@ export function HomeSettings() {
 
         {on ? (
           <>
+            <div className="settings-row">
+              <div className="settings-row-text">
+                <div className="settings-row-title">{t("settings.home.labels")}</div>
+                <div className="settings-row-hint">{t("settings.home.labelsHint")}</div>
+              </div>
+              <Switch
+                checked={settings["home.labels"]}
+                label={t("settings.home.labels")}
+                onChange={(v) => change({ "home.labels": v })}
+              />
+            </div>
+
 
         <div className="settings-row">
           <div className="settings-row-text">

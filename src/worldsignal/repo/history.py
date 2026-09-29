@@ -16,6 +16,7 @@ from datetime import UTC, date, datetime, timedelta, tzinfo
 from typing import Any
 
 from ..db import Database, utc_now_iso
+from ..textnorm import fold_for_search, repair_mojibake
 from ..stories.score import Interest, Member, independent_sources, score_story
 from .stories import StoryRepository, parse_iso
 
@@ -227,6 +228,29 @@ class HistoryRepository:
                 (cutoff,),
             ).rowcount
         return removed
+
+    def repair_mojibake(self, batch: int = 2000) -> int:
+        """Titles and summaries a feed delivered as UTF-8-read-as-Windows-1252 ("SoykÄ±rÄ±m") are written correctly,
+        and their search index with them. Returns the number of reports repaired."""
+        repaired, last = 0, 0
+        while True:
+            rows = self.db.conn.execute(
+                "SELECT id, title, summary, author FROM articles WHERE id > ? ORDER BY id LIMIT ?", (last, batch)
+            ).fetchall()
+            if not rows:
+                return repaired
+            last = rows[-1]["id"]
+            with self.db.transaction() as c:
+                for r in rows:
+                    title, summary, author = (repair_mojibake(r["title"]), repair_mojibake(r["summary"]),
+                                              repair_mojibake(r["author"]) or None)
+                    if (title, summary, author) == (r["title"], r["summary"], r["author"]):
+                        continue
+                    c.execute("UPDATE articles SET title = ?, summary = ?, author = ? WHERE id = ?",
+                              (title, summary, author, r["id"]))
+                    c.execute("UPDATE articles_fts SET title = ?, summary = ? WHERE rowid = ?",
+                              (fold_for_search(title), fold_for_search(summary), r["id"]))
+                    repaired += 1
 
     def reclaim(self, min_ratio: float = 0.2, min_bytes: int = 16_000_000) -> int:
         """Give the space of deleted rows back to the disk (VACUUM) once it is a noticeable part of the file.

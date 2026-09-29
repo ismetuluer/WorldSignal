@@ -15,6 +15,7 @@ from ..country import HomeProfile
 from ..db import Database, utc_now_iso
 from ..flags import MARKER_WINDOW, group_condition, has_breaking_marker, is_exclusive
 from ..textnorm import build_fts_query, fold_for_search
+from .sources import region_condition
 
 # Small clock differences between servers are ignored.
 FUTURE_TOLERANCE = timedelta(minutes=5)
@@ -131,7 +132,6 @@ class ArticleRepository:
             params.append(f.until)
         for column, values in (
             ("a.source_id", f.source_ids),
-            ("s.region", f.regions),
             ("COALESCE(a.language, s.language)", f.languages),
             ("x.category", f.categories),
         ):
@@ -141,6 +141,9 @@ class ArticleRepository:
         if groups := group_condition(f.groups):
             where.append(groups[0])
             params.extend(groups[1])
+        if regions := region_condition(f.regions):
+            where.append(regions[0])
+            params.extend(regions[1])
         if f.turkey_only:
             where.append("a.home_relevance IN ('direct', 'indirect')")
         if paginate and f.before:
@@ -159,10 +162,13 @@ class ArticleRepository:
                    COALESCE(a.language, s.language) AS language,
                    s.id AS source_id, s.name AS source_name, s.region, s.catalog_group, s.paywalled,
                    x.status AS ai_status, x.texts AS ai_texts, x.brief AS ai_brief, x.category, x.countries,
-                   a.home_relevance AS turkey_relevance, a.home_links AS turkey_links, x.issues AS ai_issues, x.model AS ai_model, x.error_code AS ai_error
+                   a.home_relevance AS turkey_relevance, a.home_links AS turkey_links, x.issues AS ai_issues, x.model AS ai_model, x.error_code AS ai_error,
+                   ft.status AS fulltext_status, ft.error_code AS fulltext_error, ft.chars AS fulltext_chars,
+                   ft.translate_status AS fulltext_translate_status
             FROM articles a
             JOIN sources s ON s.id = a.source_id
             LEFT JOIN article_ai x ON x.article_id = a.id
+            LEFT JOIN article_fulltext ft ON ft.article_id = a.id
             WHERE {where}
             ORDER BY a.sort_at DESC, a.id DESC
             LIMIT ?"""

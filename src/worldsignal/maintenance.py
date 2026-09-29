@@ -65,6 +65,11 @@ class Maintenance:
             checked = self.fulltext.recheck(judge, MAX_CHARS)
             if any(checked.values()):
                 log.info("Full-text re-check: %s", checked)
+        if not self.settings.get("repair.mojibake"):  # once: reports stored with broken Turkish letters (0.13.1)
+            fixed = self.history.repair_mojibake()
+            self.settings.set("repair.mojibake", 1)
+            if fixed:
+                log.info("Repaired the letters of %d reports", fixed)
         removed = self.history.prune(self.clock(), int(prefs["retention.fulltext_days"]), VECTOR_KEEP_DAYS)
         self._state.update(last_run_at=utc_now_iso(self.clock()), last_removed=removed, last_error=None)
         if any(removed.values()):

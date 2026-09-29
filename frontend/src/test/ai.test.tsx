@@ -51,11 +51,12 @@ const SETTINGS: Settings = {
   "ai.model": "qwen3:14b",
   "ai.max_age_hours": 24,
   "ai.yield_gpu": true,
-  "feed.view": "articles", "feed.filters": { regions: [], groups: [], langs: [], sources: [], categories: [], turkey: false }, "update.auto_check": true, "update.auto_download": true, "home.enabled": true, "home.country": "", "home.related": null, "home.topics": null, "home.keywords": [], "ai.languages": null,
+  "feed.view": "articles", "feed.filters": { regions: [], groups: [], langs: [], sources: [], categories: [], turkey: false }, "update.auto_check": true, "update.auto_download": true, "home.enabled": true, "home.labels": true, "work.limited": false, "work.start": 7, "work.end": 23, "home.country": "", "home.related": null, "home.topics": null, "home.keywords": [], "ai.languages": null,
   ...STORY_SETTINGS,
 };
 const META: Meta = {
   regions: ["turkey", "europe"],
+  home_region: "turkey",
   groups: ["turkey", "western"],
   kinds: ["exclusive", "opinion"],
   languages: ["en", "tr"],
@@ -391,6 +392,32 @@ describe("My country", () => {
     expect(screen.queryByRole("combobox", { name: "Ülke" })).not.toBeInTheDocument();
     await userEvent.click(toggle);
     expect(mocked.updateSettings).toHaveBeenLastCalledWith({ "home.enabled": true });
+  });
+
+  it("hides the country labels on cards when only the labels are off", async () => {
+    mocked.articles.mockResolvedValue({
+      items: [enriched(1, { turkey_relevance: "direct", turkey_links: ["home_mentioned"] })], next: null, total: 1,
+    });
+    wrap(<FeedPage />, { ...SETTINGS, "home.labels": false });
+    await screen.findByText("Liderler Brüksel'de bir araya geldi");
+    expect(screen.queryByTitle("Metinde Türkiye geçiyor")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Türkiye bağlantılı" })).toBeInTheDocument();  // the filter stays
+  });
+
+  it("switches the country labels off separately", async () => {
+    wrap(<HomeSettings />);
+    await userEvent.click(await screen.findByRole("switch", { name: "Ülke etiketleri" }));
+    expect(mocked.updateSettings).toHaveBeenLastCalledWith({ "home.labels": false });
+  });
+
+  it("offers 'outside my region' instead of 'global' in the region filter", async () => {
+    mocked.articles.mockResolvedValue({ items: [], next: null, total: 0 });
+    wrap(<FeedPage />);
+    await userEvent.click(await screen.findByRole("button", { name: "Bölge" }));
+    expect(screen.getByRole("option", { name: "Yerel dışı" })).toBeInTheDocument();
+    expect(screen.queryByRole("option", { name: "Küresel" })).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole("option", { name: "Yerel dışı" }));
+    await waitFor(() => expect(mocked.articles).toHaveBeenLastCalledWith(expect.objectContaining({ region: ["abroad"] })));
   });
 
   it("offers exclusives and opinion pieces in the source-group filter", async () => {

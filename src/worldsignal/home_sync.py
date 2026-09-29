@@ -43,6 +43,9 @@ class HomeSync:
 
     def sync(self) -> int | None:
         """Rate everything again if the rules changed. Returns the number of changed ratings (None: nothing to do)."""
+        prefs = self.settings.get_preferences()
+        if prefs.get("home.enabled") is False or prefs.get("home.labels") is False:
+            return None  # off: nothing is rated; switching it on again rates what changed meanwhile
         home = self.state.profile()
         if self.settings.get(APPLIED) == home.key:
             return None
@@ -51,7 +54,6 @@ class HomeSync:
             changed = self.articles.recompute_home(home)
             restated = self.stories.recompute_home(home.relevance)  # the facts of story summaries
             now = self.clock()
-            prefs = self.settings.get_preferences()
             ids = sorted(set(self.stories.active_story_ids(utc_now_iso(now - RESCORE_WINDOW))) | set(restated))
             if ids:
                 self.stories.recompute(ids, now, weights_from(prefs), interest_from(prefs))

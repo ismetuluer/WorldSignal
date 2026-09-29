@@ -130,7 +130,7 @@ class AiRepository:
         ).fetchone()
         return Job(**dict(row), upgrade=True) if row else None
 
-    def next_jobs(self, limit: int, *, automatic_only: bool = False) -> list[Job]:
+    def next_jobs(self, limit: int, *, automatic_only: bool = False, requested_only: bool = False) -> list[Job]:
         """Queued articles, most urgent first (the user's requests before everything)."""
         rows = self.db.conn.execute(
             f"""SELECT x.article_id, x.attempts, a.title,
@@ -142,6 +142,7 @@ class AiRepository:
                JOIN sources s ON s.id = a.source_id
                LEFT JOIN article_fulltext ft ON ft.article_id = a.id
                WHERE x.status = 'pending' {"AND x.requested_by_user = 0" if automatic_only else ""}
+                 {"AND x.requested_by_user = 1" if requested_only else ""}
                ORDER BY x.priority DESC LIMIT ?""",
             (limit,),
         ).fetchall()

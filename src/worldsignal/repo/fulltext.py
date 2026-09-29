@@ -21,7 +21,13 @@ PAUSE_AFTER = {  # error -> how long the site is left alone
     "http_403": timedelta(hours=6),
     "http_429": timedelta(hours=6),
     "paywall": timedelta(hours=3),
+    "http_401": timedelta(hours=6),  # a site asking for a login is not asked again and again
 }
+# A refusal (bot check, 401/403/429) repeated within ``ESCALATE_WINDOW`` doubles the pause each time, up to
+# ``MAX_PAUSE``: a site that keeps saying no is left alone for longer, so the subscription is not flagged.
+REFUSALS = ("bot_check", "http_401", "http_403", "http_429")
+ESCALATE_WINDOW = timedelta(days=3)
+MAX_PAUSE = timedelta(hours=72)
 FINAL_ERRORS = {"bot_check", "paywall", "not_article", "aggregator_link", "http_401", "http_403", "http_404", "http_410",
                 "http_429"}
 
@@ -104,7 +110,8 @@ class FullTextRepository:
             )
         return "pending"
 
-    def next_job(self, now: datetime, per_site_hour: int, browser: BrowserPace | None = None) -> FullTextJob | None:
+    def next_job(self, now: datetime, per_site_hour: int, browser: BrowserPace | None = None,
+                 user_only: bool = False) -> FullTextJob | None:
         """Highest-priority pending article whose site is not paused, not over its hourly limit and
         whose full-text mode allows fetching (the user's own requests ignore 'off'). Sites read in the
         browser also follow ``browser`` (a person's pace)."""
@@ -133,11 +140,12 @@ class FullTextRepository:
                JOIN sources s ON s.id = a.source_id
                WHERE f.status = 'pending' AND s.enabled = 1
                  AND (s.fulltext_mode != 'off' OR f.reason = 'user')
+                 AND (f.reason = 'user' OR :user_only = 0)
                  AND (s.fulltext_paused_until IS NULL OR s.fulltext_paused_until <= :now)
                  AND (SELECT COUNT(*) FROM article_fulltext f2 JOIN articles a2 ON a2.id = f2.article_id
                       WHERE a2.source_id = s.id AND f2.attempted_at >= :hour_ago) < :per_hour""" + pace_sql + """
                ORDER BY f.priority DESC LIMIT 1""",
-            {"now": now_iso, "hour_ago": hour_ago, "per_hour": per_site_hour, **pace_params},
+            {"now": now_iso, "hour_ago": hour_ago, "per_hour": per_site_hour, "user_only": int(user_only), **pace_params},
         ).fetchone()
         if row is None:
             return None
@@ -172,6 +180,14 @@ class FullTextRepository:
                 (status, code, attempts, job.mode, job.article_id),
             )
             pause = PAUSE_AFTER.get(code)
+            if pause is not None and code in REFUSALS:
+                earlier = c.execute(
+                    """SELECT COUNT(*) FROM article_fulltext f JOIN articles a ON a.id = f.article_id
+                       WHERE a.source_id = ? AND f.error_code IN (?, ?, ?, ?) AND f.attempted_at >= ?
+                         AND f.article_id != ?""",
+                    (job.source_id, *REFUSALS, utc_now_iso(now - ESCALATE_WINDOW), job.article_id),
+                ).fetchone()[0]
+                pause = min(pause * 2 ** min(earlier, 6), MAX_PAUSE)
             if pause is not None:
                 c.execute("UPDATE sources SET fulltext_paused_until = ? WHERE id = ?", (utc_now_iso(now + pause), job.source_id))
         return status

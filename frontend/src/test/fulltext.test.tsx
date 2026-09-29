@@ -1,4 +1,4 @@
-import { render, screen, waitFor, within } from "@testing-library/react";
+import { act, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { ReactNode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -28,7 +28,7 @@ vi.mock("../api/client", async (importOriginal) => {
 });
 
 import { api, ApiError } from "../api/client";
-import { TRANSLATION_POLL_MS } from "../components/FullText";
+import { CardFullText, TRANSLATION_POLL_MS } from "../components/FullText";
 import { StoryDetail } from "../components/StoryDetail";
 import { ToastProvider } from "../components/Toasts";
 import { I18nProvider } from "../i18n";
@@ -45,7 +45,7 @@ const SETTINGS: Settings = {
   "ui.language": "tr",
   "ui.theme": "light",
   "feed.window_hours": 24,
-  "feed.view": "stories", "feed.filters": { regions: [], groups: [], langs: [], sources: [], categories: [], turkey: false }, "update.auto_check": true, "update.auto_download": true, "home.enabled": true, "home.country": "", "home.related": null, "home.topics": null, "home.keywords": [], "ai.languages": null,
+  "feed.view": "stories", "feed.filters": { regions: [], groups: [], langs: [], sources: [], categories: [], turkey: false }, "update.auto_check": true, "update.auto_download": true, "home.enabled": true, "home.labels": true, "work.limited": false, "work.start": 7, "work.end": 23, "home.country": "", "home.related": null, "home.topics": null, "home.keywords": [], "ai.languages": null,
   "ai.enabled": true,
   "ai.url": "http://localhost:11434",
   "ai.model": "gemma4-26b-a4b",
@@ -55,6 +55,7 @@ const SETTINGS: Settings = {
 };
 const META: Meta = {
   regions: ["turkey", "europe"],
+  home_region: "turkey",
   groups: ["turkey", "western"],
   kinds: ["exclusive", "opinion"],
   languages: ["en", "tr"],
@@ -378,6 +379,54 @@ describe("Full text in a story", () => {
     const reader = (await screen.findAllByRole("dialog")).at(-1)!;
     expect(await within(reader).findByText(/özetlemeyi açın/)).toBeInTheDocument();
     expect(within(reader).queryByRole("button", { name: "Çevir" })).not.toBeInTheDocument();
+  });
+});
+
+describe("Full text on a card of the feed", () => {
+  const report = (extra: Partial<StoryMember> = {}) => member(21, "Beta Haber", extra);
+
+  it("fetches the text from the card and waits for it", async () => {
+    mocked.requestFulltext.mockResolvedValue({ status: "pending" });
+    mocked.fulltext.mockResolvedValue({ fulltext: null });
+    wrap(<CardFullText report={report()} />);
+    await userEvent.click(screen.getByRole("button", { name: "Tam metni getir" }));
+    expect(mocked.requestFulltext).toHaveBeenCalledWith(21);
+    expect(await screen.findByText("Tam metin sırada…")).toBeInTheDocument();
+  });
+
+  it("offers the reader as soon as the text has arrived, without reloading the list", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    try {
+      mocked.requestFulltext.mockResolvedValue({ status: "pending" });
+      mocked.fulltext.mockResolvedValue({ fulltext: fulltext({ article_id: 21, status: "done", chars: 2048 }) });
+      wrap(<CardFullText report={report({ fulltext_status: "pending" })} />);
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(4500);
+      });
+      expect(await screen.findByRole("button", { name: "Tam metni oku (2.048 karakter)" })).toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("opens the reader for a text that is already there", async () => {
+    mocked.fulltext.mockResolvedValue({ fulltext: fulltext({ article_id: 21 }) });
+    wrap(<CardFullText report={report({ fulltext_status: "done", fulltext_chars: 48 })} />);
+    await userEvent.click(screen.getByRole("button", { name: "Tam metni oku (48 karakter)" }));
+    const reader = await screen.findByRole("dialog");
+    expect(mocked.fulltext).toHaveBeenCalledWith(21);
+    await userEvent.click(await within(reader).findByRole("button", { name: /^Orijinal/ }));
+    expect(await within(reader).findByText("First paragraph of the article.")).toBeInTheDocument();
+  });
+});
+
+describe("Translating the full text too", () => {
+  it("is off by default and switched on in the settings", async () => {
+    wrap(<FullTextSettings />);
+    const toggle = await screen.findByRole("switch", { name: "Tam metni de çevir" });
+    expect(toggle).toHaveAttribute("aria-checked", "false");
+    await userEvent.click(toggle);
+    expect(mocked.updateSettings).toHaveBeenLastCalledWith({ "fulltext.translate": true });
   });
 });
 

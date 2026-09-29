@@ -17,6 +17,7 @@ from ..flags import group_condition, is_breaking, is_exclusive
 from ..stories.score import Interest, Member, score_story
 from ..textnorm import build_fts_query
 from .ai import lacking_sql
+from .sources import region_condition
 
 DTYPE = np.float32  # computing
 STORED = "f2"  # how new vectors are stored (migration 0010): 16-bit floats; older rows say "f4"
@@ -364,7 +365,7 @@ class StoryRepository:
             params.extend(f.categories)
         member_conds = []
         member_params: list[Any] = []
-        for column, values in (("a.source_id", f.source_ids), ("s.region", f.regions),
+        for column, values in (("a.source_id", f.source_ids),
                                ("COALESCE(a.language, s.language)", f.languages)):
             if values:
                 member_conds.append(f"{column} IN ({','.join('?' * len(values))})")
@@ -372,6 +373,9 @@ class StoryRepository:
         if groups := group_condition(f.groups):
             member_conds.append(groups[0])
             member_params.extend(groups[1])
+        if regions := region_condition(f.regions):
+            member_conds.append(regions[0])
+            member_params.extend(regions[1])
         if f.query:
             fts = build_fts_query(f.query, f.alternatives)
             if fts is None:

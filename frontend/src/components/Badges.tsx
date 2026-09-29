@@ -1,17 +1,11 @@
 import { useI18n } from "../i18n";
 
-/** "Breaking": a story spreading right now, or marked breaking by its publisher. The signal's arcs pulse outwards. */
+/** "Breaking": a story spreading right now, or marked breaking by its publisher. A red dot blinks. */
 export function BreakingBadge() {
   const { t } = useI18n();
   return (
     <span className="badge badge-breaking" title={t("badge.breakingHint")}>
-      <svg className="signal-pulse" width="13" height="13" viewBox="0 0 24 24" aria-hidden="true" fill="none"
-        stroke="currentColor" strokeWidth="2.6" strokeLinecap="round">
-        <circle cx="12" cy="17" r="1.6" fill="currentColor" stroke="none" />
-        <path className="arc arc-1" d="M8.5 14a4.5 4.5 0 0 1 7 0" />
-        <path className="arc arc-2" d="M5.5 11a8.5 8.5 0 0 1 13 0" />
-        <path className="arc arc-3" d="M2.5 8a12.5 12.5 0 0 1 19 0" />
-      </svg>
+      <span className="live-dot" aria-hidden="true" />
       {t("badge.breaking")}
     </span>
   );

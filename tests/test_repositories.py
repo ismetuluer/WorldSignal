@@ -202,6 +202,17 @@ def test_exclusive_and_opinion_groups(db, sources, articles):
     assert titles(ArticleFilter(groups=["turkey", "opinion"])) == ["Toplantı bitti", "Why it matters", "Özel haber: Bakan açıkladı"]
 
 
+def test_region_filter_offers_everything_outside_the_local_region(db, sources, articles):
+    by_slug = seed(sources)
+    insert(db, articles, by_slug["alpha"], [entry("a1", "Alpha one")])  # Europe (MINI_CATALOG)
+    insert(db, articles, by_slug["beta"], [entry("b1", "Beta one"), entry("b2", "Beta two")])  # Türkiye
+    titles = lambda f: sorted(a["title"] for a in articles.list(f))  # noqa: E731
+    assert titles(ArticleFilter(regions=["abroad"])) == ["Alpha one"]
+    assert titles(ArticleFilter(regions=["turkey"])) == ["Beta one", "Beta two"]
+    assert len(titles(ArticleFilter(regions=["abroad", "turkey"]))) == 3
+    assert len(titles(ArticleFilter(regions=["abroad"], groups=["turkey"]))) == 0  # filters add up (AND)
+
+
 def test_disabled_source_articles_are_hidden(db, sources, articles):
     s = seed(sources)["alpha"]
     insert(db, articles, s, [entry("x", "Hidden later")])

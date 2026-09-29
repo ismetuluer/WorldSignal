@@ -11,7 +11,7 @@ from worldsignal.ai import translate
 from worldsignal.fulltext.extract import SHORT_TEXT, declared_word_count, extract, judge, tidy
 from worldsignal.fulltext.fetch import BrowserInfo, FetchFailed, Page, profile_in_use, read_like_a_person
 from worldsignal.fulltext.worker import FullTextWorker
-from worldsignal.repo.fulltext import BrowserPace, FullTextRepository
+from worldsignal.repo.fulltext import MAX_PAUSE, PAUSE_AFTER, BrowserPace, FullTextRepository
 from worldsignal.repo.stories import StoryRepository
 
 NOW = datetime.now(UTC).replace(microsecond=0)
@@ -132,6 +132,26 @@ def test_hourly_limit_per_site_and_pauses(world):
     assert repo.paused_sources(NOW) == []
 
 
+def test_repeated_refusals_lengthen_the_pause(world):
+    repo, ids = world["repo"], world["ids"]
+    alpha = [ids["a1"], ids["a2"], ids["a3"]]
+    repo.enqueue(alpha, "auto")
+    # Every refusal pauses the site; the same refusal again within three days doubles the pause.
+    job = repo.next_job(NOW, 10)
+    repo.mark_attempt(job.article_id, NOW)  # the worker marks every attempt before it reads the page
+    assert repo.store_failure(job, "http_403", NOW) == "failed"
+    assert repo.paused_sources(NOW + timedelta(hours=5))
+    assert not repo.paused_sources(NOW + timedelta(hours=7))  # 6 hours the first time
+    later = NOW + timedelta(days=1)
+    job = repo.next_job(later, 10)
+    repo.mark_attempt(job.article_id, later)
+    repo.store_failure(job, "http_403", later)
+    assert repo.paused_sources(later + timedelta(hours=11))
+    assert not repo.paused_sources(later + timedelta(hours=13))  # 12 hours the second time
+    # A login request (401) pauses the site too, and the pause never exceeds three days.
+    assert PAUSE_AFTER["http_401"] > timedelta(0) and MAX_PAUSE == timedelta(hours=72)
+
+
 def pace(**kw):
     values = {"gap": timedelta(minutes=20), "user_gap": timedelta(minutes=3), "per_day": 15,
               "day_start": NOW - timedelta(hours=10), "resting": False}
@@ -249,6 +269,42 @@ def test_worker_fetches_over_http_and_the_ai_uses_the_full_text(world, tmp_path)
     ai.request(ids["a2"])
     job = ai.next_job()
     assert job.article_id == ids["a2"] and job.summary == ft["text"]  # the model reads the full text
+
+
+def test_feed_articles_carry_the_state_of_their_full_text(world, tmp_path):
+    from worldsignal.repo.articles import ArticleFilter, ArticleRepository
+
+    repo, ids = world["repo"], world["ids"]
+    articles = ArticleRepository(world["db"])
+    state = lambda: {a["id"]: a["fulltext_status"] for a in articles.list(ArticleFilter(limit=50))}  # noqa: E731
+    assert state()[ids["a2"]] is None  # never asked for
+    repo.request(ids["a2"])
+    assert state()[ids["a2"]] == "pending"
+    run(make_ft_worker(world, tmp_path).step())
+    listed = {a["id"]: a for a in articles.list(ArticleFilter(limit=50))}
+    assert listed[ids["a2"]]["fulltext_status"] == "done" and listed[ids["a2"]]["fulltext_chars"] > 100
+
+
+def test_the_full_text_is_translated_too_only_when_asked_for(world, tmp_path):
+    repo, ids, settings = world["repo"], world["ids"], world["settings"]
+    woken = []
+    repo.request(ids["a1"])
+    worker = make_ft_worker(world, tmp_path)
+    worker.on_translation_queued = lambda: woken.append(1)
+    run(worker.step())
+    assert repo.get(ids["a1"])["status"] == "done" and repo.get(ids["a1"])["translate_status"] is None  # default: summary only
+    assert woken == []
+
+    settings.set("fulltext.translate", True)
+    repo.request(ids["a2"])
+    run(worker.step())
+    assert repo.get(ids["a2"])["translate_status"] == "pending" and woken == [1]  # queued for the AI worker
+    assert repo.next_translation()["article_id"] == ids["a2"]
+
+    settings.set_many({"fulltext.translate": True, "ai.enabled": False})
+    repo.request(ids["a3"])
+    run(worker.step())
+    assert repo.get(ids["a3"])["translate_status"] is None  # without the AI nothing is queued
 
 
 def test_worker_uses_the_browser_for_paid_sites_and_the_chosen_profile(world, tmp_path):

@@ -3,6 +3,40 @@
 English version of [CHANGELOG.md](CHANGELOG.md), from 0.10.0 on. Version numbers follow
 [Semantic Versioning](https://semver.org/).
 
+## [0.13.1] — 2026-09-29 — "My country" really switches off, working hours, fixes
+
+### Added
+- **Working hours** (Settings → Background). Default: it works day and night, so you can leave the program open all the
+  time. You can pick a time window; outside it collecting news, the AI and full texts rest. What you ask for by hand
+  (Summarise, fetch the full text, Scan now) is still done; the window and your data stay usable.
+- **Country labels are a separate option** (Settings → My country → Country labels, on by default). When off, changing
+  the country or topics does not rate older reports again and cards show no label.
+
+- **Full text in the feed:** a **Fetch full text** / **Read full text** button on story cards and on report cards. It
+  follows the state without reloading the card ("Full text queued…") and opens the reader when the text arrives (for
+  your own reading only; never in outputs). On a story card the button is for the story's representative report; the
+  other reports are in the story detail.
+- **Translate the full text too** (Settings → Full text, off by default = the summary only). When on, every full text
+  that arrives is also translated into your summary languages (a lot of AI work); when off, press **Translate** in the
+  reader.
+
+### Changed
+- **"Outside my region" replaces "Global" in the region filter:** reports of every source outside the local region
+  (Türkiye). To separate the wire agencies (Reuters, AP, AFP, Bloomberg) use Source group → Agencies. The choice is
+  offered only to users whose country is Türkiye (other countries have no "local region" defined).
+- **With "My country" off the AI no longer does that work at all:** the country and topic questions are left out of
+  the report and story prompts (shorter prompts and answers, faster work), and summaries are no longer written again
+  because "the country facts are missing". Cost: reports processed while it is off have no country facts; if you
+  switch it on later it applies to new reports only.
+- **The breaking-news indicator** is now a blinking red dot (the old one looked like a wireless network icon).
+- **Sites that refuse us are treated more carefully:** after a bot check or a 401/403/429 the pause doubles each time
+  the same refusal repeats within three days (up to 72 hours), and sites asking for a login (401) are paused too. The
+  aim is that subscriptions are not flagged as suspicious.
+
+### Fixed
+- **Broken Turkish letters in some feeds, such as TRT Haber** ("SoykÄ±rÄ±m"): UTF-8 text that was read as Windows-1252
+  is repaired when new reports are read; the 69 stored reports were repaired once (search index included).
+
 ## [0.13.0] — 2026-09-29 — The AI keeps up, the database gets smaller
 
 ### Added

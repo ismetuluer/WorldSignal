@@ -21,7 +21,7 @@ export const STORY_SETTINGS = {
   "interest.keywords": [],
   "interest.categories": [],
   "interest.regions": [],
-  "fulltext.enabled": true,
+  "fulltext.enabled": true, "fulltext.translate": false,
   "fulltext.browser_path": "",
   "fulltext.profile": "own",
   "fulltext.visible": false,

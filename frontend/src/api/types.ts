@@ -54,6 +54,8 @@ export interface Settings {
   /** "My country" (ISO code); "" = Windows' region. related/topics null = the country's own defaults. */
   /** "My country" on/off: off leaves the country link out of the score, filter and badges. */
   "home.enabled": boolean;
+  /** Rate reports for "my country" and show the labels (the ratings are not redone while off). */
+  "home.labels": boolean;
   "home.country": string;
   "home.related": string[] | null;
   "home.topics": string[] | null;
@@ -86,6 +88,8 @@ export interface Settings {
   "interest.categories": Category[];
   "interest.regions": Region[];
   "fulltext.enabled": boolean;
+  /** Also translate every full text that arrives (summary + full text); off: the summary only. */
+  "fulltext.translate": boolean;
   "fulltext.browser_path": string;
   "fulltext.profile": "own" | "main";
   "fulltext.visible": boolean;
@@ -102,6 +106,10 @@ export interface Settings {
   "notify.enabled": boolean;
   "notify.min_score": number;
   "notify.min_sources": number;
+  /** Working hours: off = the background work runs all day and night. */
+  "work.limited": boolean;
+  "work.start": number;
+  "work.end": number;
   "notify.quiet": boolean;
   "notify.quiet_start": number;
   "notify.quiet_end": number;
@@ -157,6 +165,11 @@ export interface Article {
   ai_issues: string[];
   ai_model: string | null;
   ai_error: string | null;
+  /** The full text of the report: its state in the queue (null: never asked for). */
+  fulltext_status?: FullTextStatus | null;
+  fulltext_error?: string | null;
+  fulltext_chars?: number | null;
+  fulltext_translate_status?: AiItemStatus | null;
 }
 
 export interface ArticlePage {
@@ -231,6 +244,7 @@ export type AiState =
   | "model_missing"
   | "timeout"
   | "gpu_busy"
+  | "resting"
   | "no_key"
   | "bad_key"
   | "rate_limited";
@@ -504,8 +518,13 @@ export interface Status {
 
 export type FeedKind = "exclusive" | "opinion";
 
+/** A region of the feed's filter: a source's region, or "abroad" (every source outside the local region). */
+export type FeedRegion = Region | "abroad";
+
 export interface Meta {
   regions: Region[];
+  /** The local region ("turkey" for a user in Türkiye), or null where there is none: "abroad" is then not offered. */
+  home_region: Region | null;
   groups: CatalogGroup[];
   /** Virtual groups of the feed's source-group filter: exclusives and opinion pieces from any source. */
   kinds: FeedKind[];

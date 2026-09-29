@@ -6,6 +6,7 @@ import logging
 import re
 import sqlite3
 import unicodedata
+from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from typing import Any
@@ -14,6 +15,25 @@ from ..db import Database, utc_now_iso
 from .settings import CATALOG_REMOVED, SettingsRepository
 
 log = logging.getLogger(__name__)
+
+# The feed's region filter also offers "abroad": every source outside the user's own region (local = "turkey", the
+# region of a user in Türkiye). Not a region of a source, so it is not in REGIONS.
+ABROAD = "abroad"
+HOME_REGION = "turkey"
+
+
+def region_condition(regions: Sequence[str]) -> tuple[str, list[str]] | None:
+    """SQL over ``s`` (sources) for the feed's region filter: the chosen regions, and/or "abroad"."""
+    regions = list(dict.fromkeys(regions))
+    plain = [r for r in regions if r != ABROAD]
+    parts: list[str] = []
+    if plain:
+        parts.append(f"s.region IN ({','.join('?' * len(plain))})")
+    if ABROAD in regions:
+        parts.append("s.region != ?")
+    params = plain + ([HOME_REGION] if ABROAD in regions else [])
+    return (f"({' OR '.join(parts)})", params) if parts else None
+
 
 CATALOG_GROUPS = ("western", "agency", "middle_east", "russia_ukraine", "asia", "europe", "other", "turkey", "sports")
 REGIONS = (

@@ -27,6 +27,7 @@ from .stories.worker import StoryWorker
 from .updater import Updater
 from .country import HomeState, windows_country
 from .home_sync import HomeSync
+from .worktime import WorkHours
 from .apikeys import SecretStore
 
 log = logging.getLogger(__name__)
@@ -41,7 +42,8 @@ def build_context(paths: DataPaths, token: str, ui_dir: Path | None, run_collect
     sources.seed_from_catalog(load_catalog())
     home = HomeState(settings.get_preferences, windows_country())
     articles = ArticleRepository(db)
-    collector = Collector(db, sources, articles)
+    work = WorkHours(settings)
+    collector = Collector(db, sources, articles, resting=work.resting)
     ai = AiRepository(db, home=home.profile)
     stories = StoryRepository(db)
     fulltext = FullTextRepository(db)
@@ -52,9 +54,10 @@ def build_context(paths: DataPaths, token: str, ui_dir: Path | None, run_collect
         keys=keys,
         db=db, paths=paths, token=token, settings=settings, sources=sources, articles=articles,
         collector=collector, ai=ai,
-        ai_worker=AiWorker(ai, settings, stories=stories, fulltext=fulltext, home=home.profile, keys=keys),
+        ai_worker=AiWorker(ai, settings, stories=stories, fulltext=fulltext, home=home.profile, keys=keys,
+                           resting=work.resting),
         stories=stories, story_worker=StoryWorker(stories, settings), notebook=NotebookRepository(db, stories),
-        fulltext=fulltext, fulltext_worker=FullTextWorker(fulltext, settings, paths.browser_profile),
+        fulltext=fulltext, fulltext_worker=FullTextWorker(fulltext, settings, paths.browser_profile, resting=work.resting),
         history=history, maintenance=Maintenance(history, settings, backups, fulltext), backups=backups,
         notifier=Notifier(db, settings),
         updater=Updater(settings, paths.root),

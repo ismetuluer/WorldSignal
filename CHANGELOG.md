@@ -3,6 +3,38 @@
 Sürüm numaraları [Anlamsal Sürümleme](https://semver.org/lang/tr/) izler. 1.0'a kadar her faz bir ara sürümdür.
 İngilizcesi (0.10.0'dan itibaren): [CHANGELOG.en.md](CHANGELOG.en.md).
 
+## [0.13.1] — 2026-09-29 — Ülkem gerçekten kapanıyor, çalışma saatleri, düzeltmeler
+
+### Eklendi
+- **Çalışma saatleri** (Ayarlar → Arka plan). Varsayılan: gece gündüz sürekli çalışır; programı hep açık
+  bırakabilirsiniz. İsterseniz saat aralığı seçersiniz; dışında haber toplama, yapay zekâ ve tam metin dinlenir. Elle
+  istedikleriniz (Özetle, tam metni getir, Şimdi tara) yine yapılır; pencere ve veriler her zaman kullanılabilir.
+- **Ülke etiketleri ayrı bir seçenek** (Ayarlar → Ülkem → Ülke etiketleri, varsayılan açık). Kapatınca ülkeyi ya da
+  konuları değiştirdiğinizde eski haberler yeniden derecelendirilmez ve kartlarda etiket görünmez.
+
+- **Akışta tam metin:** hem hikâye kartlarında hem haber kartlarında **Tam metni getir** / **Tam metni oku** düğmesi.
+  Getirince kart yenilenmeden durumu izler ("Tam metin sırada…"), gelince okuma penceresi açılır (yalnızca sizin
+  okumanız için; çıktılara konmaz). Hikâye kartında düğme, hikâyenin temsilci haberi içindir; diğer haberler hikâye
+  ayrıntısında.
+- **Tam metni de çevir** (Ayarlar → Tam metin, varsayılan kapalı = yalnızca özet). Açıksa gelen her tam metin özet
+  dillerinize de çevrilir (çok yapay zekâ işi gerektirir); kapalıyken okuma penceresinde **Çevir**'e basınca çevrilir.
+
+### Değişti
+- **Bölge filtresinde "Küresel" yerine "Yerel dışı":** yerel bölge (Türkiye) dışındaki tüm kaynakların haberleri.
+  Ajansları (Reuters, AP, AFP, Bloomberg) ayırmak için Kaynak grubu → Ajanslar kullanılır. Seçenek yalnızca ülkesi
+  Türkiye olanlarda görünür (başka ülkelerde "yerel bölge" tanımı yok).
+- **"Ülkem" kapalıyken yapay zekâ o işleri hiç yapmıyor:** haber ve hikâye istemlerinden ülke/konu soruları çıkarıldı
+  (istem ve cevap kısalır, iş hızlanır) ve "ülke bilgisi eksik" diye özetlerin yeniden yazılması durdu. Bedeli:
+  kapalıyken işlenen haberlerde ülke bilgisi olmaz; sonradan açarsanız yalnızca yeni haberlerde çalışır.
+- **Son dakika göstergesi** artık yanıp sönen kırmızı bir nokta (eskisi kablosuz ağ simgesine benziyordu).
+- **Engellenen sitelere daha temkinli davranılıyor:** bot doğrulaması ya da 401/403/429 alan sitede bekleme süresi, aynı
+  engel üç gün içinde tekrarlanırsa her seferinde ikiye katlanıyor (en fazla 72 saat); giriş isteyen (401) siteler de
+  beklemeye alınıyor. Amaç aboneliklerin şüpheli işaretlenmemesi.
+
+### Düzeltildi
+- **TRT Haber gibi bazı akışlarda bozuk Türkçe karakterler** ("SoykÄ±rÄ±m"): UTF-8 yazının Windows-1252 sanılmasından
+  doğan bozukluk yeni haberlerde okunurken düzeltiliyor; kayıtlı 69 haber bir kez onarıldı (arama dizini dahil).
+
 ## [0.13.0] — 2026-09-29 — Yapay zekâ yetişiyor, veritabanı küçülüyor
 
 ### Eklendi

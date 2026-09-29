@@ -2401,11 +2401,26 @@ a.member-title svg {
   background: var(--surface-2);
 }
 
-/* "Breaking" and "Exclusive" badges. The breaking signal's arcs light up one after another, like a wave. */
+/* "Breaking" and "Exclusive" badges. Breaking: a red dot that blinks, like an "on air" light. */
 .badge-breaking {
-  background: var(--danger);
-  color: #fff;
+  background: rgba(255, 59, 48, 0.12);
+  color: #d70015;
   font-weight: 600;
+}
+:root[data-theme="dark"] .badge-breaking {
+  color: #ff6961;
+}
+.live-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #ff3b30;
+  flex: none;
+  animation: live-blink 1.1s ease-in-out infinite;
+}
+@keyframes live-blink {
+  0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(255, 59, 48, 0.45); }
+  50% { opacity: 0.25; box-shadow: 0 0 0 0 rgba(255, 59, 48, 0); }
 }
 .badge-exclusive {
   background: rgba(175, 82, 222, 0.12);
@@ -2415,21 +2430,8 @@ a.member-title svg {
 :root[data-theme="dark"] .badge-exclusive {
   color: #da8fff;
 }
-.signal-pulse .arc {
-  animation: signal-wave 1.6s ease-in-out infinite;
-}
-.signal-pulse .arc-2 {
-  animation-delay: 0.2s;
-}
-.signal-pulse .arc-3 {
-  animation-delay: 0.4s;
-}
-@keyframes signal-wave {
-  0%, 100% { opacity: 0.25; }
-  35% { opacity: 1; }
-}
 @media (prefers-reduced-motion: reduce) {
-  .signal-pulse .arc {
+  .live-dot {
     animation: none;
   }
 }

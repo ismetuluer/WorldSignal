@@ -8,6 +8,7 @@ import { Icon } from "./Icon";
 import { LangToggle } from "./StoryCard";
 import { openableUrl } from "../lib/links";
 import { BreakingBadge, ExclusiveBadge } from "./Badges";
+import { CardFullText } from "./FullText";
 
 /** One article in the feed. AI output is labelled and the original is always one click away. */
 export function ArticleCard({
@@ -63,7 +64,7 @@ export function ArticleCard({
         ) : null}
         {hasAi && a.category ? <span className="badge">{t(`category.${a.category}`)}</span> : null}
         {useAi ? <LangToggle current={shown.lang} languages={languages} onChange={setLang} /> : null}
-        {hasAi && settings["home.enabled"] && a.turkey_relevance && a.turkey_relevance !== "none" ? (
+        {hasAi && settings["home.enabled"] && settings["home.labels"] && a.turkey_relevance && a.turkey_relevance !== "none" ? (
           <span
             className={`badge ${a.turkey_relevance === "direct" ? "badge-danger" : "badge-accent"}`}
             title={a.turkey_links.map(i18n.turkeyLink).join(" · ")}
@@ -93,6 +94,7 @@ export function ArticleCard({
       ) : null}
 
       <div className="article-actions" dir="ltr">
+        {settings["fulltext.enabled"] ? <CardFullText report={a} /> : null}
         {hasAi ? (
           <>
             <button type="button" className="link-btn" onClick={() => setShowOriginal((v) => !v)}>

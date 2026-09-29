@@ -111,8 +111,30 @@ tests/                   Arka uç + uçtan uca testler
   "Opinion:" etiketi). Veritabanında saklanmaz; bağlantı açılırken SQLite'a `ws_kind(title, url)` işlevi olarak
   kaydedilir ve akış filtresi (`flags.group_condition`) katalog gruplarıyla VEYA'lanır — kural değişince eski
   haberler de hemen yeni kurala uyar. Ölçüm: 24 saatlik süzme 0,03 sn (haber) / 0,2 sn (hikâye).
-- **Ülkem kapalı** (0.13, `home.enabled`): yalnızca sunum ve skor; ülke ağırlığı 0 (`weights_from`), filtre ve
-  rozetler gizli. Derecelendirme ve YZ'nin ülke bilgisi sürer, açınca yeniden iş gerekmez.
+- **Ülkem kapalı** (0.13.1, `home.enabled`): skor (`weights_from`: ülke ağırlığı 0), filtre ve rozetler gizli;
+  YZ'de `EnrichTask.facts = False` istemden ve şemadan ülke/konu sorularını çıkarır (hikâye özeti dahil),
+  `need_facts` özet yeniden yazdırmaz. `home.labels` ayrı: kapalıyken `HomeSync.sync` derecelendirmeyi yenilemez
+  (açılınca ülke değişmişse yenilenir).
+- **Akışta tam metin** (0.13.1): `ArticleRepository.list` `article_fulltext`'i birleştirir (`fulltext_status/error/chars/
+  translate_status`), hikâye kartı `representative` üyesinin aynı alanlarını kullanır; arayüzde `CardFullText`
+  (`components/FullText.tsx`) durumu kartta tutar ve bekleyen metni 4 sn'de bir sorar. `fulltext.translate` (varsayılan
+  kapalı): açıkken tam metin işçisi metni kaydedince `request_translation` ile çeviriyi kuyruğa alır ve YZ işçisini
+  uyandırır (YZ kapalıysa kuyruğa almaz).
+- **Bölge filtresi "Yerel dışı"** (0.13.1, `repo.sources.region_condition`): kaynağın bölgesi yerel bölge
+  (`HOME_REGION = "turkey"`) olmayan her haber; kaynağın bölgesine bakar, haberin konusuna değil. `meta.home_region`
+  yalnızca ülkesi TR olanlarda dolu, arayüz seçeneği ona göre gösterir. "Küresel" bölgesi (dört ajans) filtreden çıktı,
+  kaynak bölgesi olarak durur; ajanslar Kaynak grubu → Ajanslar ile süzülür.
+- **Çalışma saatleri** (0.13.1, `worktime.py`, `work.limited/start/end`, varsayılan sürekli): `WorkHours.resting()`
+  toplayıcıya, YZ işçisine ve tam metin işçisine verilir. Dinlenirken toplayıcı döngüyü atlar ("Şimdi tara" bir kez
+  aşar), YZ yalnızca kullanıcının istediği işleri (`next_jobs(requested_only=True)`, elle hikâye özeti, çeviri) yapar,
+  tam metin yalnızca `reason = 'user'` işleri okur. Hikâye işçisi ve bakım dinlenmez.
+- **Engel bekleme süresi** (0.13.1, `repo.fulltext.store_failure`): bot doğrulaması ve 401/403/429'da site
+  beklemeye alınır; aynı engel `ESCALATE_WINDOW` (3 gün) içinde tekrarlanırsa süre her seferinde ikiye katlanır
+  (`MAX_PAUSE` 72 sa).
+- **Bozuk karakter onarımı** (0.13.1, `textnorm.repair_mojibake`): UTF-8'in Windows-1252 okunmasından doğan
+  "Ã/Ä/Å + devam karakteri" örüntüsü, yalnızca temiz biçimde geri çözülüyorsa düzeltilir (`strip_html` içinde, yani
+  başlık/özet/yazar okunurken); kayıtlı haberler bakımda bir kez onarılır (`HistoryRepository.repair_mojibake`, ayar
+  `repair.mojibake`).
 - **İstatistik** (0.12, `repo/stats.py`, `GET /api/stats`, `GET /api/stats/topic`): istek anında SQL ile sayılır,
   saklanmaz (30 günlük dönem ~20.000 haberde ~0,25 sn). Dönemler yerel saate hizalı; önceki dönem eşit uzunlukta
   (süren gün yarım günle kıyaslanır) ve toplamanın başladığı andan (`MIN(first_seen_at)`) eskiyse karşılaştırma

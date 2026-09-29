@@ -11,11 +11,54 @@ import { Icon } from "./Icon";
 import { useToast } from "./Toasts";
 import { openableUrl } from "../lib/links";
 
+/** What the full-text controls need to know of a report: a member of a story or an article of the feed. */
+export type Reportish = Pick<StoryMember, "id" | "url" | "title" | "source_name" | "sort_at" | "language"> &
+  Partial<Pick<StoryMember, "fulltext_status" | "fulltext_error" | "fulltext_chars">>;
+
+const CARD_POLL_MS = 4000;
+
+/**
+ * The same controls on a card of the feed: asking for the text there keeps the state here (no list reload) and
+ * looks again every few seconds until the text arrived or failed.
+ */
+export function CardFullText({ report }: { report: Reportish }) {
+  const [state, setState] = useState<Pick<Reportish, "fulltext_status" | "fulltext_error" | "fulltext_chars">>({
+    fulltext_status: report.fulltext_status ?? null,
+    fulltext_error: report.fulltext_error ?? null,
+    fulltext_chars: report.fulltext_chars ?? null,
+  });
+  const pending = state.fulltext_status === "pending";
+
+  const look = useCallback(async () => {
+    try {
+      const { fulltext } = await api.fulltext(report.id);
+      if (fulltext) {
+        setState({ fulltext_status: fulltext.status, fulltext_error: fulltext.error_code, fulltext_chars: fulltext.chars });
+      }
+    } catch {
+      // The next look tries again; the card stays as it is.
+    }
+  }, [report.id]);
+
+  useEffect(() => {
+    if (!pending) return;
+    const timer = window.setInterval(() => void look(), CARD_POLL_MS);
+    return () => window.clearInterval(timer);
+  }, [pending, look]);
+
+  return (
+    <MemberFullText
+      member={{ ...report, ...state }}
+      onRequested={() => setState((s) => ({ ...s, fulltext_status: "pending", fulltext_error: null }))}
+    />
+  );
+}
+
 /**
  * Full-text state of one report in a story, with the action that fits it:
  * fetch, wait, retry after a failure, or open the reader.
  */
-export function MemberFullText({ member: m, onRequested }: { member: StoryMember; onRequested: () => void }) {
+export function MemberFullText({ member: m, onRequested }: { member: Reportish; onRequested: () => void }) {
   const i18n = useI18n();
   const { t } = i18n;
   const toast = useToast();
@@ -74,7 +117,7 @@ type Tab = string;
 export const TRANSLATION_POLL_MS = 3000;
 
 /** Reading window: the extracted text, and on request its translations into the user's AI languages. */
-export function FullTextReader({ member: m, onClose }: { member: StoryMember; onClose: () => void }) {
+export function FullTextReader({ member: m, onClose }: { member: Reportish; onClose: () => void }) {
   const i18n = useI18n();
   const { t } = i18n;
   const toast = useToast();

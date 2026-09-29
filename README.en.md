@@ -181,7 +181,15 @@ checked against the source. If a number does not appear in the source, a "Check"
   - it is *indirectly* related if it mentions a neighbour, one of the related countries you chose, or one of your topics.
 
   You can add topics from the suggestions, remove them, or write your own. If you do not want this, switch off
-  **Use my country**: the link then does not count in the score, and its filter and labels are hidden.
+  **Use my country**: the link then does not count in the score, its filter and labels are hidden, and the AI no
+  longer asks the country and topic questions (it works faster). **Country labels** can be switched off on their own:
+  changing the country then does not rate older reports again.
+- **Full text.** The **Fetch full text** button on a card queues it, and **Read full text** opens it inside the program
+  (for your own reading only; never in outputs). If you switch on Settings → Full text → **Translate the full text
+  too**, every full text that arrives is also translated into your summary languages; the default is the summary only.
+- **Working hours.** Settings → Background. The default is to work day and night (you can leave the program open all
+  the time); you can pick a time window, and outside it collecting news, the AI and full texts rest. What you ask for
+  by hand (Summarise, fetch the full text, Scan now) is still done.
 - **Story detail.** Summary, a breakdown of the score, day-by-day development, all reports with links, and your notes.
   Use **Remove from this story** for a wrongly grouped report and **Merge with another story** for two stories about
   the same event.

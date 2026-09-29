@@ -29,10 +29,28 @@ def fold_for_search(text: str | None) -> str:
     return text.translate(_I_FOLD).replace("̇", "").lower()
 
 
+# UTF-8 read as Windows-1252 leaves a lead character (Ã, Ä, Å, Â …) before a continuation character.
+_MOJIBAKE = re.compile("[ÂÃÄÅ][-¿ŒœŠšŸŽžƒˆ˜–—"
+                       "‘-„†-•…‰‹›€™]")
+
+
+def repair_mojibake(text: str | None) -> str:
+    """Undo UTF-8 text that a feed's server or a proxy had read as Windows-1252 ("SoykÄ±rÄ±m" -> "Soykırım").
+    Only text that shows the pattern and decodes cleanly back is changed; anything else is returned as it is."""
+    if not text or not _MOJIBAKE.search(text):
+        return text or ""
+    try:
+        fixed = text.encode("cp1252").decode("utf-8")
+    except (UnicodeEncodeError, UnicodeDecodeError):
+        return text
+    return fixed if len(fixed) < len(text) else text
+
+
 def strip_html(text: str | None) -> str:
     """Turn an RSS summary (often HTML) into clean single-spaced text."""
     if not text:
         return ""
+    text = repair_mojibake(text)
     text = _TAGS.sub(" ", text)
     text = html.unescape(text)
     return _WS.sub(" ", text).strip()

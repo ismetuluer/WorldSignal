@@ -20,6 +20,7 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import urlsplit
 
+from ..ai.languages import effective as ai_languages
 from ..db import utc_now_iso
 from ..repo.fulltext import BrowserPace, FullTextJob, FullTextRepository
 from ..repo.notebook import local_today
@@ -58,7 +59,10 @@ class FullTextWorker:
         sleep: Callable[[float], Any] = asyncio.sleep,
         today: Callable[[], str] = local_today,
         local_zone: tzinfo | None = None,
+        resting: Callable[[], bool] = lambda: False,
     ) -> None:
+        self.resting = resting  # outside the working hours only the user's own requests are read (worktime.py)
+        self.on_translation_queued: Callable[[], None] = lambda: None  # wakes the AI worker (set by the API)
         self.local_zone = local_zone  # None: this computer's time zone
         self.repo = repo
         self.settings = settings
@@ -147,20 +151,22 @@ class FullTextWorker:
             await self.close_browser()
             return PAUSED_SECONDS
 
-        since = utc_now_iso(now - AUTO_WINDOW)
-        picks = await asyncio.to_thread(
-            self.repo.auto_candidates, since, float(prefs.get("fulltext.auto_min_score", 60)),
-            int(prefs.get("fulltext.auto_per_story", 2)), self.today(),
-        )
-        for reason in ("notebook", "auto"):
-            await asyncio.to_thread(self.repo.enqueue, picks[reason], reason)
+        resting = await asyncio.to_thread(self.resting)
+        if not resting:
+            since = utc_now_iso(now - AUTO_WINDOW)
+            picks = await asyncio.to_thread(
+                self.repo.auto_candidates, since, float(prefs.get("fulltext.auto_min_score", 60)),
+                int(prefs.get("fulltext.auto_per_story", 2)), self.today(),
+            )
+            for reason in ("notebook", "auto"):
+                await asyncio.to_thread(self.repo.enqueue, picks[reason], reason)
 
         job = await asyncio.to_thread(self.repo.next_job, now, int(prefs.get("fulltext.per_site_hour", 4)),
-                                      self.browser_pace(prefs, now))
+                                      self.browser_pace(prefs, now), resting)
         if job is None:
             if self._session is not None and self._last_browser_use and now - self._last_browser_use > BROWSER_IDLE_CLOSE:
                 await self.close_browser()
-            self._state.update(state="idle", current_article_id=None)
+            self._state.update(state="resting" if resting else "idle", current_article_id=None)
             return IDLE_SECONDS
 
         browser = None
@@ -187,6 +193,10 @@ class FullTextWorker:
             code, result = exc.code, None
         if result is not None and result.ok:
             await asyncio.to_thread(self.repo.store_text, job.article_id, result.text, job.mode, self.clock())
+            if prefs.get("fulltext.translate") and prefs.get("ai.enabled", True):
+                # Summary and full text in the user's languages (Settings -> Full text).
+                await asyncio.to_thread(self.repo.request_translation, job.article_id, ai_languages(prefs))
+                self.on_translation_queued()
             self._state.update(state="ok", last_error=None, last_done_at=utc_now_iso(self.clock()), current_article_id=None)
             log.info("Full text of article %s (%s, %s): %d chars", job.article_id, job.source_name, job.mode, len(result.text or ""))
         else:

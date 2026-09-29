@@ -41,6 +41,41 @@ export function BackgroundSettings() {
 
         <div className="settings-row">
           <div className="settings-row-text">
+            <div className="settings-row-title">{t("settings.work")}</div>
+            <div className="settings-row-hint">{t(settings["work.limited"] ? "settings.work.limitedHint" : "settings.work.hint")}</div>
+          </div>
+          <div className="inline-row">
+            {settings["work.limited"] ? (
+              <>
+                <select
+                  className="select"
+                  aria-label={t("settings.work.start")}
+                  value={settings["work.start"]}
+                  onChange={(e) => void change({ "work.start": Number(e.target.value) })}
+                >
+                  {HOURS.map((h) => <option key={h} value={h}>{hour(h)}</option>)}
+                </select>
+                <span aria-hidden="true">–</span>
+                <select
+                  className="select"
+                  aria-label={t("settings.work.end")}
+                  value={settings["work.end"]}
+                  onChange={(e) => void change({ "work.end": Number(e.target.value) })}
+                >
+                  {HOURS.map((h) => <option key={h} value={h}>{hour(h)}</option>)}
+                </select>
+              </>
+            ) : null}
+            <Switch
+              checked={settings["work.limited"]}
+              label={t("settings.work.limit")}
+              onChange={(v) => void change({ "work.limited": v })}
+            />
+          </div>
+        </div>
+
+        <div className="settings-row">
+          <div className="settings-row-text">
             <div className="settings-row-title">{t("settings.notify")}</div>
             <div className="settings-row-hint">{t("settings.notify.hint")}</div>
             {!available ? (

@@ -31,7 +31,7 @@ const SETTINGS: Settings = {
   "ui.language": "tr",
   "ui.theme": "light",
   "feed.window_hours": 24,
-  "feed.view": "stories", "feed.filters": { regions: [], groups: [], langs: [], sources: [], categories: [], turkey: false }, "update.auto_check": true, "update.auto_download": true, "home.enabled": true, "home.country": "", "home.related": null, "home.topics": null, "home.keywords": [], "ai.languages": null,
+  "feed.view": "stories", "feed.filters": { regions: [], groups: [], langs: [], sources: [], categories: [], turkey: false }, "update.auto_check": true, "update.auto_download": true, "home.enabled": true, "home.labels": true, "work.limited": false, "work.start": 7, "work.end": 23, "home.country": "", "home.related": null, "home.topics": null, "home.keywords": [], "ai.languages": null,
   "ai.enabled": true,
   "ai.url": "http://localhost:11434",
   "ai.model": "gemma4-26b-a4b",
@@ -40,7 +40,7 @@ const SETTINGS: Settings = {
   ...STORY_SETTINGS,
 };
 const META: Meta = {
-  regions: ["turkey", "europe"], groups: ["turkey", "western"], kinds: ["exclusive", "opinion"], languages: ["en", "tr"], categories: ["politics"],
+  regions: ["turkey", "europe"], home_region: "turkey", groups: ["turkey", "western"], kinds: ["exclusive", "opinion"], languages: ["en", "tr"], categories: ["politics"],
   ui_languages: ["tr", "en"], home_country: "TR", system_country: "TR", ai_output_languages: ["tr", "en", "pt", "ar"], data_dir: "C:\\data", version: "0.6.0",
 };
 const AI: AiStatus = {

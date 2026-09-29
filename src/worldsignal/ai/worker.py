@@ -85,7 +85,9 @@ class AiWorker:
         home: Callable[[], HomeProfile] | None = None,
         keys: SecretStore | None = None,
         cloud_factory: Callable[[str, str, str], Any] = make_cloud_client,
+        resting: Callable[[], bool] = lambda: False,
     ) -> None:
+        self.resting = resting  # outside the working hours only what the user asked for is done (worktime.py)
         self.keys = keys  # API keys of cloud services (apikeys.py)
         self.cloud_factory = cloud_factory
         self.ai = ai
@@ -227,18 +229,27 @@ class AiWorker:
         min_sources = int(prefs.get("stories.min_sources_for_ai", 2))
         since = utc_now_iso(datetime.now(UTC) - timedelta(hours=int(prefs.get("ai.max_age_hours", 24))))
         covered = min_sources if depth != "full" and self.stories is not None else None
-        await asyncio.to_thread(self.ai.enqueue_recent, since, covered)
-        job = await asyncio.to_thread(self.ai.next_job, since, languages)
+        facts_wanted = covered is not None and prefs.get("home.enabled") is not False
+        resting = await asyncio.to_thread(self.resting)
+        if not resting:
+            await asyncio.to_thread(self.ai.enqueue_recent, since, covered)
+            job = await asyncio.to_thread(self.ai.next_job, since, languages)
+        else:
+            asked = await asyncio.to_thread(partial(self.ai.next_jobs, 1, requested_only=True))
+            job = asked[0] if asked else None
         story_job = None
         if self.stories is not None:
             story_since = utc_now_iso(datetime.now(UTC) - timedelta(hours=STORY_WINDOW_HOURS))
             settled = await asyncio.to_thread(self.stories.embedding_backlog, story_since) <= STORY_BACKLOG_LIMIT
             story_job = await asyncio.to_thread(
                 partial(self.stories.next_story_job, story_since, min_sources,
-                        automatic=settled, languages=languages, need_facts=covered is not None)
+                        automatic=settled and not resting, languages=languages, need_facts=facts_wanted)
             )
         translation = await asyncio.to_thread(self.fulltext.next_translation) if self.fulltext is not None else None
         if job is None and story_job is None and translation is None:
+            if resting:
+                self._state.update(state="resting", current_article_id=None)
+                return IDLE_SECONDS
             # Still verify the service so the UI can warn before work arrives.
             try:
                 await make().version()
@@ -357,7 +368,8 @@ class AiWorker:
         when unset), and the Türkiye question only for users in Türkiye."""
         home = self.home() if self.home is not None else None
         topics = tuple(home.topics) if home is not None else ()
-        return EnrichTask(languages, topics, ask_turkey=home is None or home.code == "TR")
+        return EnrichTask(languages, topics, ask_turkey=home is None or home.code == "TR",
+                          facts=prefs.get("home.enabled") is not False)
 
     async def _run_translation(self, client: OllamaClient, model: str, item: dict[str, Any],
                                languages: tuple[str, ...]) -> float:
@@ -418,7 +430,8 @@ class AiWorker:
         assert self.stories is not None
         self._state["current_story_id"] = story["id"]
         reports = pick_reports(story["members"])
-        facts = self.task(prefs, languages)  # the facts for "my country", asked as for a single report
+        asked = self.task(prefs, languages)  # the facts for "my country", asked as for a single report
+        facts = asked if asked.facts else None  # "my country" off: no such questions
         started = time.perf_counter()
         try:
             result = await client.chat_json(
