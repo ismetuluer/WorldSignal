@@ -3,6 +3,11 @@
 Story summaries (several sources about one event) come first, highest score
 first; then single articles, newest first.
 
+How much is written (``ai.depth``): "full" reads every report on its own; "stories" leaves out the reports of
+a story with a summary (the summary extracts the facts for "my country" itself); "fast" also reads single
+reports ``BATCH_SIZE`` at a time for their headline, category and facts, and writes a summary only when the
+user asks for it. A slow computer cannot read every report of the day on its own (~8 s each).
+
 The AI runs in Ollama on this (or another) computer, or at a cloud service the user chose (``ai.provider``,
 cloud.py). With Ollama the GPU is a single shared resource, so there is exactly one job in flight; with a cloud
 service jobs are spaced to stay under the requests per minute the user set (``ai.cloud_rpm``).
@@ -17,7 +22,7 @@ import asyncio
 import logging
 import time
 from collections.abc import Callable
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import UTC, datetime, timedelta
 from functools import partial
 from typing import Any
@@ -31,10 +36,13 @@ from ..repo.ai import AiRepository, Job
 from ..repo.fulltext import FullTextRepository
 from . import query, translate
 from ..repo.settings import SettingsRepository
-from ..repo.stories import StoryRepository
-from .enrich import PROMPT_VERSION, EnrichInput, EnrichTask, validate
+from ..repo.stories import StoryFacts, StoryRepository, story_text
+from .enrich import (
+    BATCH_SIZE, PROMPT_VERSION, EnrichInput, EnrichTask, batch_prompt, batch_schema, render_batch, validate,
+    validate_batch,
+)
 from .languages import effective
-from .story import pick_reports, render_reports, story_prompt, story_schema, validate_story
+from .story import StoryReport, StoryResult, pick_reports, render_reports, story_prompt, story_schema, validate_story
 from .ollama import OllamaClient, OllamaError
 
 log = logging.getLogger(__name__)
@@ -215,16 +223,19 @@ class AiWorker:
         pace = 60.0 / max(1, int(prefs.get("ai.cloud_rpm") or 10)) if cloud else 0.0
 
         languages = tuple(effective(prefs))
+        depth = str(prefs.get("ai.depth") or "full")
+        min_sources = int(prefs.get("stories.min_sources_for_ai", 2))
         since = utc_now_iso(datetime.now(UTC) - timedelta(hours=int(prefs.get("ai.max_age_hours", 24))))
-        await asyncio.to_thread(self.ai.enqueue_recent, since)
+        covered = min_sources if depth != "full" and self.stories is not None else None
+        await asyncio.to_thread(self.ai.enqueue_recent, since, covered)
         job = await asyncio.to_thread(self.ai.next_job, since, languages)
         story_job = None
         if self.stories is not None:
             story_since = utc_now_iso(datetime.now(UTC) - timedelta(hours=STORY_WINDOW_HOURS))
             settled = await asyncio.to_thread(self.stories.embedding_backlog, story_since) <= STORY_BACKLOG_LIMIT
             story_job = await asyncio.to_thread(
-                partial(self.stories.next_story_job, story_since, int(prefs.get("stories.min_sources_for_ai", 2)),
-                        automatic=settled, languages=languages)
+                partial(self.stories.next_story_job, story_since, min_sources,
+                        automatic=settled, languages=languages, need_facts=covered is not None)
             )
         translation = await asyncio.to_thread(self.fulltext.next_translation) if self.fulltext is not None else None
         if job is None and story_job is None and translation is None:
@@ -251,10 +262,16 @@ class AiWorker:
         if translation is not None:  # the user is waiting for it
             delay = await self._run_translation(client, model, translation, languages)
         elif story_job is not None:
-            delay = await self._run_story(client, model, story_job, languages)
+            delay = await self._run_story(client, model, story_job, prefs, languages)
         else:
             assert job is not None
-            delay = await self._run_article(client, model, job, prefs, languages)
+            batch = []
+            if depth == "fast" and not job.requested and not job.upgrade:
+                batch = await asyncio.to_thread(self.ai.next_jobs, BATCH_SIZE, automatic_only=True)
+            if len(batch) > 1:
+                delay = await self._run_batch(client, model, batch, prefs, languages)
+            else:
+                delay = await self._run_article(client, model, job, prefs, languages)
         return max(delay, pace)
 
     async def _run_article(self, client: Any, model: str, job: Job, prefs: dict[str, Any],
@@ -292,6 +309,46 @@ class AiWorker:
         self._state.update(
             state="ok", current_article_id=None, last_error=None, last_done_at=utc_now_iso(),
             avg_seconds=round(sum(self._durations) / len(self._durations), 1),
+        )
+        return 0
+
+    async def _run_batch(self, client: Any, model: str, jobs: list[Job], prefs: dict[str, Any],
+                         languages: tuple[str, ...]) -> float:
+        """Several single reports in one request: headline, category and facts ("fast"); no summaries."""
+        self._state["current_article_id"] = jobs[0].article_id
+        inputs = [EnrichInput(j.source_name, j.language, j.title, j.summary) for j in jobs]
+        task = replace(self.task(prefs, languages), with_summary=False)
+        started = time.perf_counter()
+        try:
+            answer = await client.chat_json(model, batch_prompt(task), render_batch(inputs), batch_schema(task),
+                                            keep_alive="30m", num_predict=200 + len(jobs) * (80 + 40 * len(languages)))
+            results = validate_batch(answer.data, inputs, task)
+        except OllamaError as exc:
+            self._state["current_article_id"] = None
+            if exc.code in SERVICE_ERRORS:
+                log.warning("AI paused: %s", exc)
+                self._state.update(state=exc.code, last_error=exc.code)
+                return PAUSED_SECONDS
+            log.warning("AI failed for a batch of %d articles: %s", len(jobs), exc)
+            for job in jobs:
+                await asyncio.to_thread(self._fail, job, exc.code)
+            self._state.update(state="ok", last_error=exc.code)
+            return 0
+        per_item = (time.perf_counter() - started) / len(jobs)
+        missing = 0
+        for job, result in zip(jobs, results, strict=True):
+            if result is None:  # left out or unusable: tried again (alone or in the next batch)
+                missing += 1
+                await asyncio.to_thread(self._fail, job, "bad_response")
+                continue
+            await asyncio.to_thread(self.ai.store_result, job.article_id, result, model=model,
+                                    prompt_version=PROMPT_VERSION, duration_ms=int(per_item * 1000), brief=True)
+        log.info("Batch of %d articles read in %.1fs (%d left out)", len(jobs), per_item * len(jobs), missing)
+        self._durations = (self._durations + [per_item] * (len(jobs) - missing))[-50:]
+        self._state.update(
+            state="ok", current_article_id=None, last_error="bad_response" if missing else None,
+            last_done_at=utc_now_iso(),
+            avg_seconds=round(sum(self._durations) / len(self._durations), 1) if self._durations else None,
         )
         return 0
 
@@ -340,24 +397,36 @@ class AiWorker:
         self._state.update(state="ok", current_translation_id=None, last_error=None, last_done_at=utc_now_iso())
         return 0
 
+    def story_facts(self, written: StoryResult, reports: list[StoryReport]) -> StoryFacts | None:
+        """The story's facts rated against the user's country (country.py), as for a single report. Kept even
+        without a country to rate against, so the story is not summarised again for its facts."""
+        if written.countries is None:
+            return None
+        text = story_text(written.texts) + "\n" + "\n".join(r.title for r in reports)
+        level, links = ("none", []) if self.home is None else self.home().relevance(
+            text, written.countries, written.topics, written.mentions_home)
+        return StoryFacts(written.countries, written.topics, written.mentions_home, level, links)
+
     def _fail(self, job: Job, code: str) -> None:
         if job.upgrade:
             self.ai.store_upgrade_failure(job.article_id, code)  # keep the finished text
         else:
             self.ai.store_failure(job.article_id, code)
 
-    async def _run_story(self, client: OllamaClient, model: str, story: dict[str, Any],
+    async def _run_story(self, client: OllamaClient, model: str, story: dict[str, Any], prefs: dict[str, Any],
                          languages: tuple[str, ...]) -> float:
         assert self.stories is not None
         self._state["current_story_id"] = story["id"]
         reports = pick_reports(story["members"])
+        facts = self.task(prefs, languages)  # the facts for "my country", asked as for a single report
         started = time.perf_counter()
         try:
             result = await client.chat_json(
-                model, story_prompt(languages), render_reports(reports, story["source_count"]), story_schema(languages),
-                keep_alive="30m", num_predict=300 + 2 * TOKENS_PER_LANGUAGE * len(languages),
+                model, story_prompt(languages, facts), render_reports(reports, story["source_count"]),
+                story_schema(languages, facts), keep_alive="30m",
+                num_predict=400 + 2 * TOKENS_PER_LANGUAGE * len(languages),
             )
-            written = validate_story(result.data, reports, story["source_count"], languages)
+            written = validate_story(result.data, reports, story["source_count"], languages, facts)
         except OllamaError as exc:
             self._state["current_story_id"] = None
             if exc.code in SERVICE_ERRORS:
@@ -373,6 +442,7 @@ class AiWorker:
         await asyncio.to_thread(
             self.stories.store_story_ai, story["id"], texts=written.texts, category=written.category,
             issues=written.issues, model=model, article_count=story["article_count"],
+            facts=self.story_facts(written, reports),
         )
         elapsed = time.perf_counter() - started
         log.info("Story %s summarised in %.1fs", story["id"], elapsed)

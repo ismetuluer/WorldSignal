@@ -9,7 +9,11 @@ Relevance to the user's country is *not* judged by the model. Language models pr
 (benchmark 2026-09-27: Afghanistan, Israel and Russia were called "neighbours of Türkiye", and listing
 non-neighbours in the prompt made it worse). The model therefore only extracts facts that are in the text —
 which countries appear, whether Türkiye is mentioned (asked only when the user's country is Türkiye), which of
-the user's topics appear — and country.py decides with fixed, explainable rules.
+the user's topics appear — and country.py decides with fixed, explainable rules. Story summaries (story.py) ask
+for the same facts with the same wording (:meth:`EnrichTask.fact_fields`).
+
+With ``ai.depth = "fast"`` single reports are read ``BATCH_SIZE`` at a time for their headline, category and facts
+only (``with_summary=False``); the summary is written when the user asks for it.
 """
 
 from __future__ import annotations
@@ -44,6 +48,8 @@ CATEGORIES = (
 
 MAX_SOURCE_CHARS = 6000
 MAX_COUNTRIES = 8
+BATCH_SIZE = 10
+BATCH_TEXT_CHARS = 600  # per report in a batch: headline and the start of its text are enough without a summary
 
 # Built-in topics (country.TOPICS) as the prompt names them; the user's own topics are used as written.
 TOPIC_NAMES = {
@@ -67,23 +73,45 @@ class EnrichTask:
     languages: tuple[str, ...] = tuple(DEFAULT_LANGUAGES)
     topics: tuple[str, ...] = TOPICS
     ask_turkey: bool = True
+    with_summary: bool = True  # False: headline, category and facts only ("fast", read in batches)
+
+    def fact_schema(self) -> dict[str, Any]:
+        """The facts for "my country": the same for reports and stories."""
+        props: dict[str, Any] = {"countries": {"type": "array", "items": {"type": "string"}}}
+        if self.ask_turkey:
+            props["mentions_turkey"] = {"type": "boolean"}
+        if self.topics:
+            props["topics"] = {"type": "array", "items": {"type": "string", "enum": list(self.topics)}}
+        return props
+
+    def fact_fields(self, what: str = "text") -> list[str]:
+        fields = [f"- countries: ISO 3166-1 alpha-2 codes (e.g. \"US\", \"IR\", \"GR\") of the countries the {what} "
+                  "is about or explicitly names. Cities and regions count for their country. Empty list if none."]
+        if self.ask_turkey:
+            fields.append(f"- mentions_turkey: true only if the {what} explicitly mentions Türkiye/Turkey, Turkish "
+                          "people, a Turkish city, company, institution, team or official.")
+        if self.topics:
+            listed = "; ".join(f"{t} = {topic_label(t)}" if t in TOPIC_NAMES else t for t in self.topics)
+            fields.append(f"- topics: those of these topics that the {what} explicitly talks about ({listed}). "
+                          "Use the exact values before \"=\". Usually an empty list.")
+        return fields
 
     @property
     def schema(self) -> dict[str, Any]:
         props: dict[str, Any] = {}
         for lang in self.languages:
             props[f"title_{lang}"] = {"type": "string"}
-            props[f"summary_{lang}"] = {"type": "string"}
+            if self.with_summary:
+                props[f"summary_{lang}"] = {"type": "string"}
         props["category"] = {"type": "string", "enum": list(CATEGORIES)}
-        props["countries"] = {"type": "array", "items": {"type": "string"}}
-        if self.ask_turkey:
-            props["mentions_turkey"] = {"type": "boolean"}
-        if self.topics:
-            props["topics"] = {"type": "array", "items": {"type": "string", "enum": list(self.topics)}}
+        props.update(self.fact_schema())
         return {"type": "object", "properties": props, "required": list(props)}
 
     @property
     def system_prompt(self) -> str:
+        return self._prompt("You receive ONE news item (headline and whatever text the feed provided) in any language.")
+
+    def _prompt(self, intro: str) -> str:
         names = [lang_name(lang) for lang in self.languages]
         fields = []
         for i, lang in enumerate(self.languages):
@@ -92,22 +120,17 @@ class EnrichTask:
                 fields.append(f"- title_{lang}: a natural {name} news headline in sentence case, max 110 characters. "
                               "Translate faithfully; do not sensationalize. If the source is in this language, keep "
                               "close to the original wording.")
-                fields.append(f"- summary_{lang}: 1 to 4 {name} sentences summarizing only what the text says.")
-            else:
+                if self.with_summary:
+                    fields.append(f"- summary_{lang}: 1 to 4 {name} sentences summarizing only what the text says.")
+            elif self.with_summary:
                 fields.append(f"- title_{lang}, summary_{lang}: the same headline and summary in natural {name} "
                               f"(same facts as summary_{self.languages[0]}, nothing more).")
+            else:
+                fields.append(f"- title_{lang}: the same headline in natural {name}, in sentence case.")
         fields.append("- category: one of " + ", ".join(CATEGORIES) + ".")
-        fields.append("- countries: ISO 3166-1 alpha-2 codes (e.g. \"US\", \"IR\", \"GR\") of the countries the text "
-                      "is about or explicitly names. Cities and regions count for their country. Empty list if none.")
-        if self.ask_turkey:
-            fields.append("- mentions_turkey: true only if the text explicitly mentions Türkiye/Turkey, Turkish people, "
-                          "a Turkish city, company, institution, team or official.")
-        if self.topics:
-            listed = "; ".join(f"{t} = {topic_label(t)}" if t in TOPIC_NAMES else t for t in self.topics)
-            fields.append(f"- topics: those of these topics that the text explicitly talks about ({listed}). "
-                          "Use the exact values before \"=\". Usually an empty list.")
+        fields.extend(self.fact_fields())
         return f"""You are a careful news desk editor.
-You receive ONE news item (headline and whatever text the feed provided) in any language.
+{intro}
 Produce output in {", ".join(names)} as JSON.
 
 Strict rules:
@@ -184,6 +207,41 @@ def validate(data: dict[str, Any], inp: EnrichInput, task: EnrichTask = EnrichTa
     written = "\n".join(f"{t['title']}\n{t['summary']}" for t in texts.values())
     issues = fidelity_issues(inp.source_text, written)
     return EnrichResult(texts, category, countries, topics, task.ask_turkey and bool(data.get("mentions_turkey")), issues)
+
+
+def batch_schema(task: EnrichTask) -> dict[str, Any]:
+    item = task.schema
+    item = {**item, "properties": {"n": {"type": "integer"}, **item["properties"]}, "required": ["n", *item["required"]]}
+    return {"type": "object", "properties": {"items": {"type": "array", "items": item}}, "required": ["items"]}
+
+
+def batch_prompt(task: EnrichTask) -> str:
+    return task._prompt(
+        "You receive several numbered news items (headline and whatever text the feed provided) in any language.\n"
+        "Treat every item on its own: never mix facts between items. Return one object per item, with n = its "
+        "number, in \"items\".")
+
+
+def render_batch(inputs: list[EnrichInput]) -> str:
+    parts = []
+    for n, inp in enumerate(inputs, 1):
+        short = EnrichInput(inp.source_name, inp.language, inp.title, inp.text.strip()[:BATCH_TEXT_CHARS])
+        parts.append(f"[{n}]\n{short.render()}")
+    return "\n\n".join(parts)
+
+
+def validate_batch(data: dict[str, Any], inputs: list[EnrichInput], task: EnrichTask) -> list[EnrichResult | None]:
+    """One result per input, in order; None where the model left an item out or gave an unusable one."""
+    results: list[EnrichResult | None] = [None] * len(inputs)
+    items = data.get("items")
+    for item in items if isinstance(items, list) else []:
+        n = item.get("n") if isinstance(item, dict) else None
+        if isinstance(n, int) and 1 <= n <= len(inputs) and results[n - 1] is None:
+            try:
+                results[n - 1] = validate(item, inputs[n - 1], task)
+            except ValueError:
+                continue
+    return results
 
 
 def clean_title(value: Any) -> str:

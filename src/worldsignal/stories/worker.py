@@ -171,7 +171,10 @@ def choose_story(sims: np.ndarray, stories: np.ndarray, threshold: float, cohesi
 
 
 def weights_from(prefs: dict[str, Any]) -> dict[str, float]:
-    return {k: float(prefs.get(f"score.w_{k}", 0)) for k in ("sources", "freshness", "turkey", "interest")}
+    weights = {k: float(prefs.get(f"score.w_{k}", 0)) for k in ("sources", "freshness", "turkey", "interest")}
+    if prefs.get("home.enabled") is False:  # "My country" is switched off: its link does not count.
+        weights["turkey"] = 0.0
+    return weights
 
 
 def interest_from(prefs: dict[str, Any]) -> Interest:

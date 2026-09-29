@@ -186,6 +186,22 @@ def test_filters_and_pagination(db, sources, articles):
     assert len(seen) == 8 and len(set(seen)) == 8
 
 
+def test_exclusive_and_opinion_groups(db, sources, articles):
+    by_slug = seed(sources)
+    insert(db, articles, by_slug["alpha"], [
+        entry("x1", "Exclusive: The memo"),
+        ParsedEntry(dedupe_key="o1", url="https://x.example/opinion/o1", title="Why it matters", summary="", author=None,
+                    published_at=NOW - timedelta(minutes=5)),
+        entry("n1", "Leaders meet"),
+    ])
+    insert(db, articles, by_slug["beta"], [entry("b1", "Özel haber: Bakan açıkladı"), entry("b2", "Toplantı bitti")])
+    titles = lambda f: sorted(a["title"] for a in articles.list(f))  # noqa: E731
+    assert titles(ArticleFilter(groups=["exclusive"])) == ["Exclusive: The memo", "Özel haber: Bakan açıkladı"]
+    assert titles(ArticleFilter(groups=["opinion"])) == ["Why it matters"]
+    # Several choices of the same filter add up: a catalog group or a kind.
+    assert titles(ArticleFilter(groups=["turkey", "opinion"])) == ["Toplantı bitti", "Why it matters", "Özel haber: Bakan açıkladı"]
+
+
 def test_disabled_source_articles_are_hidden(db, sources, articles):
     s = seed(sources)["alpha"]
     insert(db, articles, s, [entry("x", "Hidden later")])

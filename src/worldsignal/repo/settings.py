@@ -19,6 +19,9 @@ DEFAULTS: dict[str, Any] = {
     "feed.filters": {"regions": [], "groups": [], "langs": [], "sources": [], "categories": [], "turkey": False},
     # "My country" (country.py): "" = Windows' region. related/topics None = the country's defaults
     # (for Türkiye: the Turkic states and the six topics; elsewhere none). keywords: extra words that name it.
+    # Off: the country link is left out of the score and the feed hides its filter and badges. The AI still
+    # extracts the countries, so switching it back on needs no new work.
+    "home.enabled": True,
     "home.country": "",
     "home.related": None,
     "home.topics": None,
@@ -39,6 +42,9 @@ DEFAULTS: dict[str, Any] = {
     "ai.model": "gemma4-26b-a4b:latest",  # chosen by the project owner on 2026-09-27 after tools/benchmark_models.py
     "ai.max_age_hours": 24,  # newer articles are queued automatically; older ones on request
     "ai.yield_gpu": True,  # wait while another model is loaded in Ollama instead of evicting it
+    # How much the AI writes (ai/worker.py): "full" every report on its own; "stories" the reports of a summarised
+    # story are not read one by one; "fast" also single reports ten at a time, headline only (summary on request).
+    "ai.depth": "fast",
     # Stories (phase 3). Embedding model and threshold come from tools/benchmark_embeddings.py.
     "stories.embed_model": "bge-m3:latest",
     # Measured in docs/GOMME_KARSILASTIRMA.md: titles alone separate distinct events better.

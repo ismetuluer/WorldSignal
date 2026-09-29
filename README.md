@@ -65,7 +65,9 @@ Microsoft Edge WebView2 Windows'ta hazır gelir.
 
 **Verileriniz** (veritabanı, notlar, ayarlar, yedekler, günlükler) program klasöründe değil, her zaman şurada durur:
 `%LOCALAPPDATA%\WorldSignal` (Ayarlar → Veri → **Klasörü aç**). Program klasörünü silmek ya da güncellemek verilerinize
-dokunmaz. Veritabanı her gün kendiliğinden yedeklenir.
+dokunmaz. Veritabanı her gün kendiliğinden yedeklenir (sıkıştırılmış `.zip`; hikâye birleştirmenin yeniden
+hesaplanabilen vektörleri yedeğe konmaz, bu yüzden bir yedek veritabanının yaklaşık beşte biri kadardır). Silinen
+verinin yeri bakım sırasında diske geri verilir.
 
 ## Güncellemeler
 
@@ -114,6 +116,20 @@ metin dışarı gönderilmez.**
    Model karşılaştırması gerçek haberlerle yapıldı (bkz. `tools/benchmark_models.py`).
 4. Ollama başka bir bilgisayarda çalışıyorsa **Ayarlar → Yapay zekâ → Ollama adresi**'ne o adresi yazabilirsiniz.
 
+### Özetleme kapsamı
+
+Günde binlerce haber gelir; yapay zekâ her birini tek tek özetlemeye çoğu bilgisayarda yetişemez (haber başına
+~8 saniye). **Ayarlar → Yapay zekâ → Özetleme kapsamı**:
+
+| Seçenek | Ne yapar | Kime |
+|---|---|---|
+| **Her haber ayrı** | Her haber tek tek özetlenir. | Güçlü ekran kartı ya da hızlı bir bulut hizmeti |
+| **Hikâyeler birlikte** | Birden çok kaynakta geçen olayın haberleri ayrıca işlenmez; hikâye özeti onları kapsar (ülke bağlantısı da özetten çıkarılır). Tek kaynaklı haberler tek tek özetlenir. | Orta |
+| **Hızlı** (varsayılan) | Ayrıca tek kaynaklı haberler 10'arlı işlenir: başlık, kategori ve ülke bağlantısı yazılır; özeti, haberde **Özetle** deyince yazılır. | Yavaş bilgisayarlar |
+
+Ülke bağlantısının kuralları üçünde de aynıdır: yapay zekâ yalnızca metindeki ülkeleri ve konuları çıkarır, kararı sabit
+kurallar verir.
+
 ### Özet dilleri
 
 **Ayarlar → Yapay zekâ → Özet dilleri**'nden 1–4 dil seçersiniz (30'dan fazla dil var; varsayılan: arayüz dili ve
@@ -156,11 +172,14 @@ bir sayı varsa "Dikkat" uyarısı gösterilir.
 - **Akış** — *Hikâyeler* görünümü aynı olayın haberlerini tek kartta, önem sırasıyla gösterir; kartın altındaki
   etiketler nedenini söyler ("5 kaynak", "3 saatte 4 kaynak", "Türkiye bağlantısı"). *Haberler* görünümü tek tek en
   yeni haberlerdir. Üstte arama, zaman aralığı ve filtreler var (bölge, kaynak grubu, dil, kategori, kaynak,
-  "Türkiye bağlantılı"). **Seçtiğiniz filtreler hatırlanır.**
+  "Türkiye bağlantılı"). **Seçtiğiniz filtreler hatırlanır.** Kaynak grubu filtresinde iki özel seçenek daha var:
+  **Özel haberler** (yayıncının "Özel haber" / "Exclusive" diye işaretledikleri) ve **Makaleler** (görüş, analiz,
+  köşe yazısı); ikisi de her kaynaktan toplanır.
 - **Ülkem** — "(Ülkeniz) bağlantılı" filtresi ve etiketleri Ayarlar → **Ülkem**'de seçtiğiniz ülkeye göre çalışır
   (varsayılan: Windows'un bölge ayarı). Haber, yapay zekâ onu okuduktan sonra değerlendirilir: ülkeniz haberde
   geçiyorsa *doğrudan*, bir komşunuz, seçtiğiniz yakın ülkeler ya da konular geçiyorsa *dolaylı* bağlantılıdır.
-  Konuları listeden ekleyip çıkarabilir, kendi konularınızı yazabilirsiniz.
+  Konuları listeden ekleyip çıkarabilir, kendi konularınızı yazabilirsiniz. İstemezseniz **Ülkem özelliği**ni
+  kapatın: ülke bağlantısı önem skoruna katılmaz, filtresi ve etiketleri görünmez.
 - **Hikâye ayrıntısı** — özet, skorun dökümü, günlere göre gelişim, tüm haberler ve bağlantıları, notlarınız.
   Yanlış gruplanmış haberi **Bu hikâyeden ayır**, aynı olayı anlatan iki hikâyeyi **Başka hikâyeyle birleştir**.
 - **Toplantı** — bugünün öneri listesi. Hikâyeyi **Toplantıya ekle** (ya da `T`), sürükleyerek sırala, her öneriye kısa

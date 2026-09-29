@@ -60,6 +60,8 @@ function interestLabel(i18n: I18n, match: string): string {
 /** Human-readable explanation tags; the reasons behind the score. */
 export function ScoreTags({ story: s, i18n }: { story: Story; i18n: I18n }) {
   const { t, plural } = i18n;
+  const { settings } = useAppState();
+  const homeOn = settings["home.enabled"];
   const tags: ScoreTag[] = s.score_parts.tags ?? [];
   return (
     <div className="story-tags" dir="ltr">
@@ -87,6 +89,7 @@ export function ScoreTags({ story: s, i18n }: { story: Story; i18n: I18n }) {
               </span>
             );
           case "turkey":
+            if (!homeOn) return null;
             return (
               <span key="turkey" className={`badge ${tag.level === "direct" ? "badge-danger" : "badge-accent"}`}>
                 {t(tag.level === "direct" ? "stories.tag.turkeyDirect" : "stories.tag.turkeyIndirect")}

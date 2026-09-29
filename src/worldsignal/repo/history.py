@@ -8,6 +8,8 @@ in the database, including days before this feature existed, and it reflects lat
 
 from __future__ import annotations
 
+import logging
+import sqlite3
 from collections import Counter, defaultdict
 from dataclasses import dataclass
 from datetime import UTC, date, datetime, timedelta, tzinfo
@@ -16,6 +18,8 @@ from typing import Any
 from ..db import Database, utc_now_iso
 from ..stories.score import Interest, Member, independent_sources, score_story
 from .stories import StoryRepository, parse_iso
+
+log = logging.getLogger(__name__)
 
 # Moments of a day the history can be seen at.
 MOMENTS = ("morning", "day")
@@ -223,6 +227,22 @@ class HistoryRepository:
                 (cutoff,),
             ).rowcount
         return removed
+
+    def reclaim(self, min_ratio: float = 0.2, min_bytes: int = 16_000_000) -> int:
+        """Give the space of deleted rows back to the disk (VACUUM) once it is a noticeable part of the file.
+        SQLite reuses free pages but never shrinks the file by itself. Returns the bytes freed (0: not needed or
+        the database was busy; it is tried again on the next run)."""
+        page_size = self.db.conn.execute("PRAGMA page_size").fetchone()[0]
+        pages = self.db.conn.execute("PRAGMA page_count").fetchone()[0]
+        free = self.db.conn.execute("PRAGMA freelist_count").fetchone()[0]
+        if not pages or free / pages < min_ratio or free * page_size < min_bytes:
+            return 0
+        try:
+            self.db.conn.execute("VACUUM")
+        except sqlite3.OperationalError as exc:
+            log.warning("Could not compact the database now: %s", exc)
+            return 0
+        return int((pages - self.db.conn.execute("PRAGMA page_count").fetchone()[0]) * page_size)
 
     def database_size(self) -> int:
         """Bytes used by the database file (pages in use)."""

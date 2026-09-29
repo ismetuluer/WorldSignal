@@ -63,7 +63,9 @@ On the first start the sources are scanned at once. Articles appear within secon
 
 **Your data** (database, notes, settings, backups, logs) is never kept in the program folder but always in
 `%LOCALAPPDATA%\WorldSignal` (Settings → Data → **Open folder**). Deleting or updating the program folder does not
-touch your data. The database is backed up automatically every day.
+touch your data. The database is backed up automatically every day (a compressed `.zip`; the story-merging vectors,
+which can be computed again, are left out, so a backup is about a fifth of the database). The space of removed data is
+given back to the disk during maintenance.
 
 ## Updates
 
@@ -113,6 +115,20 @@ it.**
    The models were compared on real news (see `tools/benchmark_models.py`).
 4. If Ollama runs on another computer, enter its address under **Settings → Artificial intelligence → Ollama address**.
 
+### How much the AI writes
+
+Thousands of reports arrive every day, and on most computers the AI cannot summarise each of them on its own
+(~8 seconds per report). Under **Settings → Artificial intelligence → How much the AI writes**:
+
+| Option | What it does | For |
+|---|---|---|
+| **Every report** | Every report is summarised on its own. | A strong graphics card or a fast cloud service |
+| **Stories together** | Reports of an event covered by several sources are not read separately: the story summary covers them, and the link to your country is taken from it. Single reports are summarised one by one. | Medium |
+| **Fast** (default) | Single reports are also read ten at a time: headline, category and the link to your country. The summary is written when you click **Summarise** on the report. | Slower computers |
+
+The rules for the link to your country are the same in all three: the AI only extracts the countries and topics in
+the text, and fixed rules decide.
+
 ### Summary languages
 
 Under **Settings → Artificial intelligence → Summary languages** you choose 1–4 languages from more than 30. The
@@ -156,13 +172,16 @@ checked against the source. If a number does not appear in the source, a "Check"
 - **Feed.** The *Stories* view shows reports of the same event on one card, in order of importance. The labels under
   each card say why ("5 sources", "4 sources in 3 hours", "Related to Brazil"). The *Articles* view lists single
   reports, newest first. At the top are search, a time range and filters: region, source group, language, category,
-  source and "Related to (your country)". **Your filters are remembered.**
+  source and "Related to (your country)". **Your filters are remembered.** The source-group filter has two more
+  choices: **Exclusives** (reports the publisher marks "Exclusive") and **Articles** (opinion, analysis, columns),
+  both gathered from every source.
 - **My country.** The "Related to (your country)" filter and labels follow the country chosen under Settings → **My
   country**. The default is Windows' region setting. A report is rated after the AI has read it:
   - it is *directly* related if your country appears in it;
   - it is *indirectly* related if it mentions a neighbour, one of the related countries you chose, or one of your topics.
 
-  You can add topics from the suggestions, remove them, or write your own.
+  You can add topics from the suggestions, remove them, or write your own. If you do not want this, switch off
+  **Use my country**: the link then does not count in the score, and its filter and labels are hidden.
 - **Story detail.** Summary, a breakdown of the score, day-by-day development, all reports with links, and your notes.
   Use **Remove from this story** for a wrongly grouped report and **Merge with another story** for two stories about
   the same event.

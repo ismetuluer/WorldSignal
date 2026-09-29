@@ -214,7 +214,8 @@ def cloud_worker(db, settings, fake, keys, **prefs):
     from worldsignal.ai.worker import AiWorker
     from worldsignal.repo.ai import AiRepository
 
-    settings.set_many({"ai.provider": "gemini", "ai.gemini_model": "gemini-x", "ai.cloud_rpm": 12, **prefs})
+    settings.set_many({"ai.provider": "gemini", "ai.gemini_model": "gemini-x", "ai.cloud_rpm": 12, "ai.depth": "full",
+                       **prefs})
     return AiWorker(AiRepository(db), settings, client_factory=lambda url: pytest.fail("Ollama must not be used"),
                     keys=keys, cloud_factory=fake.factory)
 

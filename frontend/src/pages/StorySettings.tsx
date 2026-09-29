@@ -133,7 +133,7 @@ export function StorySettings() {
             <div className="settings-row-hint">{t("settings.stories.weightsHint")}</div>
           </div>
           <div className="weight-grid">
-            {WEIGHTS.map((k) => {
+            {WEIGHTS.filter((k) => k !== "turkey" || settings["home.enabled"]).map((k) => {
               const key = `score.w_${k}` as const;
               const commit = () => weights[k] !== settings[key] && void change({ [key]: weights[k] });
               return (

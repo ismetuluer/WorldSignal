@@ -11,8 +11,9 @@ from test_api import TOKEN, ctx  # noqa: F401  (the API fixture)
 from test_stories import NOW, seed_articles
 from worldsignal.api.app import create_app
 from worldsignal.backup import (
-    KEEP_OTHERS, RESTORE_FILE, RESTORE_RESULT_FILE, BackupManager, InvalidBackup, apply_pending_restore,
+    KEEP_OTHERS, RESTORE_FILE, RESTORE_RESULT_FILE, BackupManager, InvalidBackup, apply_pending_restore, opened_backup,
 )
+from worldsignal.db.database import BACKUP_MEMBER
 from worldsignal.db import Database
 from worldsignal.maintenance import Maintenance
 from worldsignal.notify import Notifier, in_quiet_hours, spreading_count
@@ -36,7 +37,68 @@ def fake_backup(dir_, stamp: str, label: str, db_source=None):
     return path
 
 
+def zip_with_version(path, version):
+    """Rewrite the database inside the backup zip ``path`` with another schema version."""
+    import zipfile
+
+    with opened_backup(path) as copy:
+        conn = sqlite3.connect(copy)
+        conn.execute(f"PRAGMA user_version = {version}")
+        conn.close()
+        data = copy.read_bytes()
+    with zipfile.ZipFile(path, "w", zipfile.ZIP_DEFLATED) as zf:
+        zf.writestr(BACKUP_MEMBER, data)
+    return path
+
+
 # -- backups --------------------------------------------------------------------------------------
+def test_a_backup_is_a_zip_without_the_story_vectors(db, sources, articles, settings, backups, data_paths):
+    import asyncio
+    import zipfile
+
+    from test_stories import SPECS, FakeEmbedOllama, make_worker
+
+    seed_articles(db, sources, articles, SPECS)
+    asyncio.run(make_worker(db, settings, FakeEmbedOllama()).step())
+    assert db.conn.execute("SELECT COUNT(*) FROM article_embeddings").fetchone()[0] == len(SPECS)
+    info = backups.make("manual")
+    assert info.name.endswith("-manual.zip")
+    assert zipfile.ZipFile(data_paths.backups / info.name).namelist() == [BACKUP_MEMBER]
+    with opened_backup(data_paths.backups / info.name) as copy:
+        conn = sqlite3.connect(copy)
+        assert conn.execute("SELECT COUNT(*) FROM article_embeddings").fetchone()[0] == 0  # derived: left out
+        assert conn.execute("SELECT COUNT(*) FROM articles").fetchone()[0] == len(SPECS)
+        assert conn.execute("SELECT COUNT(*) FROM story_articles").fetchone()[0] == len(SPECS)
+        conn.close()
+    # The live database keeps its vectors, and no temporary file is left behind.
+    assert db.conn.execute("SELECT COUNT(*) FROM article_embeddings").fetchone()[0] == len(SPECS)
+    assert sorted(p.name for p in data_paths.backups.iterdir()) == [info.name]
+
+
+def test_a_broken_zip_is_refused(backups, data_paths):
+    (data_paths.backups / "worldsignal-20260920-080000-manual.zip").write_bytes(b"PK not really")
+    with pytest.raises(InvalidBackup) as e:
+        backups.check("worldsignal-20260920-080000-manual.zip")
+    assert e.value.code == "corrupt"
+
+
+def test_an_old_plain_backup_can_still_be_restored(data_paths):
+    db = Database(data_paths.database, backup_dir=data_paths.backups)
+    db.migrate()
+    db.conn.execute("CREATE TABLE marker (v TEXT)")
+    db.conn.execute("INSERT INTO marker VALUES ('old')")
+    old = fake_backup(data_paths.backups, "20260920-080000", "daily", db_source=db)  # a 0.11 backup: plain .db
+    db.conn.execute("UPDATE marker SET v = 'new'")
+    manager = BackupManager(db, data_paths.backups, data_paths.root)
+    assert manager.check(old.name).label == "daily"
+    manager.schedule_restore(old.name)
+    db.close_thread_connection()
+    assert apply_pending_restore(data_paths.database, data_paths.backups, data_paths.root)["ok"] is True
+    reopened = Database(data_paths.database)
+    assert reopened.conn.execute("SELECT v FROM marker").fetchone()[0] == "old"
+    reopened.close_thread_connection()
+
+
 def test_daily_backup_once_per_day_and_old_ones_pruned(db, backups, data_paths):
     for i in range(5):
         fake_backup(data_paths.backups, f"2026090{i + 1}-080000", "daily")
@@ -46,10 +108,11 @@ def test_daily_backup_once_per_day_and_old_ones_pruned(db, backups, data_paths):
     assert backups.daily(today, keep=3) is None  # already done today
     daily = [b for b in backups.list() if b.label == "daily"]
     assert len(daily) == 3 and daily[0].name == made.name  # newest first, oldest removed
-    # The copy is a real, readable database.
-    conn = sqlite3.connect(data_paths.backups / made.name)
-    assert conn.execute("PRAGMA user_version").fetchone()[0] == db.schema_version()
-    conn.close()
+    # The copy is a real, readable database (inside a zip).
+    with opened_backup(data_paths.backups / made.name) as copy:
+        conn = sqlite3.connect(copy)
+        assert conn.execute("PRAGMA user_version").fetchone()[0] == db.schema_version()
+        conn.close()
 
 
 def test_other_backups_are_kept_separately(backups, data_paths):
@@ -77,9 +140,8 @@ def test_manual_backup_and_check(db, backups, data_paths):
 
 def test_backup_from_a_newer_program_is_refused(db, backups, data_paths):
     info = backups.make("manual")
-    conn = sqlite3.connect(data_paths.backups / info.name)
-    conn.execute("PRAGMA user_version = 999")
-    conn.close()
+    newer = zip_with_version(data_paths.backups / info.name, 999)
+    assert newer.name == info.name
     with pytest.raises(InvalidBackup) as e:
         backups.schedule_restore(info.name)
     assert e.value.code == "too_new" and backups.pending_restore() is None
@@ -102,9 +164,10 @@ def test_restore_swaps_the_database_and_keeps_a_safety_copy(data_paths):
     assert not (data_paths.root / RESTORE_FILE).exists()
     reopened = Database(data_paths.database)
     assert reopened.conn.execute("SELECT v FROM marker").fetchone()[0] == "old"
-    safety = sqlite3.connect(data_paths.backups / result["safety_copy"])
-    assert safety.execute("SELECT v FROM marker").fetchone()[0] == "new"  # the replaced data is not lost
-    safety.close()
+    with opened_backup(data_paths.backups / result["safety_copy"]) as copy:
+        safety = sqlite3.connect(copy)
+        assert safety.execute("SELECT v FROM marker").fetchone()[0] == "new"  # the replaced data is not lost
+        safety.close()
     reopened.close_thread_connection()
     assert json.loads((data_paths.root / RESTORE_RESULT_FILE).read_text(encoding="utf-8"))["ok"] is True
 
@@ -123,7 +186,7 @@ def test_failed_restore_leaves_the_database_and_does_not_repeat(data_paths):
 def test_maintenance_makes_the_daily_backup_first(db, settings, backups):
     m = Maintenance(HistoryRepository(db, StoryRepository(db)), settings, backups, clock=lambda: NOW)
     m.run_once()
-    assert m.status()["last_backup"].endswith("-daily.db") and m.status()["backup_error"] is None
+    assert m.status()["last_backup"].endswith("-daily.zip") and m.status()["backup_error"] is None
 
     class Broken(BackupManager):
         def daily(self, today: date, keep: int):

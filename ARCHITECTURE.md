@@ -95,6 +95,24 @@ tests/                   Arka uç + uçtan uca testler
 - **Arama**: `articles_fts` (FTS5). SQLite'ın hazır büyük/küçük harf katlaması Türkçede yanlış çalıştığı için
   (`IRAK` ≠ `ırak`, test edildi) metin Python'da `fold_for_search` ile normalleştirilip indekslenir; arama
   sorgusuna da aynı işlem uygulanır. Kullanıcı girdisi FTS sözdizimine hiçbir zaman doğrudan geçmez.
+- **Özetleme kapsamı** (0.13, `ai.depth`, göç 0011): "full" her haber ayrı; "stories" 2+ kaynaklı ve özeti
+  başarısız olmamış hikâyelerin haberleri kuyruğa girmez (`AiRepository.enqueue_recent(covered_by_stories)`),
+  hikâye özeti Ülkem bilgilerini (ülkeler, Türkiye, konular) raporla aynı alan tanımlarıyla çıkarır
+  (`EnrichTask.fact_fields`), `country.py` kuralları hikâyeyi derecelendirir (`stories.ai_home_relevance`),
+  skor üyelerin ve hikâyenin derecesinin yükseğini alır; bilgisiz eski özetler yeniden yazılır (`need_facts`).
+  "fast" ayrıca tek kaynaklıları `BATCH_SIZE` (10) haberlik tek istekte, özetsiz işler (`article_ai.brief = 1`);
+  kullanıcı "Özetle" deyince tam özet yazılır. Ölçüm (gemma4-26b-a4b, gerçek haber): tek tek ~8 sn, toplu ~3,3 sn
+  / haber, 30/30 kullanılabilir.
+- **Yedekler ve yer** (0.13): yedek = SQLite yedekleme API'siyle tutarlı kopya, vektörler silinip VACUUM, zip
+  (`db.database.write_backup`; 80 MB → ~15 MB); eski `.db` yedekler okunur. Vektörler float16 (göç 0010, `dtype`)
+  ve 4 gün tutulur; boş sayfalar dosyanın %20'sini ve 16 MB'ı aşınca bakım VACUUM yapar.
+- **Özel haber / makale grupları** (0.13): kaynak kataloğunda grup değil, haberin kendisinden okunur
+  (`flags.article_kind`: başlıktaki "Exclusive"/"Özel haber" işareti; adreste yayıncının görüş bölümü ya da başlıkta
+  "Opinion:" etiketi). Veritabanında saklanmaz; bağlantı açılırken SQLite'a `ws_kind(title, url)` işlevi olarak
+  kaydedilir ve akış filtresi (`flags.group_condition`) katalog gruplarıyla VEYA'lanır — kural değişince eski
+  haberler de hemen yeni kurala uyar. Ölçüm: 24 saatlik süzme 0,03 sn (haber) / 0,2 sn (hikâye).
+- **Ülkem kapalı** (0.13, `home.enabled`): yalnızca sunum ve skor; ülke ağırlığı 0 (`weights_from`), filtre ve
+  rozetler gizli. Derecelendirme ve YZ'nin ülke bilgisi sürer, açınca yeniden iş gerekmez.
 - **İstatistik** (0.12, `repo/stats.py`, `GET /api/stats`, `GET /api/stats/topic`): istek anında SQL ile sayılır,
   saklanmaz (30 günlük dönem ~20.000 haberde ~0,25 sn). Dönemler yerel saate hizalı; önceki dönem eşit uzunlukta
   (süren gün yarım günle kıyaslanır) ve toplamanın başladığı andan (`MIN(first_seen_at)`) eskiyse karşılaştırma
@@ -234,7 +252,10 @@ articles ─► StoryWorker: gömme (Ollama /api/embed, işlemcide) ─► artic
 - **Elle düzeltme**: "Bu hikâyeden ayır" haberi kendi hikâyesine taşır; "Başka hikâyeyle birleştir" iki hikâyeyi
   birleştirir. İkisi de `assigned_by = 'user'` yazar; otomatik birleştirme bu haberlere dokunmaz.
 - **Skor** (`stories/score.py`) = 100 × dört bileşenin ağırlıklı ortalaması (ağırlıklar ayarlardan):
-  1. *Bağımsız kaynak*: aynı medya grubunun kaynakları tek sayılır; güvenilirlikle ağırlıklı, logaritmik (12 kaynak = tam).
+  1. *Bağımsız kaynak*: aynı medya grubunun kaynakları tek sayılır; güvenilirlikle ağırlıklı, logaritmik (40 kaynak = tam). Bölge başına en fazla 6 bağımsız
+     kaynak sayılır (en güvenilirleri; 0.13): kaynağı çok olan bir bölge — kullanıcının kendi basını — tabloyu tek
+     başına dolduramaz. Ölçüm (gerçek akış, 24 saat): ilk 20'de çoğu Türk kaynaklı hikâye 11 → 4; en çok yabancı
+     kaynakta geçen hikâyeler 28./36./53. sıradan 2./4./8. sıraya.
   2. *Tazelik ve yayılma*: son haberin yaşı (yarı ömür 8 sa) + son 3 saatteki bağımsız kaynak sayısı.
   3. *Ülke* (tarihsel adıyla `turkey`): doğrudan 1, dolaylı 0,5 (kural tabanlı karar, bkz. "Ülkem").
   4. *İlgi profili*: anahtar kelime (Türkçe harf duyarsız), kategori, bölge eşleşmeleri.

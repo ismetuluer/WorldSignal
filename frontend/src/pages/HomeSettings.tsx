@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { api, ApiError } from "../api/client";
 import type { HomeInfo, Settings } from "../api/types";
 import { ChipList } from "../components/ChipList";
+import { Switch } from "../components/controls";
 import { MultiSelect } from "../components/MultiSelect";
 import { useToast } from "../components/Toasts";
 import { describeError, useI18n } from "../i18n";
@@ -14,6 +15,7 @@ export function HomeSettings() {
   const { t } = i18n;
   const toast = useToast();
   const { settings, updateSettings, meta } = useAppState();
+  const on = settings["home.enabled"];
   const [info, setInfo] = useState<HomeInfo | null>(null);
   const [keywords, setKeywords] = useState(settings["home.keywords"].join(", "));
 
@@ -75,8 +77,15 @@ export function HomeSettings() {
       <h2 className="section-title">{t("settings.home")}</h2>
       <div className="settings-card">
         <div className="settings-row">
-          <div className="settings-status">{t("settings.home.hint")}</div>
+          <div className="settings-row-text">
+            <div className="settings-row-title">{t("settings.home.enabled")}</div>
+            <div className="settings-row-hint">{t(on ? "settings.home.hint" : "settings.home.offHint")}</div>
+          </div>
+          <Switch checked={on} label={t("settings.home.enabled")} onChange={(v) => change({ "home.enabled": v })} />
         </div>
+
+        {on ? (
+          <>
 
         <div className="settings-row">
           <div className="settings-row-text">
@@ -207,6 +216,8 @@ export function HomeSettings() {
                 </button>
               </div>
             ) : null}
+          </>
+        ) : null}
           </>
         ) : null}
       </div>

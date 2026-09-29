@@ -13,7 +13,7 @@ from typing import Any
 from ..collector.rss import ParsedEntry
 from ..country import HomeProfile
 from ..db import Database, utc_now_iso
-from ..flags import MARKER_WINDOW, has_breaking_marker, is_exclusive
+from ..flags import MARKER_WINDOW, group_condition, has_breaking_marker, is_exclusive
 from ..textnorm import build_fts_query, fold_for_search
 
 # Small clock differences between servers are ignored.
@@ -132,13 +132,15 @@ class ArticleRepository:
         for column, values in (
             ("a.source_id", f.source_ids),
             ("s.region", f.regions),
-            ("s.catalog_group", f.groups),
             ("COALESCE(a.language, s.language)", f.languages),
             ("x.category", f.categories),
         ):
             if values:
                 where.append(f"{column} IN ({','.join('?' * len(values))})")
                 params.extend(values)
+        if groups := group_condition(f.groups):
+            where.append(groups[0])
+            params.extend(groups[1])
         if f.turkey_only:
             where.append("a.home_relevance IN ('direct', 'indirect')")
         if paginate and f.before:
@@ -156,7 +158,7 @@ class ArticleRepository:
             SELECT a.id, a.url, a.title, a.summary, a.author, a.published_at, a.first_seen_at, a.sort_at,
                    COALESCE(a.language, s.language) AS language,
                    s.id AS source_id, s.name AS source_name, s.region, s.catalog_group, s.paywalled,
-                   x.status AS ai_status, x.texts AS ai_texts, x.category, x.countries,
+                   x.status AS ai_status, x.texts AS ai_texts, x.brief AS ai_brief, x.category, x.countries,
                    a.home_relevance AS turkey_relevance, a.home_links AS turkey_links, x.issues AS ai_issues, x.model AS ai_model, x.error_code AS ai_error
             FROM articles a
             JOIN sources s ON s.id = a.source_id

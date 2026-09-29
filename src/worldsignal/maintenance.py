@@ -1,5 +1,5 @@
-"""Background housekeeping a little after start-up and then every few hours: the retention policy and
-the daily database backup."""
+"""Background housekeeping a little after start-up and then every few hours: the retention policy, the
+daily database backup, and giving the space of removed data back to the disk."""
 
 from __future__ import annotations
 
@@ -20,8 +20,8 @@ log = logging.getLogger(__name__)
 
 FIRST_RUN_DELAY = 60.0  # let the collector and the workers start first
 INTERVAL = timedelta(hours=6)
-# Story matching compares new reports with the last 72 hours (stories/worker.py); a week is ample.
-VECTOR_KEEP_DAYS = 7
+# Story matching compares new reports with the last 72 hours (stories/worker.py); a day more is enough.
+VECTOR_KEEP_DAYS = 4
 
 
 class Maintenance:
@@ -69,6 +69,9 @@ class Maintenance:
         self._state.update(last_run_at=utc_now_iso(self.clock()), last_removed=removed, last_error=None)
         if any(removed.values()):
             log.info("Retention: removed %s", removed)
+        freed = self.history.reclaim()
+        if freed:
+            log.info("Database compacted: %.1f MB given back to the disk", freed / 1e6)
         return removed
 
     def wake(self) -> None:

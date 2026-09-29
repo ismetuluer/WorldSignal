@@ -3,6 +3,42 @@
 Sürüm numaraları [Anlamsal Sürümleme](https://semver.org/lang/tr/) izler. 1.0'a kadar her faz bir ara sürümdür.
 İngilizcesi (0.10.0'dan itibaren): [CHANGELOG.en.md](CHANGELOG.en.md).
 
+## [0.13.0] — 2026-09-29 — Yapay zekâ yetişiyor, veritabanı küçülüyor
+
+### Eklendi
+- **Özetleme kapsamı** (Ayarlar → Yapay zekâ). Günde ~7.500 haber geliyor, program günde ~8 saat açık; haber başına
+  ~8 saniyeyle yapay zekâ en fazla ~4.000 haber okuyabiliyordu ve kuyruk hiç yetişmiyordu. Üç seçenek:
+  - **Her haber ayrı** (eskisi gibi) — güçlü bilgisayarlar ya da hızlı bir bulut hizmeti için.
+  - **Hikâyeler birlikte** — birden çok kaynakta geçen olayın haberleri ayrıca işlenmez, hikâye özeti onları kapsar.
+    Hikâye özeti artık ülke bilgisini de çıkarıyor (hangi ülkeler, Türkiye geçiyor mu, konularınız); hikâyenin ülke
+    bağlantısı hem haberlerinden hem bu bilgiden, aynı kurallarla hesaplanıyor. Bu bilgi olmadan yazılmış son
+    özetler bir kez yeniden yazılır.
+  - **Hızlı** (varsayılan) — ayrıca tek kaynaklı haberler 10'arlı okunur: başlık, kategori ve ülke bağlantısı; özet,
+    haberdeki **Özetle** düğmesiyle yazılır. Gerçek haberlerde ölçüldü: haber başına ~8 yerine ~3,3 saniye, 30
+    haberin 30'u kullanılabilir. Hesap: günlük iş ~65.000 saniyeden ~12.000 saniyeye iniyor.
+- **Akışta iki yeni kaynak grubu:** "Kaynak grubu" filtresinde **Özel haberler** (yayıncının "Özel haber",
+  "Exclusive" … diye işaretlediği haberler) ve **Makaleler (görüş, analiz, köşe yazısı)**. Makale; sitenin kendi
+  bölümünden (adreste `/opinion/`, `/yazarlar/`, `/commentisfree/` …) ya da başlıktaki etiketten ("Görüş:",
+  "Analysis |", "… - opinion") tanınır. Her kaynaktan gelir; kaynak listesi değişmez. Gerçek akışta son 24 saat:
+  7 özel haber, 76 makale.
+
+### Değişti
+- **Önem sırası dünyaya açıldı:** bir bölgeden en fazla 6 bağımsız kaynak sayılıyor ve kaynak puanı 12 yerine 40
+  kaynakta doluyor. Önceden Türk basınında 12 kaynakta geçen bir iç haber, 57 yabancı kaynakta geçen bir dünya
+  haberiyle aynı kaynak puanını alıyordu. Gerçek akışta ölçüldü (son 24 saat): ilk 20 hikâyede çoğunluğu Türk
+  kaynaklı olanlar 11'den 4'e indi; en çok yabancı kaynakta geçen hikâyeler 28., 36. ve 53. sıradan 2., 4. ve 8. sıraya
+  çıktı. Büyük Türkiye haberleri ilk sıralarda kalıyor. Kartta "N kaynak" etiketi yine tüm kaynakları sayar.
+- **Ülkem artık isteğe bağlı** (Ayarlar → Ülkem → Ülkem özelliği). Kapatınca ülke bağlantısı önem skoruna katılmaz,
+  akıştaki ülke filtresi ve kartlardaki ülke etiketi gizlenir. Yapay zekâ ülke bilgisini çıkarmayı sürdürür; yeniden
+  açınca hemen geçerli olur.
+- **Yedekler beş kat küçük:** yedek artık sıkıştırılmış bir `.zip` ve hikâye birleştirmenin vektörlerini içermiyor
+  (geri yüklemeden sonra birkaç dakikada yeniden hesaplanırlar). Ölçülen: 80 MB → ~15 MB. Eski `.db` yedekler
+  listelenir ve geri yüklenebilir.
+- **Vektörler yarım boyutta ve 4 gün:** hikâye birleştirme son 72 saate baktığı için 7 yerine 4 gün tutuluyor; 16 bitlik
+  sayılarla saklanıyor (ölçüm: 27.122 benzer çiftin yalnızca 4'ünde karar değişiyor). Veritabanının en büyük kalemi
+  (~210 MB) ~60 MB'a iniyor.
+- **Silinen verinin yeri diske geri veriliyor:** bakım, boş alan dosyanın %20'sini aşınca veritabanını sıkıştırıyor.
+
 ## [0.12.0] — 2026-09-29 — Başka dillerde arama ve İstatistik
 
 ### Eklendi

@@ -35,6 +35,7 @@ import { api } from "../api/client";
 import { ToastProvider } from "../components/Toasts";
 import { I18nProvider } from "../i18n";
 import { FeedPage } from "../pages/FeedPage";
+import { HomeSettings } from "../pages/HomeSettings";
 import { SettingsPage } from "../pages/SettingsPage";
 import { AppStateProvider, useAppState } from "../state";
 import { FULLTEXT_WORKER, HOME, MAINTENANCE, NOTIFY, STORY_SETTINGS, STORY_WORKER, UPDATE_IDLE } from "./fixtures";
@@ -50,12 +51,13 @@ const SETTINGS: Settings = {
   "ai.model": "qwen3:14b",
   "ai.max_age_hours": 24,
   "ai.yield_gpu": true,
-  "feed.view": "articles", "feed.filters": { regions: [], groups: [], langs: [], sources: [], categories: [], turkey: false }, "update.auto_check": true, "update.auto_download": true, "home.country": "", "home.related": null, "home.topics": null, "home.keywords": [], "ai.languages": null,
+  "feed.view": "articles", "feed.filters": { regions: [], groups: [], langs: [], sources: [], categories: [], turkey: false }, "update.auto_check": true, "update.auto_download": true, "home.enabled": true, "home.country": "", "home.related": null, "home.topics": null, "home.keywords": [], "ai.languages": null,
   ...STORY_SETTINGS,
 };
 const META: Meta = {
   regions: ["turkey", "europe"],
   groups: ["turkey", "western"],
+  kinds: ["exclusive", "opinion"],
   languages: ["en", "tr"],
   categories: ["politics", "economy", "diplomacy"],
   ui_languages: ["tr", "en"], home_country: "TR", system_country: "TR", ai_output_languages: ["tr", "en", "pt", "ar"],
@@ -98,9 +100,9 @@ const enriched = (id: number, extra: Partial<Article> = {}) =>
     ...extra,
   });
 
-function wrap(ui: ReactNode) {
+function wrap(ui: ReactNode, settings: Settings = SETTINGS) {
   return render(
-    <AppStateProvider initialSettings={SETTINGS} initialMeta={META}>
+    <AppStateProvider initialSettings={settings} initialMeta={META}>
       <I18nProvider lang="tr">
         <ToastProvider>{ui}</ToastProvider>
       </I18nProvider>
@@ -152,6 +154,18 @@ describe("AI in the feed", () => {
     await userEvent.click(await screen.findByRole("button", { name: "Özetle" }));
     expect(mocked.requestAi).toHaveBeenCalledWith(7);
     expect(await screen.findByText("Özet için kuyruğa alındı")).toBeInTheDocument();
+  });
+
+  it("offers the summary of a report that was read quickly (headline only)", async () => {
+    const quick = enriched(8, { ai_brief: 1 });
+    quick.ai_texts = { tr: { title: "Hızlı başlık", summary: "" }, en: { title: "Quick headline", summary: "" } };
+    mocked.articles.mockResolvedValue({ items: [quick], next: null, total: 1 });
+    mocked.requestAi.mockResolvedValue({ status: "pending" });
+    wrap(<FeedPage />);
+    const card = (await screen.findByRole("link", { name: "Hızlı başlık" })).closest("li")!;
+    expect(within(card).getByText(quick.summary)).toBeInTheDocument();  // the feed's own summary meanwhile
+    await userEvent.click(within(card).getByRole("button", { name: "Özetle" }));
+    expect(mocked.requestAi).toHaveBeenCalledWith(8);
   });
 
   it("passes category and Türkiye filters to the API", async () => {
@@ -220,6 +234,15 @@ describe("AI settings", () => {
     await userEvent.selectOptions(select, "gemma4:12b");
     expect(mocked.updateSettings).toHaveBeenCalledWith({ "ai.model": "gemma4:12b" });
     expect(await screen.findByText("Durum: Hazır, sırada iş yok")).toBeInTheDocument();
+  });
+
+  it("chooses how much the AI writes", async () => {
+    wrap(<SettingsPage />);
+    const group = await screen.findByRole("group", { name: "Özetleme kapsamı" });
+    expect(within(group).getByRole("button", { name: "Hızlı" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByText(/tek kaynaklı haberler 10’arlı işlenir/)).toBeInTheDocument();
+    await userEvent.click(within(group).getByRole("button", { name: "Her haber ayrı" }));
+    expect(mocked.updateSettings).toHaveBeenCalledWith({ "ai.depth": "full" });
   });
 
   it("does not call the models 'not installed' before Ollama has answered", async () => {
@@ -348,6 +371,35 @@ describe("My country", () => {
     wrap(<FeedPage />);
     const badge = await screen.findByTitle("Metinde Türkiye geçiyor");
     expect(badge).toHaveTextContent("Türkiye");
+  });
+
+  it("hides the country filter and labels when 'my country' is off", async () => {
+    mocked.articles.mockResolvedValue({
+      items: [enriched(1, { turkey_relevance: "direct", turkey_links: ["home_mentioned"] })], next: null, total: 1,
+    });
+    // A filter remembered while it was on does not apply any more.
+    const filters = { regions: [], groups: [], langs: [], sources: [], categories: [], turkey: true };
+    wrap(<FeedPage />, { ...SETTINGS, "home.enabled": false, "feed.filters": filters });
+    await waitFor(() => expect(mocked.articles).toHaveBeenLastCalledWith(expect.objectContaining({ turkey: false })));
+    expect(screen.queryByRole("button", { name: "Türkiye bağlantılı" })).not.toBeInTheDocument();
+    expect(screen.queryByTitle("Metinde Türkiye geçiyor")).not.toBeInTheDocument();
+  });
+
+  it("switches 'my country' off and hides its details", async () => {
+    wrap(<HomeSettings />, { ...SETTINGS, "home.enabled": false });
+    const toggle = await screen.findByRole("switch", { name: "Ülkem özelliği" });
+    expect(screen.queryByRole("combobox", { name: "Ülke" })).not.toBeInTheDocument();
+    await userEvent.click(toggle);
+    expect(mocked.updateSettings).toHaveBeenLastCalledWith({ "home.enabled": true });
+  });
+
+  it("offers exclusives and opinion pieces in the source-group filter", async () => {
+    mocked.articles.mockResolvedValue({ items: [], next: null, total: 0 });
+    wrap(<FeedPage />);
+    await userEvent.click(await screen.findByRole("button", { name: "Kaynak grubu" }));
+    expect(screen.getByRole("option", { name: "Özel haberler" })).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("option", { name: "Makaleler (görüş, analiz, köşe yazısı)" }));
+    await waitFor(() => expect(mocked.articles).toHaveBeenLastCalledWith(expect.objectContaining({ group: ["opinion"] })));
   });
 });
 

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { api, ApiError } from "../api/client";
-import type { AiProvider, OllamaTestResult, Settings } from "../api/types";
+import type { AiDepth, AiProvider, OllamaTestResult, Settings } from "../api/types";
 import { ChipList } from "../components/ChipList";
 import { useToast } from "../components/Toasts";
 import { Segmented, Spinner, Switch } from "../components/controls";
@@ -10,6 +10,7 @@ import { useAppState } from "../state";
 import { CloudAiSettings } from "./CloudAiSettings";
 import { isServiceUrl } from "./sourceForm";
 
+const DEPTHS: AiDepth[] = ["full", "stories", "fast"];
 const MAX_AGES = [6, 12, 24, 48];
 const MAX_LANGUAGES = 4;
 const PROVIDERS: AiProvider[] = ["ollama", "gemini", "openai", "anthropic"];
@@ -203,6 +204,19 @@ export function AiSettings() {
             value={settings["ai.max_age_hours"]}
             onChange={(v) => void change({ "ai.max_age_hours": v })}
             options={MAX_AGES.map((n) => ({ value: n, label: t("settings.ai.lastHours", { n }) }))}
+          />
+        </div>
+
+        <div className="settings-row">
+          <div className="settings-row-text">
+            <div className="settings-row-title">{t("settings.ai.depth")}</div>
+            <div className="settings-row-hint">{t(`settings.ai.depth.${settings["ai.depth"]}Hint`)}</div>
+          </div>
+          <Segmented<AiDepth>
+            label={t("settings.ai.depth")}
+            value={settings["ai.depth"]}
+            onChange={(v) => void change({ "ai.depth": v })}
+            options={DEPTHS.map((d) => ({ value: d, label: t(`settings.ai.depth.${d}`) }))}
           />
         </div>
 

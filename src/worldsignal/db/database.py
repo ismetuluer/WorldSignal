@@ -11,23 +11,59 @@ Design notes
   ``NNNN_name.sql`` files applied in order, each in its own transaction.
   Before migrating an existing database a full backup is written, which is the
   rollback path if a new version misbehaves.
+* Backups (:func:`write_backup`) are zip files holding a consistent copy without
+  derived data (the story-matching vectors, recomputed after a restore).
 """
 
 from __future__ import annotations
 
 import logging
+import os
 import re
 import sqlite3
 import threading
+import zipfile
 from collections.abc import Iterator
 from contextlib import contextmanager
 from datetime import UTC, datetime
 from importlib import resources
 from pathlib import Path
 
-log = logging.getLogger(__name__)
+from ..flags import article_kind
+
+log =logging.getLogger(__name__)
 
 _MIGRATION_NAME = re.compile(r"^(\d{4})_[a-z0-9_]+\.sql$")
+
+BACKUP_MEMBER = "worldsignal.db"  # the database inside a backup zip
+# Derived data, left out of backups: the story worker computes it again for recent reports after a restore.
+# (The vectors are most of the database and do not compress; without them a backup is about five times smaller.)
+DERIVED_TABLES = ("article_embeddings",)
+
+
+def write_backup(conn: sqlite3.Connection, target: Path) -> None:
+    """A consistent copy of ``conn``'s database (SQLite's backup API, WAL included) without derived data,
+    compressed into the zip ``target``. The live database is not touched; a failure leaves no partial file."""
+    copy = target.with_name(target.name + ".tmp")
+    part = target.with_name(target.name + ".part")
+    try:
+        dst = sqlite3.connect(copy)
+        try:
+            conn.backup(dst)
+            present = {r[0] for r in dst.execute("SELECT name FROM sqlite_master WHERE type = 'table'")}
+            for table in DERIVED_TABLES:
+                if table in present:
+                    dst.execute(f"DELETE FROM {table}")
+            dst.commit()
+            dst.execute("VACUUM")
+        finally:
+            dst.close()
+        with zipfile.ZipFile(part, "w", compression=zipfile.ZIP_DEFLATED, compresslevel=6) as zf:
+            zf.write(copy, BACKUP_MEMBER)
+        os.replace(part, target)
+    finally:
+        copy.unlink(missing_ok=True)
+        part.unlink(missing_ok=True)
 
 
 def utc_now_iso(dt: datetime | None = None) -> str:
@@ -68,6 +104,8 @@ class Database:
         conn.execute("PRAGMA synchronous = NORMAL")
         conn.execute("PRAGMA foreign_keys = ON")
         conn.execute("PRAGMA busy_timeout = 10000")
+        # The feed's "exclusive" / "opinion" groups are read from the headline and address (flags.py).
+        conn.create_function("ws_kind", 2, article_kind, deterministic=True)
         return conn
 
     @property
@@ -142,11 +180,7 @@ class Database:
             return None
         self.backup_dir.mkdir(parents=True, exist_ok=True)
         stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
-        target = self.backup_dir / f"worldsignal-{stamp}-{label}.db"
-        dst = sqlite3.connect(target)
-        try:
-            self.conn.backup(dst)
-        finally:
-            dst.close()
+        target = self.backup_dir / f"worldsignal-{stamp}-{label}.zip"
+        write_backup(self.conn, target)
         log.info("Database backup written: %s", target)
         return target

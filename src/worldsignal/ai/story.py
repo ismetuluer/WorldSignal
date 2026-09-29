@@ -2,34 +2,38 @@
 written from several reports of the same event.
 
 As with single articles, the model may only use the given texts; numbers in the
-output are checked against them (:func:`fidelity_issues`).
+output are checked against them (:func:`fidelity_issues`). Given the report task (``facts``), it also extracts the
+facts for "my country" the same way (countries, the home country, the user's topics); country.py decides.
 """
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass, field
 from typing import Any
 
-from .enrich import CATEGORIES, clean_title, fidelity_issues
+from .enrich import CATEGORIES, MAX_COUNTRIES, EnrichTask, clean_title, fidelity_issues
 from .languages import DEFAULT_LANGUAGES
 from .languages import name as lang_name
 
-STORY_PROMPT_VERSION = 3  # 3: the user's languages
+STORY_PROMPT_VERSION = 4  # 4: the facts for "my country"
 MAX_REPORTS = 8
 REPORT_CHARS = 700
 
 
-def story_schema(languages: tuple[str, ...]) -> dict[str, Any]:
+def story_schema(languages: tuple[str, ...], facts: EnrichTask | None = None) -> dict[str, Any]:
     props: dict[str, Any] = {}
     for lang in languages:
         props[f"title_{lang}"] = {"type": "string"}
         props[f"summary_{lang}"] = {"type": "string"}
         props[f"why_meeting_{lang}"] = {"type": "string"}
     props["category"] = {"type": "string", "enum": list(CATEGORIES)}
+    if facts is not None:
+        props.update(facts.fact_schema())
     return {"type": "object", "properties": props, "required": list(props)}
 
 
-def story_prompt(languages: tuple[str, ...]) -> str:
+def story_prompt(languages: tuple[str, ...], facts: EnrichTask | None = None) -> str:
     first, name = languages[0], lang_name(languages[0])
     fields = [
         f"- title_{first}: a natural {name} headline for the event in sentence case, max 110 characters.",
@@ -42,6 +46,8 @@ def story_prompt(languages: tuple[str, ...]) -> str:
         fields.append(f"- title_{lang}, summary_{lang}, why_meeting_{lang}: the same three texts in natural "
                       f"{lang_name(lang)} (same facts, nothing more).")
     fields.append("- category: one of " + ", ".join(CATEGORIES) + ".")
+    if facts is not None:
+        fields.extend(facts.fact_fields("reports"))
     return f"""You are the foreign news editor of a newsroom preparing the morning editorial meeting.
 You receive several reports from different outlets, in different languages, about ONE news event.
 Write output in {", ".join(lang_name(lang) for lang in languages)} as JSON.
@@ -68,6 +74,10 @@ class StoryResult:
     texts: dict[str, dict[str, str]]  # {"tr": {"title": …, "summary": …, "why": …}, …}
     category: str
     issues: list[str] = field(default_factory=list)
+    # The facts for "my country" (None: not asked).
+    countries: list[str] | None = None
+    topics: list[str] = field(default_factory=list)
+    mentions_home: bool = False
 
 
 def render_reports(reports: list[StoryReport], source_count: int) -> str:
@@ -92,7 +102,7 @@ def pick_reports(members: list[dict[str, Any]]) -> list[StoryReport]:
 
 
 def validate_story(data: dict[str, Any], reports: list[StoryReport], source_count: int,
-                   languages: tuple[str, ...] = tuple(DEFAULT_LANGUAGES)) -> StoryResult:
+                   languages: tuple[str, ...] = tuple(DEFAULT_LANGUAGES), facts: EnrichTask | None = None) -> StoryResult:
     texts: dict[str, dict[str, str]] = {}
     for lang in languages:
         title = clean_title(data.get(f"title_{lang}"))
@@ -104,4 +114,14 @@ def validate_story(data: dict[str, Any], reports: list[StoryReport], source_coun
     # The rendered input also contains the source count, which the model may legitimately quote.
     source_text = render_reports(reports, source_count)
     written = "\n".join("\n".join(t.values()) for t in texts.values())
-    return StoryResult(texts, category, fidelity_issues(source_text, written))
+    result = StoryResult(texts, category, fidelity_issues(source_text, written))
+    if facts is not None:
+        countries: list[str] = []
+        for c in data.get("countries") or []:
+            code = str(c).strip().upper()
+            if re.fullmatch(r"[A-Z]{2}", code) and code not in countries:
+                countries.append(code)
+        result.countries = countries[:MAX_COUNTRIES]
+        result.topics = [t for t in dict.fromkeys(data.get("topics") or []) if t in facts.topics]
+        result.mentions_home = facts.ask_turkey and bool(data.get("mentions_turkey"))
+    return result

@@ -58,6 +58,7 @@ from ..textnorm import MAX_ALTERNATIVES
 from ..updater import UpdateError, Updater
 from ..apikeys import SecretStore
 from ..ai.cloud import OPENAI_URL, make_client as make_cloud_client
+from ..flags import KINDS
 from ..country import MAX_TOPIC, MAX_TOPICS, MIN_TOPIC, TOPICS, HomeState, countries as country_data
 from ..country import profile as country_profile
 from ..ai.languages import MAX_LANGUAGES, OUTPUT_LANGUAGES, effective as ai_languages
@@ -116,13 +117,14 @@ def api_error(status: int, code: str, message: str = "") -> HTTPException:
 # -- request models -------------------------------------------------------------
 Region = Literal[REGIONS]  # type: ignore[valid-type]
 Group = Literal[CATALOG_GROUPS]  # type: ignore[valid-type]
+FeedGroup = Literal[CATALOG_GROUPS + KINDS]  # type: ignore[valid-type]
 
 
 class FeedFilters(BaseModel):
     model_config = {"extra": "forbid"}
 
     regions: list[Region] = Field(default_factory=list)
-    groups: list[Group] = Field(default_factory=list)
+    groups: list[FeedGroup] = Field(default_factory=list)
     langs: list[Annotated[str, Field(min_length=2, max_length=3)]] = Field(default_factory=list, max_length=50)
     sources: list[int] = Field(default_factory=list, max_length=500)
     categories: list[Literal[CATEGORIES]] = Field(default_factory=list)  # type: ignore[valid-type]
@@ -138,6 +140,7 @@ class SettingsPatch(BaseModel):
     feed_view: Literal["stories", "articles"] | None = Field(None, alias="feed.view")
     feed_filters: FeedFilters | None = Field(None, alias="feed.filters")
     update_auto_check: bool | None = Field(None, alias="update.auto_check")
+    home_enabled: bool | None = Field(None, alias="home.enabled")
     home_country: Annotated[str, Field(pattern=r"^([A-Z]{2})?$")] | None = Field(None, alias="home.country")
     home_related: list[Annotated[str, Field(pattern=r"^[A-Z]{2}$")]] | None = Field(None, alias="home.related", max_length=50)
     home_topics: list[Annotated[str, Field(min_length=MIN_TOPIC, max_length=MAX_TOPIC)]] | None = Field(
@@ -161,6 +164,7 @@ class SettingsPatch(BaseModel):
     ai_cloud_rpm: int | None = Field(None, alias="ai.cloud_rpm", ge=1, le=600)
     ai_max_age_hours: int | None = Field(None, alias="ai.max_age_hours", ge=1, le=168)
     ai_yield_gpu: bool | None = Field(None, alias="ai.yield_gpu")
+    ai_depth: Literal["full", "stories", "fast"] | None = Field(None, alias="ai.depth")
     stories_embed_model: str | None = Field(None, alias="stories.embed_model", min_length=1, max_length=200)
     stories_embed_summary: bool | None = Field(None, alias="stories.embed_summary")
     stories_threshold: float | None = Field(None, alias="stories.threshold", ge=0.5, le=0.95)
@@ -359,6 +363,8 @@ def create_app(ctx: AppContext) -> FastAPI:
         return {
             "regions": list(REGIONS),
             "groups": list(CATALOG_GROUPS),
+            # Virtual groups of the feed's filter: exclusives and opinion pieces from any source (flags.py).
+            "kinds": list(KINDS),
             "languages": ctx.articles.languages(),
             "categories": list(CATEGORIES),
             "ui_languages": list(SUPPORTED_LANGUAGES),
@@ -432,11 +438,11 @@ def create_app(ctx: AppContext) -> FastAPI:
         if "home.keywords" in values:
             values["home.keywords"] = list(dict.fromkeys(k.strip() for k in values["home.keywords"] if k.strip()))
         ctx.settings.set_many(values)
-        if any(k.startswith("home.") for k in values) and ctx.home_sync is not None:
+        if any(k.startswith("home.") and k != "home.enabled" for k in values) and ctx.home_sync is not None:
             ctx.home_sync.wake()
         if any(k.startswith("ai.") for k in values):
             ctx.ai_worker.wake()
-        if any(k.split(".")[0] in ("stories", "score", "interest") for k in values):
+        if any(k.split(".")[0] in ("stories", "score", "interest") or k == "home.enabled" for k in values):
             ctx.story_worker.request_rescore()
         if any(k.startswith("fulltext.") for k in values):
             ctx.fulltext_worker.wake()

@@ -4,7 +4,7 @@ from datetime import UTC, datetime, timedelta
 
 import pytest
 
-from worldsignal.flags import has_breaking_marker, is_breaking, is_exclusive
+from worldsignal.flags import article_kind, group_condition, has_breaking_marker, is_breaking, is_exclusive, is_opinion
 
 
 @pytest.mark.parametrize("title", [
@@ -66,3 +66,43 @@ def test_a_publishers_breaking_marker_counts_for_two_hours():
 
 def test_a_report_dated_slightly_in_the_future_is_fresh():
     assert is_breaking([("a", NOW + timedelta(minutes=2), "x"), ("b", ago(1), "y"), ("c", ago(2), "z")], NOW)
+
+
+# -- the feed's "exclusive" / "opinion" groups ---------------------------------------------------
+@pytest.mark.parametrize("title,url", [
+    ("Why the ceasefire will not hold", "https://www.nytimes.com/2026/09/28/opinion/ceasefire.html"),
+    ("The quiet shift", "https://www.theguardian.com/commentisfree/2026/sep/28/quiet-shift"),
+    ("Ekonomide yeni dönem", "https://www.hurriyet.com.tr/yazarlar/ahmet-hakan/ekonomide-yeni-donem-42"),
+    ("Merz und die Mitte", "https://www.spiegel.de/meinung/merz-und-die-mitte-a-1234"),
+    ("Analysis: What Beijing wants", "https://example.com/world/asia/beijing"),
+    ("Görüş - Doğu Akdeniz'de denge", "https://example.com/haber/dogu-akdeniz"),
+    ("Мнение: переговоры зашли в тупик", "https://example.ru/news/123"),
+    ("Destroying the regime is not the same as saving Iran - opinion", "https://example.com/international/article-1"),
+])
+def test_opinion_pieces(title, url):
+    assert is_opinion(title, url)
+    assert article_kind(title, url) == "opinion"
+
+
+@pytest.mark.parametrize("title,url", [
+    ("Opinion polls show a tight race", "https://example.com/politics/polls"),  # no label separator
+    ("Analysts expect a rate cut", "https://example.com/markets/rates"),
+    ("Yorumcular ne diyor?", "https://example.com/haber/spor"),
+    ("Commentary box moves", "https://example.com/sport/commentary-box"),  # "/comment" is not a whole segment
+    ("Fed faces a tough analysis", "https://example.com/markets/fed"),  # no separator before the word
+])
+def test_ordinary_reports_are_not_opinion(title, url):
+    assert not is_opinion(title, url)
+    assert article_kind(title, url) is None
+
+
+def test_exclusive_wins_over_opinion():
+    assert article_kind("Exclusive: The memo", "https://example.com/opinion/memo") == "exclusive"
+
+
+def test_group_condition_mixes_catalog_groups_and_kinds():
+    assert group_condition([]) is None
+    sql, params = group_condition(["western", "opinion", "western"])
+    assert params == ["western", "opinion"]
+    assert sql == "(s.catalog_group IN (?) OR ws_kind(a.title, a.url) IN (?))"
+    assert group_condition(["exclusive"]) == ("(ws_kind(a.title, a.url) IN (?))", ["exclusive"])

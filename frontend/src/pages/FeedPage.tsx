@@ -39,6 +39,7 @@ export function FeedPage() {
   };
 
   const view = settings["feed.view"];
+  const homeOn = settings["home.enabled"];
   const [total, setTotal] = useState<number | null>(null);
   const searchRef = useRef<HTMLInputElement>(null);
   const [bulletin, setBulletin] = useState(false);
@@ -80,9 +81,9 @@ export function FeedPage() {
       lang: filters.langs,
       source: filters.sources,
       category: filters.categories,
-      turkey: filters.turkey,
+      turkey: homeOn && filters.turkey,
     }),
-    [hours, query, languages.phrases, filters],
+    [hours, query, languages.phrases, filters, homeOn],
   );
 
   const changeView = (v: "stories" | "articles") => {
@@ -96,7 +97,7 @@ export function FeedPage() {
   };
 
   const filtersActive =
-    filters.turkey ||
+    (homeOn && filters.turkey) ||
     filters.regions.length + filters.groups.length + filters.langs.length + filters.sources.length + filters.categories.length > 0;
 
   const sourceOptions = useMemo(
@@ -166,7 +167,7 @@ export function FeedPage() {
           />
           <MultiSelect
             label={t("filter.group")}
-            options={meta.groups.map((g) => ({ value: g, label: t(`group.${g}`) }))}
+            options={[...meta.groups, ...meta.kinds].map((g) => ({ value: g, label: t(`group.${g}`) }))}
             selected={filters.groups}
             onChange={(groups) => setFilters((f) => ({ ...f, groups }))}
           />
@@ -182,15 +183,17 @@ export function FeedPage() {
             selected={filters.categories}
             onChange={(categories) => setFilters((f) => ({ ...f, categories }))}
           />
-          <button
-            type="button"
-            className="chip"
-            data-active={filters.turkey}
-            aria-pressed={filters.turkey}
-            onClick={() => setFilters((f) => ({ ...f, turkey: !f.turkey }))}
-          >
-            {t("filter.turkey")}
-          </button>
+          {homeOn ? (
+            <button
+              type="button"
+              className="chip"
+              data-active={filters.turkey}
+              aria-pressed={filters.turkey}
+              onClick={() => setFilters((f) => ({ ...f, turkey: !f.turkey }))}
+            >
+              {t("filter.turkey")}
+            </button>
+          ) : null}
           <MultiSelect
             label={t("filter.source")}
             options={sourceOptions}

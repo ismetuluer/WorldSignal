@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import sqlite3
 from collections import Counter
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from typing import Any
@@ -13,12 +13,13 @@ from typing import Any
 import numpy as np
 
 from ..db import Database, utc_now_iso
-from ..flags import is_breaking, is_exclusive
+from ..flags import group_condition, is_breaking, is_exclusive
 from ..stories.score import Interest, Member, score_story
 from ..textnorm import build_fts_query
 from .ai import lacking_sql
 
-DTYPE = np.float32
+DTYPE = np.float32  # computing
+STORED = "f2"  # how new vectors are stored (migration 0010): 16-bit floats; older rows say "f4"
 
 
 def parse_iso(value: str) -> datetime:
@@ -32,7 +33,7 @@ def pick_representative(rows: Sequence[sqlite3.Row]) -> int:
     with_vec = [r for r in rows if r["vector"] is not None]
     if not with_vec:
         return min(rows, key=lambda r: (not r["ai_titles"], -r["reliability"], r["sort_at"]))["id"]
-    matrix = np.stack([from_blob(r["vector"]) for r in with_vec])
+    matrix = np.stack([from_blob(r["vector"], r["dtype"] if "dtype" in r.keys() else STORED) for r in with_vec])
     centroid = matrix.mean(axis=0)
     centroid /= np.linalg.norm(centroid) or 1.0
     typical = matrix @ centroid
@@ -40,14 +41,31 @@ def pick_representative(rows: Sequence[sqlite3.Row]) -> int:
     return with_vec[int(scores.argmax())]["id"]
 
 
+@dataclass
+class StoryFacts:
+    """What a story summary found for "my country", and the rating country.py gave it."""
+
+    countries: list[str]
+    topics: list[str]
+    mentions_home: bool
+    level: str
+    links: list[str]
+
+
+def story_text(texts: dict[str, dict[str, str]]) -> str:
+    """The story's AI texts in all languages: the names of the home country are also looked for in them."""
+    return "\n".join(f"{t.get('title', '')}\n{t.get('summary', '')}" for t in texts.values())
+
+
 def to_blob(vector: Sequence[float]) -> bytes:
+    """Unit length, stored as ``STORED``."""
     v = np.asarray(vector, dtype=DTYPE)
     n = float(np.linalg.norm(v))
-    return (v / n if n else v).astype("<f4").tobytes()
+    return (v / n if n else v).astype(f"<{STORED}").tobytes()
 
 
-def from_blob(blob: bytes) -> np.ndarray:
-    return np.frombuffer(blob, dtype="<f4")
+def from_blob(blob: bytes, dtype: str = STORED) -> np.ndarray:
+    return np.frombuffer(blob, dtype=f"<{dtype}").astype(DTYPE)
 
 
 @dataclass
@@ -95,10 +113,10 @@ class StoryRepository:
         now = utc_now_iso()
         with self.db.transaction() as c:
             c.executemany(
-                """INSERT INTO article_embeddings (article_id, model, vector, created_at) VALUES (?, ?, ?, ?)
+                """INSERT INTO article_embeddings (article_id, model, vector, dtype, created_at) VALUES (?, ?, ?, ?, ?)
                    ON CONFLICT(article_id) DO UPDATE SET model = excluded.model, vector = excluded.vector,
-                       created_at = excluded.created_at""",
-                [(aid, model, to_blob(vec), now) for aid, model, vec in items],
+                       dtype = excluded.dtype, created_at = excluded.created_at""",
+                [(aid, model, to_blob(vec), STORED, now) for aid, model, vec in items],
             )
 
     def embedding_model_in_use(self) -> str | None:
@@ -113,7 +131,7 @@ class StoryRepository:
     def recent_vectors(self, since_iso: str, model: str) -> tuple[list[int], list[int | None], list[str], np.ndarray]:
         """Embedded articles since ``since_iso``: ids, story ids (None = unclustered), sort_at, matrix."""
         rows = self.db.conn.execute(
-            """SELECT a.id, a.sort_at, e.vector, sa.story_id
+            """SELECT a.id, a.sort_at, e.vector, e.dtype, sa.story_id
                FROM article_embeddings e
                JOIN articles a ON a.id = e.article_id
                LEFT JOIN story_articles sa ON sa.article_id = a.id
@@ -123,7 +141,7 @@ class StoryRepository:
         ).fetchall()
         if not rows:
             return [], [], [], np.zeros((0, 0), dtype=DTYPE)
-        matrix = np.vstack([from_blob(r["vector"]) for r in rows])
+        matrix = np.vstack([from_blob(r["vector"], r["dtype"]) for r in rows])
         return [r["id"] for r in rows], [r["story_id"] for r in rows], [r["sort_at"] for r in rows], matrix
 
     # -- assignment ----------------------------------------------------------------------------
@@ -196,7 +214,7 @@ class StoryRepository:
             """SELECT a.id, a.sort_at, a.title, s.id AS source_id, s.region, s.reliability,
                       COALESCE(NULLIF(s.owner, ''), s.slug) AS owner_key,
                       (SELECT group_concat(json_extract(j.value, '$.title'), ' ') FROM json_each(x.texts) j) AS ai_titles,
-                      x.category, a.home_relevance AS turkey_relevance, e.vector
+                      x.category, a.home_relevance AS turkey_relevance, e.vector, e.dtype
                FROM story_articles sa
                JOIN articles a ON a.id = sa.article_id
                JOIN sources s ON s.id = a.source_id
@@ -225,7 +243,9 @@ class StoryRepository:
                 ]
                 categories = Counter(r["category"] for r in rows if r["category"])
                 category = categories.most_common(1)[0][0] if categories else None
-                result = score_story(members, now, weights=weights, interest=interest, category=category)
+                own = c.execute("SELECT ai_home_relevance FROM stories WHERE id = ?", (sid,)).fetchone()
+                result = score_story(members, now, weights=weights, interest=interest, category=category,
+                                     story_relevance=own["ai_home_relevance"] if own else None)
                 representative = pick_representative(rows)
                 c.execute(
                     """UPDATE stories SET first_seen_at = ?, last_seen_at = ?, article_count = ?, source_count = ?,
@@ -243,13 +263,14 @@ class StoryRepository:
     # -- story AI queue -----------------------------------------------------------------------------
     def next_story_job(
         self, since_iso: str, min_sources: int, max_attempts: int = 3, *, automatic: bool = True,
-        languages: Sequence[str] = ("tr", "en"),
+        languages: Sequence[str] = ("tr", "en"), need_facts: bool = False,
     ) -> dict[str, Any] | None:
         """The highest-scoring story that needs a (new) summary.
 
         A story needs one when it has at least ``min_sources`` independent sources and either
         has no summary yet, has grown by half (and at least two articles) since it was written, or its
-        summary lacks one of ``languages`` (the user added a language).
+        summary lacks one of ``languages`` (the user added a language), or — ``need_facts``: its reports are not
+        read one by one ("stories" / "fast") — it was written before summaries extracted the facts for "my country".
         Stories the user asked for (ai_status = 'pending') come first, whatever their size.
         ``automatic=False``: only those.
         """
@@ -266,11 +287,12 @@ class StoryRepository:
                       OR (last_seen_at >= ? AND source_count >= ?
                           AND (ai_status IS NULL
                                OR (ai_status = 'done' AND {lacking})
+                               OR (ai_status = 'done' AND ? AND ai_countries IS NULL)
                                OR (ai_status = 'done' AND article_count >= ai_article_count * 1.5
                                    AND article_count >= ai_article_count + 2))))
                ORDER BY ai_status = 'pending' DESC, score DESC LIMIT 1""".format(
                 lacking=lacking_sql("ai_texts", languages)),
-            (max_attempts, since_iso, min_sources, *languages),
+            (max_attempts, since_iso, min_sources, *languages, int(need_facts)),
         ).fetchone()
         return self.get(row["id"], member_limit=12) if row else None
 
@@ -280,8 +302,8 @@ class StoryRepository:
                 raise KeyError(story_id)
 
     def store_story_ai(self, story_id: int, *, texts: dict[str, dict[str, str]], category: str | None,
-                       issues: list[str], model: str, article_count: int) -> None:
-        """``texts``: {"tr": {"title": …, "summary": …, "why": …}, …}"""
+                       issues: list[str], model: str, article_count: int, facts: StoryFacts | None = None) -> None:
+        """``texts``: {"tr": {"title": …, "summary": …, "why": …}, …}; ``facts``: for "my country" (rated)."""
         with self.db.transaction() as c:
             c.execute(
                 """UPDATE stories SET ai_status = 'done', ai_texts = ?,
@@ -291,6 +313,33 @@ class StoryRepository:
                 (json.dumps(texts, ensure_ascii=False), category, json.dumps(issues), article_count, model,
                  utc_now_iso(), story_id),
             )
+            if facts is not None:
+                c.execute(
+                    """UPDATE stories SET ai_countries = ?, ai_topics = ?, ai_mentions_home = ?,
+                           ai_home_relevance = ?, ai_home_links = ? WHERE id = ?""",
+                    (json.dumps(facts.countries), json.dumps(facts.topics), int(facts.mentions_home), facts.level,
+                     json.dumps(facts.links), story_id),
+                )
+
+    def recompute_home(self, rate: Callable[[str, list[str], list[str], bool], tuple[str, list[str]]]) -> list[int]:
+        """Rate the AI facts of every summarised story again (the user changed their country). ``rate`` is
+        ``HomeProfile.relevance``. Returns the stories whose rating changed."""
+        changed = []
+        rows = self.db.conn.execute(
+            """SELECT id, ai_texts, ai_countries, ai_topics, ai_mentions_home, ai_home_relevance, ai_home_links
+               FROM stories WHERE ai_status = 'done' AND ai_countries IS NOT NULL"""
+        ).fetchall()
+        updates = []
+        for r in rows:
+            level, links = rate(story_text(json.loads(r["ai_texts"] or "{}")), json.loads(r["ai_countries"]),
+                                json.loads(r["ai_topics"] or "[]"), bool(r["ai_mentions_home"]))
+            if level != r["ai_home_relevance"] or json.dumps(links) != r["ai_home_links"]:
+                updates.append((level, json.dumps(links), r["id"]))
+                changed.append(r["id"])
+        if updates:
+            with self.db.transaction() as c:
+                c.executemany("UPDATE stories SET ai_home_relevance = ?, ai_home_links = ? WHERE id = ?", updates)
+        return changed
 
     def store_story_ai_failure(self, story_id: int, code: str, max_attempts: int = 3) -> None:
         with self.db.transaction() as c:
@@ -315,11 +364,14 @@ class StoryRepository:
             params.extend(f.categories)
         member_conds = []
         member_params: list[Any] = []
-        for column, values in (("a.source_id", f.source_ids), ("s.region", f.regions), ("s.catalog_group", f.groups),
+        for column, values in (("a.source_id", f.source_ids), ("s.region", f.regions),
                                ("COALESCE(a.language, s.language)", f.languages)):
             if values:
                 member_conds.append(f"{column} IN ({','.join('?' * len(values))})")
                 member_params.extend(values)
+        if groups := group_condition(f.groups):
+            member_conds.append(groups[0])
+            member_params.extend(groups[1])
         if f.query:
             fts = build_fts_query(f.query, f.alternatives)
             if fts is None:

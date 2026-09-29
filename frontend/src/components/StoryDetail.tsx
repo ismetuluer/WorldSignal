@@ -302,7 +302,7 @@ function StoryBody({
         <section>
           <h4 className="subsection-title">{t("stories.detail.scoreBreakdown")}</h4>
           <dl className="score-breakdown">
-            {COMPONENTS.map((k) => {
+            {COMPONENTS.filter((k) => k !== "turkey" || settings["home.enabled"]).map((k) => {
               const weight = settings[`score.w_${k}`];
               return (
                 <div key={k} className="score-row">

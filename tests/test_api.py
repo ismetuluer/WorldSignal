@@ -93,6 +93,9 @@ def test_settings_patch_validates(client):
     assert client.patch("/api/settings", headers=H, json={"ui.theme": "pink"}).status_code == 422
     assert client.patch("/api/settings", headers=H, json={"nope": 1}).status_code == 422
     assert client.patch("/api/settings", headers=H, json={"feed.window_hours": 0}).status_code == 422
+    assert client.get("/api/settings", headers=H).json()["home.enabled"] is True
+    assert client.patch("/api/settings", headers=H, json={"home.enabled": False}).json()["home.enabled"] is False
+    assert client.patch("/api/settings", headers=H, json={"home.enabled": "maybe"}).status_code == 422
 
 
 def test_home_country_can_be_changed(client, ctx):
@@ -230,6 +233,12 @@ def test_meta(client, ctx):
     add_articles(ctx)
     meta = client.get("/api/meta", headers=H).json()
     assert "turkey" in meta["regions"] and meta["languages"] == ["tr"] and meta["ui_languages"] == ["tr", "en"]
+    assert meta["kinds"] == ["exclusive", "opinion"]
+    # The remembered feed filters accept the virtual groups; unknown ones are refused.
+    filters = {"regions": [], "groups": ["opinion", "turkey"], "langs": [], "sources": [], "categories": [], "turkey": False}
+    assert client.patch("/api/settings", headers=H, json={"feed.filters": filters}).status_code == 200
+    filters["groups"] = ["gossip"]
+    assert client.patch("/api/settings", headers=H, json={"feed.filters": filters}).status_code == 422
 
 
 def test_search_words_are_translated_for_the_lists(client, ctx, monkeypatch):

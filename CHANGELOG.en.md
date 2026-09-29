@@ -3,6 +3,47 @@
 English version of [CHANGELOG.md](CHANGELOG.md), from 0.10.0 on. Version numbers follow
 [Semantic Versioning](https://semver.org/).
 
+## [0.13.0] — 2026-09-29 — The AI keeps up, the database gets smaller
+
+### Added
+- **How much the AI writes** (Settings → Artificial intelligence). About 7,500 reports arrive a day and the app is
+  open about 8 hours a day. At ~8 seconds per report the AI could read at most ~4,000 reports a day, so its queue
+  never caught up. There are three options:
+  - **Every report** (as before), for strong computers or a fast cloud service.
+  - **Stories together**: reports of an event covered by several sources are not read separately; the story summary
+    covers them. The story summary now also extracts the facts for your country (which countries, whether Türkiye
+    is mentioned, your topics). The story's link to your country comes from its reports and from these facts, with
+    the same rules. Recent summaries written without these facts are written once more.
+  - **Fast** (default): single reports are also read ten at a time for their headline, category and link to your
+    country. The summary is written with the **Summarise** button on the report. Measured on real news: ~3.3 instead
+    of ~8 seconds per report, and all 30 of 30 reports were usable. The daily work drops from ~65,000 to ~12,000
+    seconds.
+
+- **Two new source groups in the feed:** the "Source group" filter offers **Exclusives** (reports the publisher marks
+  "Exclusive", "Özel haber" …) and **Articles (opinion, analysis, columns)**. An article is recognised by the site's
+  own section in its address (`/opinion/`, `/commentisfree/`, `/yazarlar/` …) or by a label in the headline
+  ("Opinion:", "Analysis |", "… - opinion"). They come from every source; the source list does not change. In the
+  real feed over the last 24 hours: 7 exclusives, 76 articles.
+
+### Changed
+- **The ranking opens up to the world:** at most 6 independent sources count from one region, and the sources part of
+  the score is full at 40 sources instead of 12. Before, a domestic story in 12 outlets of one country's press got the
+  same sources score as a world story in 57 foreign outlets. Measured on the real feed (last 24 hours): among the top
+  20 stories, those mostly covered by Turkish outlets dropped from 11 to 4, and the stories with the most foreign
+  sources rose from 28th, 36th and 53rd to 2nd, 4th and 8th. Big domestic stories stay near the top. The "N sources"
+  label on the card still counts every source.
+- **"My country" is optional** (Settings → My country → Use my country). When it is off, the link to your country
+  does not count in the importance score, and the feed hides the country filter and the country labels on cards.
+  The AI keeps extracting the countries, so switching it back on takes effect at once.
+- **Backups are five times smaller.** A backup is now a compressed `.zip` without the story-merging vectors, which
+  are computed again within minutes after a restore. Measured: 80 MB → ~15 MB. Old `.db` backups are still listed
+  and can be restored.
+- **Vectors at half size, kept 4 days.** Story merging looks at the last 72 hours, so vectors are kept 4 days
+  instead of 7, and stored as 16-bit numbers (measured: only 4 of 27,122 similar pairs change their decision). The
+  largest part of the database (~210 MB) drops to ~60 MB.
+- **The space of removed data goes back to the disk:** maintenance compacts the database once free space passes 20%
+  of the file.
+
 ## [0.12.0] — 2026-09-29 — Search in other languages, and Statistics
 
 ### Added

@@ -63,7 +63,7 @@ export function ArticleCard({
         ) : null}
         {hasAi && a.category ? <span className="badge">{t(`category.${a.category}`)}</span> : null}
         {useAi ? <LangToggle current={shown.lang} languages={languages} onChange={setLang} /> : null}
-        {hasAi && a.turkey_relevance && a.turkey_relevance !== "none" ? (
+        {hasAi && settings["home.enabled"] && a.turkey_relevance && a.turkey_relevance !== "none" ? (
           <span
             className={`badge ${a.turkey_relevance === "direct" ? "badge-danger" : "badge-accent"}`}
             title={a.turkey_links.map(i18n.turkeyLink).join(" · ")}
@@ -94,9 +94,16 @@ export function ArticleCard({
 
       <div className="article-actions" dir="ltr">
         {hasAi ? (
-          <button type="button" className="link-btn" onClick={() => setShowOriginal((v) => !v)}>
-            {showOriginal ? t("ai.showAi") : t("ai.showOriginal")}
-          </button>
+          <>
+            <button type="button" className="link-btn" onClick={() => setShowOriginal((v) => !v)}>
+              {showOriginal ? t("ai.showAi") : t("ai.showOriginal")}
+            </button>
+            {a.ai_brief && aiAvailable ? (
+              <button type="button" className="link-btn" onClick={() => onRequestAi(a)} title={t("ai.summarizeHint")}>
+                {t("ai.translate")}
+              </button>
+            ) : null}
+          </>
         ) : a.ai_status === "pending" ? (
           <span className="badge">{t("ai.queued")}</span>
         ) : aiAvailable ? (

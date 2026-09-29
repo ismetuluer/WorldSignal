@@ -52,6 +52,8 @@ export interface Settings {
   "update.auto_check": boolean;
   "update.auto_download": boolean;
   /** "My country" (ISO code); "" = Windows' region. related/topics null = the country's own defaults. */
+  /** "My country" on/off: off leaves the country link out of the score, filter and badges. */
+  "home.enabled": boolean;
   "home.country": string;
   "home.related": string[] | null;
   "home.topics": string[] | null;
@@ -70,6 +72,7 @@ export interface Settings {
   "ai.model": string;
   "ai.max_age_hours": number;
   "ai.yield_gpu": boolean;
+  "ai.depth": AiDepth;
   "stories.embed_model": string;
   "stories.embed_summary": boolean;
   "stories.threshold": number;
@@ -143,6 +146,8 @@ export interface Article {
   /** AI enrichment; the texts are only set when ai_status is "done". */
   ai_status: AiItemStatus | null;
   ai_texts: AiTexts;
+  /** Read in a batch ("fast"): headline only, the summary is written on request. */
+  ai_brief?: number | null;
   category: Category | null;
   /** ISO 3166-1 alpha-2 codes the AI found in the text. */
   countries: string[];
@@ -497,9 +502,13 @@ export interface Status {
   articles: { total: number; recent: number };
 }
 
+export type FeedKind = "exclusive" | "opinion";
+
 export interface Meta {
   regions: Region[];
   groups: CatalogGroup[];
+  /** Virtual groups of the feed's source-group filter: exclusives and opinion pieces from any source. */
+  kinds: FeedKind[];
   languages: string[];
   categories: Category[];
   ui_languages: UiLanguage[];
@@ -563,6 +572,9 @@ export type SourcePatch = Partial<
 >;
 
 export type FeedPatch = Partial<Pick<Feed, "label" | "enabled" | "fetch_interval_min">>;
+
+/** How much the AI writes: every report / stories cover their reports / also headlines of single reports only. */
+export type AiDepth = "full" | "stories" | "fast";
 
 // -- statistics (repo/stats.py) ----------------------------------------------------------------
 export type StatsHours = 24 | 168 | 720;

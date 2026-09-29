@@ -1,6 +1,7 @@
 from datetime import UTC, datetime, timedelta
 
-from worldsignal.stories.score import Interest, Member, independent_sources, score_story
+from worldsignal.stories.score import REGION_CAP, Interest, Member, counted_sources, independent_sources, score_story
+from worldsignal.stories.worker import weights_from
 
 NOW = datetime(2026, 9, 27, 12, 0, tzinfo=UTC)
 
@@ -59,3 +60,24 @@ def test_weights_are_configurable_and_score_is_bounded():
                               weights={"sources": 0, "freshness": 0, "turkey": 1, "interest": 0})
     assert only_turkey.score == 100.0
     assert score_story([], NOW).score == 0.0
+
+
+def test_my_country_off_leaves_the_country_link_out_of_the_score():
+    prefs = {"score.w_sources": 0.45, "score.w_freshness": 0.25, "score.w_turkey": 0.2, "score.w_interest": 0.1}
+    assert weights_from(prefs)["turkey"] == 0.2
+    assert weights_from({**prefs, "home.enabled": True})["turkey"] == 0.2
+    off = weights_from({**prefs, "home.enabled": False})
+    assert off == {"sources": 0.45, "freshness": 0.25, "turkey": 0.0, "interest": 0.1}
+
+
+def test_one_region_cannot_fill_the_source_count_alone():
+    """Many outlets from one region (the user's own press) count at most REGION_CAP; the rest need other regions."""
+    home = [m(i, f"TR{i}", region="turkey") for i in range(14)]
+    assert counted_sources(home) == REGION_CAP
+    world = [m(i, f"W{i}", region=r) for i, r in enumerate(["europe", "asia", "middle_east", "north_america"] * 3)]
+    local_story, world_story = score_story(home, NOW), score_story(world, NOW)
+    assert local_story.source_count == 14 and world_story.source_count == 12
+    assert world_story.score > local_story.score
+    # The most reliable outlets of a region are the ones counted; a media group still counts once.
+    mixed = [m(1, "A", rel=1.5, region="turkey"), m(2, "A", rel=1.0, region="turkey")] +         [m(i, f"B{i}", rel=0.5, region="turkey") for i in range(3, 3 + REGION_CAP)]
+    assert counted_sources(mixed) == 1.5 + 0.5 * (REGION_CAP - 1)

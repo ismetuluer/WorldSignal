@@ -1,7 +1,9 @@
 """Database backups: a daily copy, manual copies and restoring one.
 
-Backups are consistent copies made with SQLite's backup API while the program runs
-(``Database.backup``). File names: ``worldsignal-YYYYmmdd-HHMMSS-<label>.db``.
+Backups are consistent copies made with SQLite's backup API while the program runs, without the
+story-matching vectors and zip-compressed (``db.database.write_backup``). File names:
+``worldsignal-YYYYmmdd-HHMMSS-<label>.zip``; plain ``.db`` copies of versions before 0.12 are still listed
+and can be restored.
 
 Restoring cannot happen under a running program, so it is two-step: the chosen backup is
 checked and *scheduled* (``restore.json`` in the data folder), the program restarts, and
@@ -18,17 +20,20 @@ import re
 import shutil
 import sqlite3
 import time
+import zipfile
+from collections.abc import Iterator
+from contextlib import contextmanager
 from dataclasses import dataclass
 from datetime import date, datetime
 from pathlib import Path
 from typing import Any
 
 from .db import Database
-from .db.database import latest_schema_version
+from .db.database import BACKUP_MEMBER, latest_schema_version, write_backup
 
 log = logging.getLogger(__name__)
 
-NAME_RE = re.compile(r"^worldsignal-(\d{8})-(\d{6})-([a-z0-9-]+)\.db$")
+NAME_RE = re.compile(r"^worldsignal-(\d{8})-(\d{6})-([a-z0-9-]+)\.(?:zip|db)$")
 KEEP_OTHERS = 10  # pre-migration / pre-restore / manual copies kept besides the daily ones
 RESTORE_FILE = "restore.json"
 RESTORE_RESULT_FILE = "restore-result.json"
@@ -121,7 +126,38 @@ class BackupManager:
         return _read_json(self.data_dir / RESTORE_RESULT_FILE) or None
 
 
+def extract_backup(path: Path, target: Path) -> None:
+    """The database of a backup, written to ``target`` (a zip is unpacked, an old ``.db`` copied)."""
+    if path.suffix == ".zip":
+        try:
+            with zipfile.ZipFile(path) as zf, zf.open(BACKUP_MEMBER) as src, open(target, "wb") as dst:
+                shutil.copyfileobj(src, dst)
+        except (zipfile.BadZipFile, KeyError) as exc:
+            raise InvalidBackup("corrupt") from exc
+    else:
+        shutil.copyfile(path, target)
+
+
+@contextmanager
+def opened_backup(path: Path) -> Iterator[Path]:
+    """A readable database file of the backup ``path`` (unpacked next to it for a zip, removed afterwards)."""
+    if path.suffix != ".zip":
+        yield path
+        return
+    tmp = path.with_name(path.name + ".check")
+    try:
+        extract_backup(path, tmp)
+        yield tmp
+    finally:
+        tmp.unlink(missing_ok=True)
+
+
 def verify_backup(path: Path) -> None:
+    with opened_backup(path) as db_file:
+        _verify_database(db_file)
+
+
+def _verify_database(path: Path) -> None:
     try:
         conn = sqlite3.connect(f"file:{path}?mode=ro", uri=True)
         try:
@@ -151,19 +187,17 @@ def apply_pending_restore(database: Path, backup_dir: Path, data_dir: Path) -> d
         source = backup_dir / name
         if not NAME_RE.match(name) or not source.is_file():
             raise InvalidBackup("not_found")
-        verify_backup(source)
+        extract_backup(source, tmp)
+        _verify_database(tmp)
         if database.exists():
             stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
-            safety = backup_dir / f"worldsignal-{stamp}-pre-restore.db"
+            safety = backup_dir / f"worldsignal-{stamp}-pre-restore.zip"
             src = sqlite3.connect(database)
-            dst = sqlite3.connect(safety)
             try:
-                src.backup(dst)  # includes anything still in the WAL file
+                write_backup(src, safety)  # includes anything still in the WAL file
             finally:
-                dst.close()
                 src.close()
             result["safety_copy"] = safety.name
-        shutil.copyfile(source, tmp)
         _retry(lambda: [Path(f"{database}{suffix}").unlink(missing_ok=True) for suffix in ("-wal", "-shm")])
         _retry(lambda: os.replace(tmp, database))
         result["ok"] = True

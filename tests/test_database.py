@@ -42,11 +42,14 @@ def test_pending_migration_backs_up_first_and_failed_migration_rolls_back(data_p
     assert database.schema_version() == len(real)
     assert database.conn.execute("SELECT name FROM sqlite_master WHERE name = 'extra'").fetchone() is None
     assert database.conn.execute("SELECT value FROM settings WHERE key = 'k'").fetchone()[0] == "1"
-    backups = list(data_paths.backups.glob("*pre-migration*.db"))
+    backups = list(data_paths.backups.glob("*pre-migration*.zip"))
     assert len(backups) == 1
-    copy = sqlite3.connect(backups[0])
-    assert copy.execute("SELECT value FROM settings WHERE key = 'k'").fetchone()[0] == "1"
-    copy.close()
+    from worldsignal.backup import opened_backup
+
+    with opened_backup(backups[0]) as db_file:
+        copy = sqlite3.connect(db_file)
+        assert copy.execute("SELECT value FROM settings WHERE key = 'k'").fetchone()[0] == "1"
+        copy.close()
     database.close_thread_connection()
 
 

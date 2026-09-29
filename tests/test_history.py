@@ -149,6 +149,21 @@ def test_story_that_starts_in_turkish_has_no_turkish_source_milestone(db, source
 
 
 # -- retention ------------------------------------------------------------------------------------
+def test_the_space_of_removed_data_goes_back_to_the_disk(db):
+    history = HistoryRepository(db, StoryRepository(db))
+    assert history.reclaim() == 0  # nothing to give back
+    with db.transaction() as c:
+        c.execute("CREATE TABLE filler (b BLOB)")
+        c.executemany("INSERT INTO filler VALUES (?)", [(b"x" * 4000,) for _ in range(3000)])
+    with db.transaction() as c:
+        c.execute("DELETE FROM filler")
+    size = db.path.stat().st_size
+    assert history.reclaim(min_bytes=1_000_000) > 10_000_000
+    db.conn.execute("PRAGMA wal_checkpoint(TRUNCATE)")
+    assert db.path.stat().st_size < size - 10_000_000
+    assert history.reclaim(min_bytes=1_000_000) == 0  # done once
+
+
 def test_prune_removes_old_full_texts_and_vectors_but_keeps_the_news(db, sources, articles, settings):
     specs = [("alpha", "old", "Old report", 60 * 24 * 40), ("alpha", "new", "New report", 60)]
     ids, _, stories = build(db, sources, articles, specs, [["old"], ["new"]])

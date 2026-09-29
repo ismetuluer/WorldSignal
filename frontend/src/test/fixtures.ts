@@ -26,6 +26,7 @@ export const STORY_SETTINGS = {
   "fulltext.profile": "own",
   "fulltext.visible": false,
   "fulltext.per_site_hour": 4,
+  "ai.depth": "fast",
   "fulltext.browser_gap_min": 20,
   "fulltext.browser_per_day": 15,
   "fulltext.browser_night_rest": true,

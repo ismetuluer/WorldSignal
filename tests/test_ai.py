@@ -181,7 +181,7 @@ def test_failures_retry_then_fail_and_can_be_requeued(db, sources, articles):
 
 # -- worker ----------------------------------------------------------------------------------
 def make_worker(db, settings, fake, **prefs):
-    settings.set_many({"ai.model": "qwen3:14b", **prefs})
+    settings.set_many({"ai.model": "qwen3:14b", "ai.depth": "full", **prefs})
     home = HomeState(settings.get_preferences, "TR")
     return AiWorker(AiRepository(db, home=home.profile), settings, client_factory=fake.client)
 

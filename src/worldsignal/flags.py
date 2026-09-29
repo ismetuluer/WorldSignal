@@ -57,6 +57,54 @@ def is_exclusive(title: str | None) -> bool:
     return bool(_EXCLUSIVE.search(title) or _EXCLUSIVE_CAPS.search(title[:40]) or _EXCLUSIVE_END.search(title))
 
 
+# Opinion pieces: the publisher's own section in the address ("/opinion/", "/commentisfree/", "/yazarlar/" …) or a
+# label opening or closing the headline ("Opinion:", "Analysis |", "Görüş -", "… - opinion"). Measured on two days of the real feed: the
+# address finds ~140, the headline ~12 more.
+_OPINION_PATH = re.compile(
+    r"/(?:opinions?|op-ed|oped|commentisfree|comment|columnists?|column|yazarlar|yazar|kose-yazilari|kose-yazisi"
+    r"|analysis|analiz|editorials?|blogs?|ideas|perspectives?|meinung|kommentar|tribune|opinione)/",
+    re.IGNORECASE,
+)
+_OPINION_TITLE = re.compile(
+    r"^\s*(?:opinion|analysis|comment|column|editorial|op-ed|görüş|yorum|analiz|köşe yazısı|мнение|колонка"
+    r"|analyse|meinung|kommentar|tribune|opinión)\s*[:|\-–—]",
+    re.IGNORECASE,
+)
+# … or closing it ("… - opinion", "… | Analysis": The Jerusalem Post's style).
+_OPINION_END = re.compile(r"\s[\-–—|]\s*(?:opinion|analysis|commentary|op-ed)\s*$", re.IGNORECASE)
+# The feed's two virtual source groups: they cut across the catalog groups.
+KINDS = ("exclusive", "opinion")
+
+
+def is_opinion(title: str | None, url: str | None) -> bool:
+    if url and _OPINION_PATH.search(url):
+        return True
+    return bool(title and (_OPINION_TITLE.search(title) or _OPINION_END.search(title)))
+
+
+def article_kind(title: str | None, url: str | None) -> str | None:
+    """"exclusive", "opinion" or None; registered in SQLite as ``ws_kind(title, url)``."""
+    if is_exclusive(title):
+        return "exclusive"
+    if is_opinion(title, url):
+        return "opinion"
+    return None
+
+
+def group_condition(groups: Iterable[str]) -> tuple[str, list[str]] | None:
+    """SQL for the feed's "source group" filter over ``s`` (sources) and ``a`` (articles): a report matches when its
+    source is in one of the chosen catalog groups or it is one of the chosen kinds."""
+    groups = list(dict.fromkeys(groups))
+    catalog = [g for g in groups if g not in KINDS]
+    kinds = [g for g in groups if g in KINDS]
+    parts: list[str] = []
+    if catalog:
+        parts.append(f"s.catalog_group IN ({','.join('?' * len(catalog))})")
+    if kinds:
+        parts.append(f"ws_kind(a.title, a.url) IN ({','.join('?' * len(kinds))})")
+    return (f"({' OR '.join(parts)})", catalog + kinds) if parts else None
+
+
 def has_breaking_marker(title: str | None) -> bool:
     return bool(title and _BREAKING.search(title))
 

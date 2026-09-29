@@ -80,7 +80,7 @@ SPECS = [
 
 
 def make_worker(db, settings, fake, threshold=0.8):
-    settings.set_many({"stories.threshold": threshold, "stories.embed_model": "bge-m3:latest"})
+    settings.set_many({"stories.threshold": threshold, "stories.embed_model": "bge-m3:latest", "ai.depth": "full"})
     return StoryWorker(StoryRepository(db), settings, client_factory=fake.client)
 
 
@@ -187,6 +187,24 @@ def test_model_switch_drops_incomparable_vectors(db, sources, articles, settings
     assert fake.requests[-1]["input"][0].startswith("task: clustering | query: ")
 
 
+def test_vectors_are_stored_at_half_size_and_old_ones_still_read(db, sources, articles, settings):
+    ids = seed_articles(db, sources, articles, SPECS)
+    run(make_worker(db, settings, FakeEmbedOllama()).step())
+    rows = db.conn.execute("SELECT article_id, dtype, LENGTH(vector) AS n FROM article_embeddings").fetchall()
+    assert {r["dtype"] for r in rows} == {"f2"}
+    repo = StoryRepository(db)
+    since = (NOW - timedelta(days=1)).strftime("%Y-%m-%dT%H:%M:%SZ")
+    got_ids, _, _, matrix = repo.recent_vectors(since, "bge-m3:latest")
+    assert matrix.dtype == np.float32 and matrix.shape[1] * 2 == rows[0]["n"]
+    # A vector written by an older version (32-bit) is read alongside and gives the same similarities.
+    i = got_ids.index(ids["a1"])
+    with db.transaction() as c:
+        c.execute("UPDATE article_embeddings SET vector = ?, dtype = 'f4' WHERE article_id = ?",
+                  (matrix[i].astype("<f4").tobytes(), ids["a1"]))
+    again = repo.recent_vectors(since, "bge-m3:latest")[3]
+    assert np.allclose(again @ again[i], matrix @ matrix[i], atol=1e-3)
+
+
 def test_story_filters(db, sources, articles, settings):
     ids = seed_articles(db, sources, articles, SPECS)
     run(make_worker(db, settings, FakeEmbedOllama()).step())
@@ -199,6 +217,13 @@ def test_story_filters(db, sources, articles, settings):
     assert repo.list(StoryFilter(query="tarafsızlık", alternatives=["neutrality"]))[0][0]["id"] == repo.story_of(ids["a2"])
     # Most recent activity: the Hormuz story's latest report is 20 minutes old.
     assert repo.list(StoryFilter(sort="recent"))[0][0]["id"] == repo.story_of(ids["a1"])
+    # The feed's virtual groups: a story qualifies when one of its reports is an opinion piece / exclusive.
+    assert repo.list(StoryFilter(groups=["opinion"]))[1] == 0
+    with db.transaction() as c:
+        c.execute("UPDATE articles SET url = 'https://x.example/opinion/swiss' WHERE id = ?", (ids["b2"],))
+    found, total = repo.list(StoryFilter(groups=["opinion"]))
+    assert total == 1 and found[0]["id"] == repo.story_of(ids["a2"])
+    assert repo.list(StoryFilter(groups=["exclusive"]))[1] == 0
 
 
 # -- story AI -----------------------------------------------------------------------------------
