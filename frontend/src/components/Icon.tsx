@@ -32,6 +32,7 @@ const PATHS = {
   mail: "M4 6h16v12H4zM4 7l8 6 8-6",
   download: "M12 4v11M7 10l5 5 5-5M5 20h14",
   history: "M3.5 12a8.5 8.5 0 1 0 2.5-6M3.5 4.5V8H7M12 7.5V12l3 2",
+  chart: "M4 20h16M7 16v-5M12 16V6M17 16v-8",
 } as const;
 
 export type IconName = keyof typeof PATHS;

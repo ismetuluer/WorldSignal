@@ -8,6 +8,8 @@ import { useAppState } from "../state";
 export interface FeedQuery {
   hours: number;
   q?: string;
+  /** Translations of q (api.searchTranslations): a report matching any of them is found too. */
+  qx?: string[];
   region: string[];
   group: string[];
   lang: string[];

@@ -40,6 +40,7 @@ Arayüz Türkçe ve İngilizcedir.
 | **Toplantı ve notlar** | Tek tuşla toplantı listesine ekleme, sürükleyerek sıralama, hikâyeye not, günlere göre not defteri. |
 | **Çıktılar** | Toplantı listesi, haber detayı, sabah bülteni ve notlar: biçimli kopyala (Word/Outlook), düz metin (WhatsApp), yazdır/PDF, **e-postayla gönder**. |
 | **Geçmiş** | Takvimden bir gün seçip o sabahki sıralamayı görme, tüm günlerde arama, bir hikâyenin gün gün gelişimi. |
+| **İstatistik** | Bir konunun saat saat / gün gün izi ve gündemdeki payı, kategori ve bölgelere göre dağılım, yükselen hikâyeler, kaynak ve ülke sayıları. |
 | **Tam metin** | Açık siteler ve **sizin aboneliğiniz olan** siteler için makalenin tamamını program içinde okuma ve çevirme. |
 | **Arka planda** | Pencere kapansa da sistem tepsisinde taramaya devam eder; önemli bir hikâye hızla yayılırsa Windows bildirimi. |
 
@@ -174,8 +175,19 @@ bir sayı varsa "Dikkat" uyarısı gösterilir.
   - **Yazdır / PDF**: PDF için yazıcı olarak "Microsoft Print to PDF"i seçin.
   Çıktının dili özet dillerinizden ayrıca seçilir. **Sabah bülteni** seçilen zaman aralığının en önemli hikâyelerini
   kategorilere göre dizer.
+- **İstatistik** — üstten dönem seçilir (24 saat, 7 gün, 30 gün); her şey o döneme göre sayılır. *Konu trendi*'ne bir
+  konu yazınca (kaynaklarınızın dillerinde de aranır) saat ya da gün başına kaç haberde geçtiği ve tüm haberler
+  içindeki payı çizilir. *Kategorilere göre gündem* yalnızca yapay zekânın kategorisini belirlediği haberleri sayar
+  (oranı yazar); *Haberi veren basının bölgesi* kaynağın bölgesidir, olayın geçtiği yer değil. *Yükselenler* son
+  saatlerde en hızlı büyüyen hikâyelerdir; tıklayınca açılır. *Kaynaklar* tablosu hiç haber vermeyen kaynakları da
+  gösterir. Değişimler önceki eşit süreyle karşılaştırılır; toplama o kadar eskiye gitmiyorsa karşılaştırma gösterilmez.
+  Her grafik tablo olarak da görülebilir.
 - **Geçmiş** — takvimden bir gün; *Sabah 09:00* o sabahki sıralamayı, *Günün tamamı* gün sonundaki sıralamayı gösterir.
   Arama tüm günlerde çalışır; Türkçe karakter ve büyük/küçük harf ayırmaz.
+- **Arama başka dillerde de yapılır.** Yazdığınız kelimeler hemen aranır; yapay zekâ açıksa aynı kelimeler birkaç
+  saniye içinde kaynaklarınızın yayın dillerine çevrilir ("kuzey kore iha" → "North Korea drone", "Северная Корея
+  беспилотник" …) ve bu haberler de listeye eklenir. Arama kutusunun altında hangi çevirilerle arandığı yazar. Çoğu
+  yabancı haberin Türkçe özeti olmadığı için, bu olmadan Türkçe arama yalnızca Türkçe ya da özetlenmiş haberleri bulur.
 - **Kaynaklar** — kaynakları açıp kapatın, güvenilirlik ağırlığı ve medya grubu verin (aynı gruptan kaynaklar tek
   kaynak sayılır), **Kaynak ekle** ile kendi RSS adresinizi deneyip ekleyin. RSS adresini bilmiyorsanız sitenin
   adresini yazın: program sitenin RSS bağlantılarını ve izin verilen haber site haritalarını önerir. Çalışmayan
@@ -196,11 +208,15 @@ World Signal kimsenin içeriğini yeniden yayımlamaz; yalnızca **sizin** ekran
 - RSS'i olmayan bazı siteler, arama motorları için yayımladıkları **haber site haritasından** okunur; bu yalnızca
   sitenin robots.txt dosyası otomatik okuyuculara izin veriyorsa yapılır.
 - **Ücretli siteler:** Bir makalenin tamamını ancak **sizin** o sitede aboneliğiniz varsa okuyabilirsiniz. Bunun için
-  **Ayarlar → Tam metin → Abonelik siteleri**'nden siteyi açıp kendi hesabınızla bir kez giriş yaparsınız; oturum
+  **Kaynaklar → Abonelik siteleri**'nden siteyi açıp kendi hesabınızla bir kez giriş yaparsınız; oturum
   yalnızca bu bilgisayarda, World Signal'e ait ayrı bir tarayıcı profilinde saklanır. Aboneliğiniz yoksa o sitenin
   yalnızca başlığını, kısa özetini ve bağlantısını görürsünüz.
 - Program abonelik duvarlarını aşmaz, robot doğrulamalarını (CAPTCHA) çözmez, arşiv/paywall atlatma sitelerini
-  kullanmaz. Sayfaları insan temposunda açar (site başına saatte birkaç sayfa, aynı anda tek sayfa).
+  kullanmaz. Sayfaları insan temposunda açar: aynı anda tek sayfa, site başına saatte birkaç sayfa. Abonelik
+  sitelerinde (tarayıcıyla okunanlar) daha da yavaş: aynı siteden iki sayfa arasında en az 20 dakika (sizin
+  istediğiniz sayfalarda 3 dakika), site başına günde en çok 15 sayfa, gece 00:00–07:00 arası kendiliğinden sayfa
+  açılmaz, her sayfa açıldıktan sonra 20–60 saniye okunup aşağı kaydırılır. Bunlar Ayarlar → Tam metin'den
+  değiştirilebilir.
 - **Tam metinler hiçbir çıktıya konmaz.** Kopyalama, yazdırma, PDF ve e-posta yalnızca özetleri, kaynak adlarını ve
   bağlantıları içerir.
 - Bir [bulut yapay zekâ](#bulut-yapay-zekâ) hizmeti seçerseniz, özetlenmek üzere o hizmete gönderilen metinlerin
@@ -215,7 +231,7 @@ Program yalnızca şu adreslerle konuşur:
 - haber kaynaklarının RSS akışları ve (tam metin istediğinizde) makale sayfaları;
 - Ollama'nın adresi (varsayılan olarak bilgisayarınızın kendisi: `localhost`);
 - **yalnızca siz seçerseniz** bir bulut yapay zekâ hizmeti (Google Gemini, OpenAI uyumlu bir hizmet ya da Anthropic
-  Claude): özetlenecek haber metinleri, tam metinler dahil;
+  Claude): özetlenecek haber metinleri (tam metinler dahil) ve çevrilecek arama kelimeleriniz;
 - GitHub, yalnızca yeni sürüm bilgisi ve indirme için (kapatılabilir).
 
 Kullanım verisi, istatistik ya da kişisel bilgi toplanmaz ve gönderilmez. Programın arayüzü yalnızca bu bilgisayardan
@@ -235,7 +251,7 @@ aynı klasörde, Windows'un kullanıcı hesabınıza bağlı şifrelemesiyle (`s
 | "API anahtarı kabul edilmedi" / "istek sınırı doldu" | Anahtar geçersiz ya da süresi dolmuş: Ayarlar → Yapay zekâ'dan yenisini girin. İstek sınırında program bekleyip devam eder; sık oluyorsa **Dakikada en çok istek** değerini düşürün. |
 | Özetler çok yavaş, ekran kartı ısınıyor | Daha küçük bir model seçin (bkz. [tablo](#yapay-zekâ-isteğe-bağlı)). |
 | Bir kaynak kırmızı görünüyor | Kaynaklar ekranında nedeni yazar (site kapalı, adres değişmiş, otomatik okuyuculara kapalı…). |
-| Tam metin "abonelik duvarı" diyor | O siteye Ayarlar → Tam metin → Abonelik siteleri'nden giriş yapın; aboneliğiniz yoksa tam metin alınamaz. |
+| Tam metin "abonelik duvarı" diyor | O siteye Kaynaklar → Abonelik siteleri'nden giriş yapın; aboneliğiniz yoksa tam metin alınamaz. |
 | "Güncelleme yapılamadı" | Program klasöründe bir dosya açıktı; bir sonraki denemede yeniden yapılır. Olmazsa yeni zip'i indirip ayıklayın. |
 | Bir şey ters gitti | Ayarlar → **Yedekler**'den önceki bir günün yedeğini geri yükleyin; program yeniden başlar. |
 

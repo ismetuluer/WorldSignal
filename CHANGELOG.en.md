@@ -3,6 +3,53 @@
 English version of [CHANGELOG.md](CHANGELOG.md), from 0.10.0 on. Version numbers follow
 [Semantic Versioning](https://semver.org/).
 
+## [0.12.0] — 2026-09-29 — Search in other languages, and Statistics
+
+### Added
+- **Statistics** (a new "Statistics" page). Choose the period at the top: 24 hours (hour by hour), or 7 or 30 days
+  (day by day).
+  - **Headline numbers:** reports, stories and independent sources (one media group counts once), with the change
+    against the previous period of equal length.
+  - **Topic trend:** type a topic to see in how many reports and from how many sources it appears per hour or day,
+    and its share of all reports. It is also searched in your sources' languages, like the new search below. Without
+    a topic, all reports are shown.
+  - **Share of the news:** by category (only reports whose category is known; that share is stated) and by the
+    region of the reporting press, with the change in percentage points against the previous period.
+  - **Rising:** the stories that grew fastest in the last 6 hours (last 24 hours for 7 days, last 72 hours for 30
+    days). Click one to open it.
+  - **Sources:** reports, stories and latest report per source; sources with no reports in the period are shown too.
+  - **Countries mentioned most**, from the reports the AI has read (their number is stated).
+  - Every chart can also be shown as a table, and hovering or keyboard focus shows the values. While collection does
+    not cover the previous period, the page says there is not enough history to compare, instead of showing
+    misleading changes.
+- **Search also runs in the languages your sources publish in.** Most foreign reports have no summary in your
+  language (the AI cannot keep up with every report), so a search in your language did not find them. For example,
+  WSJ's "North Korea Is Testing Swarm Attacks Mixing Drones and Missiles" did not come up for "kuzey kore iha".
+  The words you type are now searched at once. Then the AI translates them into the languages of the enabled sources
+  ("North Korea drone", "Северная Корея беспилотник", "Nordkorea Drohne" …), and those reports are added to the list.
+  This works in the Feed and in History. The line under the search box shows the translations used, or why there
+  are none (the AI is off, another model is on the graphics card…). Measured on this computer: "kuzey kore" finds 140
+  reports instead of 14, "seçim" (election) 574 instead of 118, and "ateşkes" (ceasefire) 178 instead of 60.
+- The translation is requested once you stop typing and is remembered for the session. With Ollama it takes a few
+  seconds, and up to 20 seconds while the graphics card is busy with summaries.
+- With a cloud AI service, the search words are sent to that service too. The warning in Settings says so.
+
+### Changed
+- **Subscription sites moved to the Sources page**, unchanged, below the paid sources. Settings → Full text has a
+  button that leads there.
+- **Subscription sites are read like a person would, more slowly**, so that bot protection is not triggered. On sites
+  read in the browser there are now at least 20 minutes between two pages of one site (3 minutes for pages you ask
+  for) and at most 15 pages per site per day. No pages are opened by themselves between 00:00 and 07:00; the ones you
+  ask for are still fetched. Each page is first looked at for a few seconds, then scrolled down in uneven steps
+  (20-60 seconds), and only then is its text taken. The pause between pages went from 25-60 seconds to 1-3 minutes.
+  Change these under Settings → Full text → **Reading pace on subscription sites** and **Rest at night on
+  subscription sites**. CAPTCHAs are still never solved.
+
+### Tried and not used
+- **Semantic search** (with bge-m3 from story merging): in the measurements, short Turkish searches found no foreign
+  reports. They ranked same-language headlines and section names such as "United Nations" or "Flash" first. It only
+  helped with long, descriptive searches, and it could only cover the last 7 days.
+
 ## [0.11.2] — 2026-09-29 — Downloaded zip and "What's new" fix
 
 ### Fixed

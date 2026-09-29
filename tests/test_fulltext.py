@@ -1,7 +1,7 @@
 """Full text: extraction, queue and pacing, the worker (with fake fetchers), translations."""
 
 import asyncio
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime, timedelta, timezone
 from pathlib import Path
 
 import pytest
@@ -9,9 +9,9 @@ import pytest
 from test_stories import SPECS, FakeEmbedOllama, make_worker, seed_articles
 from worldsignal.ai import translate
 from worldsignal.fulltext.extract import SHORT_TEXT, declared_word_count, extract, judge, tidy
-from worldsignal.fulltext.fetch import BrowserInfo, FetchFailed, Page, profile_in_use
+from worldsignal.fulltext.fetch import BrowserInfo, FetchFailed, Page, profile_in_use, read_like_a_person
 from worldsignal.fulltext.worker import FullTextWorker
-from worldsignal.repo.fulltext import FullTextRepository
+from worldsignal.repo.fulltext import BrowserPace, FullTextRepository
 from worldsignal.repo.stories import StoryRepository
 
 NOW = datetime.now(UTC).replace(microsecond=0)
@@ -132,6 +132,46 @@ def test_hourly_limit_per_site_and_pauses(world):
     assert repo.paused_sources(NOW) == []
 
 
+def pace(**kw):
+    values = {"gap": timedelta(minutes=20), "user_gap": timedelta(minutes=3), "per_day": 15,
+              "day_start": NOW - timedelta(hours=10), "resting": False}
+    return BrowserPace(**{**values, **kw})
+
+
+def test_subscription_sites_are_read_at_a_persons_pace(world):
+    repo, ids = world["repo"], world["ids"]
+    world["sources"].update_source(source_of(world, "a1"), {"fulltext_mode": "browser"})
+    alpha = [ids["a1"], ids["a2"], ids["a3"]]
+    repo.enqueue(alpha, "auto")
+    assert repo.next_job(NOW, 10, pace()) is not None
+    repo.mark_attempt(ids["a1"], NOW)
+    # Not twice within the gap, even though the hourly limit would allow it …
+    assert repo.next_job(NOW + timedelta(minutes=19), 10, pace()) is None
+    assert repo.next_job(NOW + timedelta(minutes=19), 10) is not None  # (the old rule alone)
+    assert repo.next_job(NOW + timedelta(minutes=21), 10, pace()) is not None
+    # … a page the user asked for only waits the short gap …
+    repo.request(ids["a2"])
+    assert repo.next_job(NOW + timedelta(minutes=2), 10, pace()) is None
+    assert repo.next_job(NOW + timedelta(minutes=4), 10, pace()).article_id == ids["a2"]
+    # … and the user's requests ignore the night and the daily limit; automatic ones wait.
+    later = NOW + timedelta(minutes=30)
+    assert repo.next_job(later, 10, pace(resting=True)).reason == "user"
+    repo.mark_attempt(ids["a2"], NOW)
+    repo.store_text(ids["a2"], "text", "browser", NOW)
+    assert repo.next_job(later, 10, pace(resting=True)) is None
+    assert repo.next_job(later, 10, pace(per_day=3)).article_id == ids["a3"]
+    repo.mark_attempt(ids["a3"], NOW - timedelta(minutes=40))
+    assert repo.next_job(later, 10, pace(per_day=3)) is None  # three pages of alpha today already
+    assert repo.next_job(later, 10, pace(per_day=3, day_start=NOW - timedelta(minutes=5))) is not None
+
+
+def test_the_persons_pace_is_only_for_sites_read_in_the_browser(world):
+    repo, ids = world["repo"], world["ids"]
+    repo.enqueue([ids["a1"], ids["a2"]], "auto")  # alpha downloads over plain HTTP
+    repo.mark_attempt(ids["a1"], NOW)
+    assert repo.next_job(NOW + timedelta(minutes=1), 10, pace(resting=True)) is not None
+
+
 def test_temporary_errors_retry_then_fail(world):
     repo, ids = world["repo"], world["ids"]
     repo.enqueue([ids["b2"]], "auto")
@@ -217,16 +257,61 @@ def test_worker_uses_the_browser_for_paid_sites_and_the_chosen_profile(world, tm
     repo.request(ids["a1"])
     worker = make_ft_worker(world, tmp_path)
     delay = run(worker.step())
-    assert 25 <= delay <= 60  # slower pace in the browser
+    assert 60 <= delay <= 180  # a person's pace in the browser
     session = FakeSession.instances[0]
     assert session.profile == tmp_path / "own" and session.visible is False
     assert repo.get(ids["a1"])["method"] == "browser"
 
     settings.set("fulltext.profile", "main")
-    repo.request(ids["a2"])
-    world["sources"].update_source(source_of(world, "a2"), {"fulltext_mode": "browser"})
+    repo.request(ids["b1"])  # another site: the same one waits a few minutes between pages
+    world["sources"].update_source(source_of(world, "b1"), {"fulltext_mode": "browser"})
     run(worker.step())
     assert FakeSession.instances[0].closed and FakeSession.instances[1].profile == tmp_path / "main"
+
+
+def test_a_page_is_read_before_its_text_is_taken():
+    import random
+
+    wheel, waits = [], []
+
+    class Mouse:
+        async def wheel(self, dx, dy):
+            wheel.append(dy)
+
+    class FakePage:
+        mouse = Mouse()
+
+    async def sleep(seconds):
+        waits.append(seconds)
+
+    for seed in range(20):
+        wheel.clear()
+        waits.clear()
+        run(read_like_a_person(FakePage(), sleep, random.Random(seed)))
+        assert 4 <= len(wheel) <= 9 and all(250 <= dy <= 700 for dy in wheel)  # scrolled down in uneven steps
+        assert len(waits) == len(wheel) + 1 and 3 <= waits[0] <= 8
+        assert 13 <= sum(waits) <= 71  # about 20-60 seconds on the page
+
+
+def test_subscription_sites_rest_at_night_unless_the_user_asks(world, tmp_path):
+    repo, ids = world["repo"], world["ids"]
+    world["sources"].update_source(source_of(world, "a1"), {"fulltext_mode": "browser"})
+    repo.enqueue([ids["a1"]], "auto")
+    worker = make_ft_worker(world, tmp_path)
+    worker.local_zone = timezone(timedelta(hours=3))
+    worker.clock = lambda: datetime(2026, 9, 28, 0, 30, tzinfo=UTC)  # 03:30 local
+    assert worker.browser_pace(world["settings"].get_preferences(), worker.clock()).resting
+    run(worker.step())
+    assert worker.status()["state"] == "idle" and FakeSession.instances == []
+    repo.request(ids["a1"])  # the user is awake and asks for it
+    run(worker.step())
+    assert repo.get(ids["a1"])["status"] == "done"
+
+    world["settings"].set("fulltext.browser_night_rest", False)
+    assert not worker.browser_pace(world["settings"].get_preferences(), worker.clock()).resting
+    worker.clock = lambda: datetime(2026, 9, 28, 9, 0, tzinfo=UTC)  # 12:00 local
+    pace = worker.browser_pace(world["settings"].get_preferences(), worker.clock())
+    assert pace.day_start == datetime(2026, 9, 27, 21, 0, tzinfo=UTC) and pace.gap == timedelta(minutes=20)
 
 
 def test_old_google_news_links_are_not_opened(world, tmp_path):
@@ -259,7 +344,7 @@ def test_login_closes_the_hidden_browser_and_keeps_it_closed(world, tmp_path):
     """Opening a site to sign in must not land in the hidden automated browser (same profile)."""
     repo, ids = world["repo"], world["ids"]
     world["sources"].update_source(source_of(world, "a1"), {"fulltext_mode": "browser"})
-    world["sources"].update_source(source_of(world, "a2"), {"fulltext_mode": "browser"})
+    world["sources"].update_source(source_of(world, "b1"), {"fulltext_mode": "browser"})
     repo.request(ids["a1"])
     worker = make_ft_worker(world, tmp_path)
 
@@ -269,7 +354,7 @@ def test_login_closes_the_hidden_browser_and_keeps_it_closed(world, tmp_path):
         assert worker.browser_open
         await asyncio.to_thread(worker.make_room_for_login)  # called from an API thread
         assert not worker.browser_open and FakeSession.instances[0].closed
-        repo.request(ids["a2"])
+        repo.request(ids["b1"])
         assert await worker.step() == 60  # held: the login window is starting
         assert worker.status()["state"] == "profile_in_use" and len(FakeSession.instances) == 1
 

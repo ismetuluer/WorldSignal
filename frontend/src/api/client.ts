@@ -21,9 +21,13 @@ import type {
   NotebookDay,
   NotebookMonth,
   OllamaTestResult,
+  SearchTranslations,
   Settings,
   Source,
   SourceInput,
+  StatsHours,
+  StatsOverview,
+  TopicStats,
   SourcePatch,
   Status,
   Story,
@@ -121,6 +125,10 @@ export const api = {
 
   articles: (q: ArticleQuery) =>
     request<ArticlePage>("GET", `/articles${query({ ...q, turkey: q.turkey ? "true" : undefined })}`),
+  stats: (hours: StatsHours) => request<StatsOverview>("GET", `/stats${query({ hours })}`),
+  topicStats: (hours: StatsHours, q: string, qx: string[]) =>
+    request<TopicStats>("GET", `/stats/topic${query({ hours, q, qx })}`),
+  searchTranslations: (q: string) => request<SearchTranslations>("GET", `/search/translations${query({ q })}`),
   requestAi: (articleId: number) => request<{ status: string }>("POST", `/articles/${articleId}/ai`),
   testOllama: (url: string) => request<OllamaTestResult>("POST", "/ai/test", { url }),
   /** Which cloud services have an API key (the keys themselves are never sent back). */

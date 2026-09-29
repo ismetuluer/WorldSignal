@@ -20,6 +20,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import os
+import random
 import subprocess
 from dataclasses import dataclass
 from pathlib import Path
@@ -33,7 +34,12 @@ log = logging.getLogger(__name__)
 
 HTTP_TIMEOUT = httpx.Timeout(30.0, connect=10.0)
 PAGE_TIMEOUT_MS = 45_000
-SETTLE_SECONDS = 4.0  # let late scripts render the article
+# A person reads a page before leaving it: a first look (late scripts render meanwhile), then the page
+# is scrolled down in uneven steps. About 20-60 seconds per page.
+FIRST_LOOK_SECONDS = (3.0, 8.0)
+SCROLL_STEPS = (4, 9)
+SCROLL_PIXELS = (250, 700)
+SCROLL_PAUSE_SECONDS = (2.5, 7.0)
 USER_AGENT = f"Mozilla/5.0 (compatible; WorldSignal/{__version__}; article reader)"
 
 
@@ -136,6 +142,15 @@ def open_login_window(browser: BrowserInfo, user_data_dir: Path, start_url: str 
 
 
 # -- browser session -----------------------------------------------------------------------------
+async def read_like_a_person(page: Any, sleep: Any = asyncio.sleep, rng: random.Random | None = None) -> None:
+    """Look at the page, then scroll through it the way a reader does, before its text is taken."""
+    rng = rng or random.Random()
+    await sleep(rng.uniform(*FIRST_LOOK_SECONDS))
+    for _ in range(rng.randint(*SCROLL_STEPS)):
+        await page.mouse.wheel(0, rng.randint(*SCROLL_PIXELS))
+        await sleep(rng.uniform(*SCROLL_PAUSE_SECONDS))
+
+
 class BrowserSession:
     """One browser with one tab, reused for consecutive pages and closed when idle."""
 
@@ -177,7 +192,7 @@ class BrowserSession:
             await self._start()
         try:
             resp = await self._page.goto(url, wait_until="domcontentloaded", timeout=PAGE_TIMEOUT_MS)
-            await asyncio.sleep(SETTLE_SECONDS)
+            await read_like_a_person(self._page)
             html = await self._page.content()
             return Page(resp.status if resp else None, html, self._page.url)
         except Exception as exc:

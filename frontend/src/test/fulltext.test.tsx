@@ -35,6 +35,7 @@ import { I18nProvider } from "../i18n";
 import { fulltextErrorKey } from "../lib/fulltext";
 import { FullTextSettings } from "../pages/FullTextSettings";
 import { SourceEditor } from "../pages/SourceEditor";
+import { SubscriptionSitesSection } from "../pages/SubscriptionSites";
 import { AppStateProvider } from "../state";
 import { FULLTEXT_WORKER, MAINTENANCE, NOTIFY, NO_FULLTEXT, STORY_SETTINGS, STORY_WORKER } from "./fixtures";
 
@@ -157,14 +158,33 @@ describe("Full-text settings", () => {
 
   it("explains a missing browser and offers no site to open", async () => {
     mocked.browsers.mockResolvedValue({ ...BROWSERS, browsers: [], chosen: null });
-    wrap(<FullTextSettings />);
+    const { unmount } = wrap(<FullTextSettings />);
     expect(await screen.findByText(/Brave, Chrome veya Edge bulunamadı/)).toBeInTheDocument();
+    unmount();
+    wrap(<SubscriptionSitesSection />);
     await screen.findByRole("list", { name: "Abonelik siteleri" });
     expect(screen.queryByRole("button", { name: /giriş için aç/ })).not.toBeInTheDocument();
   });
 
-  it("lists subscription sites with the result of their latest attempt", async () => {
+  it("points to the subscription sites, which moved to the Sources page", async () => {
     wrap(<FullTextSettings />);
+    await userEvent.click(await screen.findByRole("button", { name: "Kaynaklar'da aç" }));
+    expect(window.location.hash).toBe("#/sources");
+    expect(screen.queryByRole("list", { name: "Abonelik siteleri" })).not.toBeInTheDocument();
+  });
+
+  it("sets the reading pace of subscription sites", async () => {
+    wrap(<FullTextSettings />);
+    await userEvent.click(await screen.findByRole("button", { name: "30 dk" }));
+    expect(mocked.updateSettings).toHaveBeenCalledWith({ "fulltext.browser_gap_min": 30 });
+    await userEvent.click(screen.getByRole("button", { name: "5 sayfa" }));
+    expect(mocked.updateSettings).toHaveBeenCalledWith({ "fulltext.browser_per_day": 5 });
+    await userEvent.click(screen.getByRole("switch", { name: "Gece abonelik sitelerini okuma" }));
+    expect(mocked.updateSettings).toHaveBeenCalledWith({ "fulltext.browser_night_rest": false });
+  });
+
+  it("lists subscription sites with the result of their latest attempt", async () => {
+    wrap(<SubscriptionSitesSection />);
     const list = await screen.findByRole("list", { name: "Abonelik siteleri" });
     const row = (name: string) => within(list).getByText(name).closest("li")!;
     expect(within(row("The New York Times")).getByText(/Abonelik duvarı: giriş gerekli/)).toBeInTheDocument();
@@ -174,8 +194,7 @@ describe("Full-text settings", () => {
 
   it("opens a site in World Signal's profile to sign in", async () => {
     mocked.openLogin.mockResolvedValue({ status: "opened" });
-    wrap(<FullTextSettings />);
-    expect(await screen.findByText(BROWSERS.own_profile)).toBeInTheDocument();
+    wrap(<SubscriptionSitesSection />);
     await userEvent.click(await screen.findByRole("button", { name: "The New York Times sitesini giriş için aç" }));
     expect(mocked.openLogin).toHaveBeenCalledWith({ source_id: 1 });
     expect(await screen.findByText(/The New York Times World Signal tarayıcısında açıldı/)).toBeInTheDocument();
@@ -183,7 +202,7 @@ describe("Full-text settings", () => {
 
   it("tries a site and shows it queued", async () => {
     mocked.testSite.mockResolvedValue({ article_id: 44, status: "pending" });
-    wrap(<FullTextSettings />);
+    wrap(<SubscriptionSitesSection />);
     const button = await screen.findByRole("button", { name: "Le Monde için tam metni dene" });
     mocked.fulltextSites.mockResolvedValue({ sites: SITES.map((s) => (s.id === 5 ? { ...s, queued: 1 } : s)), login_window_open: false });
     await userEvent.click(button);
@@ -194,27 +213,29 @@ describe("Full-text settings", () => {
 
   it("says so when the newest article already has its full text", async () => {
     mocked.testSite.mockResolvedValue({ article_id: 44, status: "done" });
-    wrap(<FullTextSettings />);
+    wrap(<SubscriptionSitesSection />);
     await userEvent.click(await screen.findByRole("button", { name: "Financial Times için tam metni dene" }));
     expect(await screen.findByText("Financial Times: en yeni haberin tam metni zaten alınmış.")).toBeInTheDocument();
   });
 
   it("asks to close the sign-in window while it is open", async () => {
     mocked.fulltextSites.mockResolvedValue({ sites: SITES, login_window_open: true });
-    wrap(<FullTextSettings />);
+    wrap(<SubscriptionSitesSection />);
     expect(await screen.findByText("World Signal tarayıcı penceresi açık")).toBeInTheDocument();
   });
 
   it("explains an error when a site cannot be tried", async () => {
     mocked.testSite.mockRejectedValue(new ApiError("no_articles", 409));
-    wrap(<FullTextSettings />);
+    wrap(<SubscriptionSitesSection />);
     await userEvent.click(await screen.findByRole("button", { name: "Le Monde için tam metni dene" }));
     expect(await screen.findByText("Bu kaynaktan henüz haber toplanmadı.")).toBeInTheDocument();
   });
 
   it("warns that the main profile is locked while the browser is open", async () => {
-    wrap(<FullTextSettings />, { ...SETTINGS, "fulltext.profile": "main" });
+    const { unmount } = wrap(<FullTextSettings />, { ...SETTINGS, "fulltext.profile": "main" });
     expect(await screen.findByText(/Tarayıcınız şu an açık/)).toBeInTheDocument();
+    unmount();
+    wrap(<SubscriptionSitesSection />, { ...SETTINGS, "fulltext.profile": "main" });
     await screen.findByRole("list", { name: "Abonelik siteleri" });
     expect(screen.queryByRole("button", { name: /giriş için aç/ })).not.toBeInTheDocument();
     expect(screen.getByText(/Kendi tarayıcınızda sitelere giriş yapın/)).toBeInTheDocument();

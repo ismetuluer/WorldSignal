@@ -3,6 +3,47 @@
 Sürüm numaraları [Anlamsal Sürümleme](https://semver.org/lang/tr/) izler. 1.0'a kadar her faz bir ara sürümdür.
 İngilizcesi (0.10.0'dan itibaren): [CHANGELOG.en.md](CHANGELOG.en.md).
 
+## [0.12.0] — 2026-09-29 — Başka dillerde arama ve İstatistik
+
+### Eklendi
+- **İstatistik ekranı** (yeni "İstatistik" sayfası). Üstten dönem: 24 saat (saat saat), 7 ya da 30 gün (gün gün).
+  - **Özet sayılar:** haber, hikâye ve bağımsız kaynak sayısı (aynı medya grubu tek kaynak), önceki eşit süreye göre
+    değişimle.
+  - **Konu trendi:** bir konu yazınca saat/gün başına kaç haberde ve kaç kaynakta geçtiği ve tüm haberler içindeki
+    payı. Kaynaklarınızın dillerinde de aranır (aşağıdaki yeni arama gibi). Konu yokken tüm haberlerin dağılımı.
+  - **Gündem payı:** kategorilere göre (yalnızca kategorisi bilinen haberler; oranı yazılır) ve haberi veren basının
+    bölgesine göre; önceki döneme göre kaç puan değiştiği.
+  - **Yükselenler:** son 6 saatte (7 günde son 24, 30 günde son 72 saatte) en hızlı büyüyen hikâyeler; tıklayınca açılır.
+  - **Kaynaklar:** kaynak başına haber, hikâye, son haber zamanı; bu dönemde hiç haber vermeyenler de görünür.
+  - **Haberlerde en çok geçen ülkeler** (yapay zekânın okuduğu haberler üzerinden; kaç haber olduğu yazılır).
+  - Her grafik tablo olarak da gösterilebilir; üzerine gelince ya da klavyeyle seçince değerler çıkar. Toplama önceki
+    dönemi kapsamıyorsa "karşılaştırma için yeterli geçmiş yok" yazar, yanıltıcı değişim gösterilmez.
+- **Arama, kaynaklarınızın yayın dillerinde de yapılıyor.** Çoğu yabancı haberin Türkçe özeti olmadığından (yapay
+  zekâ her habere yetişemiyor) Türkçe arama bu haberleri bulamıyordu; örneğin WSJ'nin "North Korea Is Testing Swarm
+  Attacks Mixing Drones and Missiles" haberi "kuzey kore iha" ile çıkmıyordu. Artık yazdığınız kelimeler hemen aranıyor,
+  ardından yapay zekâ onları etkin kaynakların dillerine çeviriyor ("North Korea drone", "Северная Корея беспилотник",
+  "Nordkorea Drohne" …) ve bu haberler de listeye ekleniyor. Akış'ta ve Geçmiş'te çalışır; arama kutusunun altında
+  hangi çevirilerle arandığı ya da neden çevrilemediği (yapay zekâ kapalı, ekran kartında başka model…) yazar.
+  Bu bilgisayarda ölçülen: "kuzey kore" 14 yerine 140, "seçim" 118 yerine 574, "ateşkes" 60 yerine 178 haber buluyor.
+- Çeviri, yazmayı bıraktıktan sonra istenir ve oturum boyunca hatırlanır. Ollama ile birkaç saniye sürer; ekran
+  kartı özet işleriyle meşgulse 20 saniyeye kadar çıkabilir.
+- Bulut yapay zekâ seçiliyse arama kelimeleri de o hizmete gönderilir; Ayarlar'daki uyarı buna göre güncellendi.
+
+### Değişti
+- **Abonelik siteleri Kaynaklar sayfasına taşındı** (olduğu gibi, ücretli kaynakların altında). Ayarlar → Tam metin'de
+  oraya giden bir düğme var.
+- **Abonelik sitelerinde insan gibi okuma, daha yavaş** (bot korumasına takılmamak için). Tarayıcıyla okunan sitelerde:
+  aynı siteden iki sayfa arasında en az 20 dakika (sizin istediğiniz sayfalarda 3 dakika); site başına günde en çok
+  15 sayfa; gece 00:00–07:00 arası kendiliğinden sayfa açılmaz (sizin istekleriniz yine alınır); her sayfa açılınca
+  önce birkaç saniye bakılıyor, sonra düzensiz adımlarla aşağı kaydırılıyor (20–60 saniye) ve metin ondan sonra
+  alınıyor; sayfalar arası bekleme 25–60 saniyeden 1–3 dakikaya çıktı. Ayarlar → Tam metin → **Abonelik sitelerinde
+  okuma temposu** ve **Gece abonelik sitelerini okuma**'dan değiştirilebilir. CAPTCHA yine asla çözülmez.
+
+### Denendi, kullanılmadı
+- **Anlamsal arama** (hikâye birleştirmedeki bge-m3 ile): ölçümde kısa Türkçe aramalar yabancı haber bulmadı, en
+  üste aynı dildeki başlıkları ve "United Nations", "Flaş" gibi bölüm adlarını getirdi. Yalnızca uzun, tarif eden
+  aramalarda işe yarıyordu ve yalnızca son 7 günü kapsayabiliyordu.
+
 ## [0.11.2] — 2026-09-29 — İndirilen zip ve Yenilikler düzeltmesi
 
 ### Düzeltildi

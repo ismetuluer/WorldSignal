@@ -17,6 +17,7 @@ vi.mock("../api/client", async (importOriginal) => {
       stories: vi.fn(),
       story: vi.fn(),
       storyNote: vi.fn(),
+      searchTranslations: vi.fn(),
     },
   };
 });
@@ -103,6 +104,7 @@ beforeEach(() => {
   mocked.historyMonth.mockResolvedValue({ month: TODAY.slice(0, 7), today: TODAY, days: [{ day: TODAY, articles: 120, stories: 45 }] });
   mocked.historyDay.mockResolvedValue(dayPage());
   mocked.storyNote.mockResolvedValue({ note: null });
+  mocked.searchTranslations.mockResolvedValue({ state: "disabled", queries: {} });
 });
 
 describe("History page", () => {
@@ -161,12 +163,15 @@ describe("History page", () => {
   it("searches every day at once", async () => {
     mocked.stories.mockResolvedValue({ items: [story(7, "Eski seçim haberi")], total: 1 });
     mocked.articles.mockResolvedValue({ items: [], next: null, total: 0 });
+    mocked.searchTranslations.mockResolvedValue({ state: "ok", queries: { en: ["election"], tr: ["seçim"] } });
     wrap(<HistoryPage />);
     await screen.findByText("Sabahın en önemli olayı");
     await userEvent.type(screen.getByRole("searchbox"), "seçim");
     expect(await screen.findByText("Eski seçim haberi")).toBeInTheDocument();
+    // The search also runs in the sources' languages (the typed words themselves are not repeated).
+    expect(await screen.findByText("Diğer dillerde de arandı: election")).toBeInTheDocument();
     const call = mocked.stories.mock.calls.at(-1)![0];
-    expect(call).toMatchObject({ q: "seçim" });
+    expect(call).toMatchObject({ q: "seçim", qx: ["election"] });
     expect(call.hours).toBeUndefined(); // all days
     expect(screen.getByText("“seçim” için tüm günler")).toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: "Haberler" }));

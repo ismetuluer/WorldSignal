@@ -5,12 +5,14 @@ import { useToast } from "../components/Toasts";
 import { Segmented, Spinner, Switch } from "../components/controls";
 import { describeError, useI18n } from "../i18n";
 import { fulltextErrorKey } from "../lib/fulltext";
-import { SubscriptionSites } from "./SubscriptionSites";
+import { navigate } from "../router";
 import { useAppState } from "../state";
 
 const PER_SITE = [2, 4, 6, 10];
 const AUTO_SCORES = [0, 50, 60, 75];
 const PER_STORY = [0, 1, 2, 3];
+const BROWSER_GAPS = [10, 20, 30, 60];
+const BROWSER_PER_DAY = [5, 10, 15, 30];
 
 /** Settings for fetching full texts: browser, profile, login, pace and the queue's state. */
 export function FullTextSettings() {
@@ -131,7 +133,15 @@ export function FullTextSettings() {
           </button>
         </div>
 
-        <SubscriptionSites canOpen={profile === "own" && !!browsers?.chosen} />
+        <div className="settings-row">
+          <div className="settings-row-text">
+            <div className="settings-row-title">{t("sites.title")}</div>
+            <div className="settings-row-hint">{t("settings.fulltext.sitesMoved")}</div>
+          </div>
+          <button className="btn" onClick={() => navigate("sources")}>
+            {t("settings.fulltext.sitesOpen")}
+          </button>
+        </div>
 
         <div className="settings-row">
           <div className="settings-row-text">
@@ -143,6 +153,41 @@ export function FullTextSettings() {
             value={settings["fulltext.per_site_hour"]}
             onChange={(v) => void change({ "fulltext.per_site_hour": v })}
             options={PER_SITE.map((n) => ({ value: n, label: t("settings.fulltext.perHour", { n }) }))}
+          />
+        </div>
+
+        <div className="settings-row">
+          <div className="settings-row-text">
+            <div className="settings-row-title">{t("settings.fulltext.humanPace")}</div>
+            <div className="settings-row-hint">{t("settings.fulltext.humanPaceHint")}</div>
+          </div>
+          <div className="segment-stack">
+            <span>{t("settings.fulltext.browserGap")}</span>
+            <Segmented
+              label={t("settings.fulltext.browserGap")}
+              value={settings["fulltext.browser_gap_min"]}
+              onChange={(v) => void change({ "fulltext.browser_gap_min": v })}
+              options={BROWSER_GAPS.map((n) => ({ value: n, label: t("settings.fulltext.minutes", { n }) }))}
+            />
+            <span>{t("settings.fulltext.browserPerDay")}</span>
+            <Segmented
+              label={t("settings.fulltext.browserPerDay")}
+              value={settings["fulltext.browser_per_day"]}
+              onChange={(v) => void change({ "fulltext.browser_per_day": v })}
+              options={BROWSER_PER_DAY.map((n) => ({ value: n, label: t("settings.fulltext.perDay", { n }) }))}
+            />
+          </div>
+        </div>
+
+        <div className="settings-row">
+          <div className="settings-row-text">
+            <div className="settings-row-title">{t("settings.fulltext.nightRest")}</div>
+            <div className="settings-row-hint">{t("settings.fulltext.nightRestHint")}</div>
+          </div>
+          <Switch
+            checked={settings["fulltext.browser_night_rest"]}
+            label={t("settings.fulltext.nightRest")}
+            onChange={(v) => void change({ "fulltext.browser_night_rest": v })}
           />
         </div>
 

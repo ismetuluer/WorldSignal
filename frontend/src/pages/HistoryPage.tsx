@@ -7,7 +7,9 @@ import { useMeeting } from "../components/meeting";
 import { StoryCard } from "../components/StoryCard";
 import { StoryDetail } from "../components/StoryDetail";
 import { describeError, useI18n } from "../i18n";
+import { SearchLanguagesNote } from "../components/SearchLanguages";
 import { isTypingTarget, localDay, useDebounced } from "../lib/hooks";
+import { useSearchTranslations } from "../lib/searchTranslations";
 import { useAppState } from "../state";
 import { ArticleList } from "./ArticleList";
 import { useListKeys } from "./feedShared";
@@ -69,7 +71,8 @@ export function HistoryPage() {
     setSearch("");
   };
 
-  const searchQuery = useMemo<ArticleQuery>(() => ({ ...NO_FILTERS, q }), [q]);
+  const languages = useSearchTranslations(q);
+  const searchQuery = useMemo<ArticleQuery>(() => ({ ...NO_FILTERS, q, qx: languages.phrases }), [q, languages.phrases]);
   const dayQuery = useMemo<ArticleQuery>(() => ({ ...NO_FILTERS, day }), [day]);
 
   return (
@@ -112,6 +115,7 @@ export function HistoryPage() {
                   ]}
                 />
               </div>
+              <SearchLanguagesNote languages={languages} />
               {searchKind === "stories" ? (
                 <StoryList query={searchQuery} filtersActive={false} onClearFilters={() => setSearch("")} onTotal={() => undefined} />
               ) : (

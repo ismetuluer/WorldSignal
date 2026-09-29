@@ -32,6 +32,22 @@ def _priority(reason: str, sort_at: str) -> float:
 
 
 @dataclass
+class BrowserPace:
+    """How a person reads a subscription site (sources read in the browser), on top of the hourly limit.
+
+    ``gap``: at least this long between two pages of the same site; ``user_gap`` for pages the user asked for
+    (a person clicking through articles). ``per_day``: pages per site since ``day_start`` (local midnight).
+    ``resting``: night hours, when only the user's own requests are read. The user's requests ignore the
+    daily limit and the night, never the gap."""
+
+    gap: timedelta
+    user_gap: timedelta
+    per_day: int
+    day_start: datetime
+    resting: bool
+
+
+@dataclass
 class FullTextJob:
     article_id: int
     url: str
@@ -88,11 +104,27 @@ class FullTextRepository:
             )
         return "pending"
 
-    def next_job(self, now: datetime, per_site_hour: int) -> FullTextJob | None:
+    def next_job(self, now: datetime, per_site_hour: int, browser: BrowserPace | None = None) -> FullTextJob | None:
         """Highest-priority pending article whose site is not paused, not over its hourly limit and
-        whose full-text mode allows fetching (the user's own requests ignore 'off')."""
+        whose full-text mode allows fetching (the user's own requests ignore 'off'). Sites read in the
+        browser also follow ``browser`` (a person's pace)."""
         now_iso = utc_now_iso(now)
         hour_ago = utc_now_iso(now - timedelta(hours=1))
+        pace_sql, pace_params = "", {}
+        if browser is not None:
+            pace_sql = """
+                 AND (CASE WHEN s.fulltext_mode = 'off' THEN (CASE WHEN s.paywalled THEN 'browser' ELSE 'http' END)
+                           ELSE s.fulltext_mode END != 'browser'
+                      OR (NOT EXISTS (SELECT 1 FROM article_fulltext f3 JOIN articles a3 ON a3.id = f3.article_id
+                                      WHERE a3.source_id = s.id
+                                        AND f3.attempted_at >= (CASE WHEN f.reason = 'user' THEN :user_gap ELSE :gap END))
+                          AND (f.reason = 'user'
+                               OR (:resting = 0
+                                   AND (SELECT COUNT(*) FROM article_fulltext f4 JOIN articles a4 ON a4.id = f4.article_id
+                                        WHERE a4.source_id = s.id AND f4.attempted_at >= :day_start) < :per_day))))"""
+            pace_params = {"gap": utc_now_iso(now - browser.gap), "user_gap": utc_now_iso(now - browser.user_gap),
+                           "resting": int(browser.resting), "day_start": utc_now_iso(browser.day_start),
+                           "per_day": browser.per_day}
         row = self.db.conn.execute(
             """SELECT f.article_id, a.url, s.id AS source_id, s.name AS source_name, s.paywalled, f.reason, f.attempts,
                       a.summary, s.fulltext_mode
@@ -101,11 +133,11 @@ class FullTextRepository:
                JOIN sources s ON s.id = a.source_id
                WHERE f.status = 'pending' AND s.enabled = 1
                  AND (s.fulltext_mode != 'off' OR f.reason = 'user')
-                 AND (s.fulltext_paused_until IS NULL OR s.fulltext_paused_until <= ?)
+                 AND (s.fulltext_paused_until IS NULL OR s.fulltext_paused_until <= :now)
                  AND (SELECT COUNT(*) FROM article_fulltext f2 JOIN articles a2 ON a2.id = f2.article_id
-                      WHERE a2.source_id = s.id AND f2.attempted_at >= ?) < ?
+                      WHERE a2.source_id = s.id AND f2.attempted_at >= :hour_ago) < :per_hour""" + pace_sql + """
                ORDER BY f.priority DESC LIMIT 1""",
-            (now_iso, hour_ago, per_site_hour),
+            {"now": now_iso, "hour_ago": hour_ago, "per_hour": per_site_hour, **pace_params},
         ).fetchone()
         if row is None:
             return None

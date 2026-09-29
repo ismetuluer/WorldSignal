@@ -14,6 +14,7 @@ import { MeetingPage } from "./pages/MeetingPage";
 import { NotebookPage } from "./pages/NotebookPage";
 import { SettingsPage } from "./pages/SettingsPage";
 import { SourcesPage } from "./pages/SourcesPage";
+import { StatsPage } from "./pages/StatsPage";
 import { navigate, useLinkedStory, useRoute, type Route } from "./router";
 import { AppStateProvider, useAppState } from "./state";
 
@@ -22,6 +23,7 @@ const NAV: { route: Route; icon: IconName; label: MessageKey }[] = [
   { route: "meeting", icon: "meeting", label: "nav.meeting" },
   { route: "notebook", icon: "notebook", label: "nav.notebook" },
   { route: "history", icon: "history", label: "nav.history" },
+  { route: "stats", icon: "chart", label: "nav.stats" },
   { route: "sources", icon: "sources", label: "nav.sources" },
   { route: "settings", icon: "settings", label: "nav.settings" },
 ];
@@ -133,6 +135,7 @@ function Shell() {
           : route === "meeting" ? <MeetingPage />
           : route === "notebook" ? <NotebookPage />
           : route === "history" ? <HistoryPage />
+          : route === "stats" ? <StatsPage />
           : route === "sources" ? <SourcesPage />
           : <SettingsPage />}
       </main>

@@ -22,6 +22,8 @@
   --accent-hover: #0077ed;
   --accent-soft: rgba(0, 113, 227, 0.1);
   --accent-text: #ffffff;
+  /* Charts (statistics): one hue, stepped for each theme. */
+  --chart-1: #2a78d6;
   --danger: #d70015;
   --danger-soft: rgba(215, 0, 21, 0.09);
   --warning: #b25000;
@@ -59,6 +61,7 @@
   --accent: #0a84ff;
   --accent-hover: #3395ff;
   --accent-soft: rgba(10, 132, 255, 0.16);
+  --chart-1: #3987e5;
   --danger: #ff453a;
   --danger-soft: rgba(255, 69, 58, 0.14);
   --warning: #ff9f0a;
@@ -386,6 +389,16 @@ textarea {
 .field-hint {
   font-size: 12px;
   color: var(--text-3);
+}
+
+/* Under the search box: the other languages the search ran in (components/SearchLanguages.tsx). */
+.search-languages {
+  margin: 0 0 12px;
+  font-size: 12.5px;
+  color: var(--text-3);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .field-row {
@@ -2419,4 +2432,263 @@ a.member-title svg {
   .signal-pulse .arc {
     animation: none;
   }
+}
+
+/* -- Statistics (pages/StatsPage.tsx, components/charts.tsx) ------------------------------------------ */
+.stats-page[data-loading="true"] .stats-card,
+.stats-page[data-loading="true"] .stat-row {
+  opacity: 0.6;
+  transition: opacity 0.2s var(--ease);
+}
+
+.stat-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.stat-tile {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+}
+
+.stat-label {
+  font-size: 12.5px;
+  color: var(--text-2);
+}
+
+.stat-value {
+  font-size: 28px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.stat-change {
+  font-size: 12.5px;
+  color: var(--text-3);
+}
+
+.stats-card {
+  padding: 16px 18px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+  gap: 16px;
+  align-items: start;
+}
+
+.stats-grid > .section {
+  margin-bottom: 0;
+}
+
+.stats-grid + .section,
+.stats-card + .stats-grid {
+  margin-top: 16px;
+}
+
+.stats-topic-search {
+  max-width: 420px;
+  margin-bottom: 8px;
+}
+
+.stats-summary {
+  margin: 0 0 8px;
+  font-size: 13.5px;
+}
+
+.chart {
+  position: relative;
+}
+
+.chart-tools {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.chart-plot {
+  position: relative;
+  width: 100%;
+}
+
+.chart-plot svg {
+  display: block;
+  overflow: visible;
+}
+
+.chart-grid {
+  stroke: var(--border);
+  stroke-width: 1;
+}
+
+.chart-axis {
+  fill: var(--text-3);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+.chart-bar {
+  fill: var(--chart-1);
+}
+
+.chart-bar[data-active="true"] {
+  opacity: 0.8;
+}
+
+.chart-hit {
+  fill: transparent;
+  outline: none;
+}
+
+.chart-hit:focus-visible {
+  stroke: var(--accent);
+  stroke-width: 2;
+}
+
+.chart-tip {
+  position: absolute;
+  transform: translate(-50%, -100%);
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 120px;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  box-shadow: var(--shadow-md);
+  font-size: 12px;
+  color: var(--text-2);
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+.chart-tip strong {
+  font-size: 13px;
+  color: var(--text);
+}
+
+.chart-table,
+.stats-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.chart-table th,
+.chart-table td,
+.stats-table th,
+.stats-table td {
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  font-weight: normal;
+}
+
+.stats-table thead th {
+  font-size: 12px;
+  color: var(--text-3);
+}
+
+.stats-table tbody th {
+  font-weight: 500;
+}
+
+.stats-table .num,
+.chart-table td:nth-child(2) {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.stats-table tr[data-silent="true"] {
+  color: var(--text-3);
+}
+
+.share-bars {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+}
+
+.share-bars li {
+  display: grid;
+  grid-template-columns: minmax(90px, 160px) 1fr 52px 76px;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+}
+
+.share-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.share-track {
+  height: 10px;
+}
+
+.share-bar {
+  display: block;
+  height: 100%;
+  min-width: 2px;
+  border-radius: 0 4px 4px 0;
+  background: var(--chart-1);
+}
+
+.share-value {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.share-change {
+  font-size: 12px;
+  color: var(--text-3);
+}
+
+.rising-list {
+  margin: 0;
+  padding-left: 22px;
+  display: grid;
+  gap: 8px;
+}
+
+.rising-list li {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.rising-title {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--text);
+  font: inherit;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+}
+
+.rising-title:hover {
+  color: var(--accent);
+}
+
+.rising-numbers {
+  font-size: 12.5px;
+  color: var(--text-3);
 }

@@ -59,6 +59,10 @@ DEFAULTS: dict[str, Any] = {
     "fulltext.profile": "own",  # own: World Signal's profile | main: the browser's everyday profile
     "fulltext.visible": False,  # show the browser window while it reads pages
     "fulltext.per_site_hour": 4,  # human pace: pages per site per hour
+    # Subscription sites (read in the browser) at a person's pace (repo.fulltext.BrowserPace):
+    "fulltext.browser_gap_min": 20,  # at least this many minutes between two pages of one site
+    "fulltext.browser_per_day": 15,  # pages per site per day
+    "fulltext.browser_night_rest": True,  # no automatic pages at night (NIGHT_HOURS, local time)
     "fulltext.auto_min_score": 60,  # stories at least this important get full texts automatically
     "fulltext.auto_per_story": 2,  # at most this many reports per story
     # History and retention (phase 6).

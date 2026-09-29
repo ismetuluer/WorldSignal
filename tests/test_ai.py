@@ -352,3 +352,44 @@ def test_a_new_language_is_added_to_finished_articles(db, sources, articles, set
     texts = repo.get(ids[0])["texts"]
     assert texts["pt"]["title"] == "Resultados das eleições no Iraque" and "en" not in texts
     assert repo.next_job("2000-01-01T00:00:00Z", ["tr", "pt"]) is None
+
+
+# -- search words in the sources' languages (ai/query.py) -----------------------------------------
+EXPANDED = {"en": ["North Korea drone", "North Korea UAV", "North Korea drone", "x" * 200], "ru": "Северная Корея дрон",
+            "tr": []}
+
+
+def test_search_words_are_translated_and_cleaned(db, settings):
+    fake = FakeOllama(answer=EXPANDED)
+    worker = make_worker(db, settings, fake)
+    result = run(worker.expand_query("kuzey kore iha", ["en", "ru", "tr"]))
+    # Duplicates and overlong phrases dropped; a bare string is accepted; an empty list is left out.
+    assert result == {"en": ["North Korea drone", "North Korea UAV"], "ru": ["Северная Корея дрон"]}
+    chat = [c for c in fake.calls if c.url.path == "/api/chat"]
+    body = json.loads(chat[0].content)
+    assert body["messages"][1]["content"] == "kuzey kore iha"
+    assert set(body["format"]["properties"]) == {"en", "ru", "tr"}
+    # The same search again is answered from memory.
+    assert run(worker.expand_query("Kuzey Kore İHA".replace("İHA", "iha"), ["en", "ru", "tr"])) == result
+    assert len([c for c in fake.calls if c.url.path == "/api/chat"]) == 1
+
+
+@pytest.mark.parametrize("prefs, loaded, code", [
+    ({"ai.enabled": False}, (), "disabled"),
+    ({"ai.model": ""}, (), "no_model"),
+    ({}, ("Qwen3.8-27b:latest",), "gpu_busy"),
+])
+def test_search_words_are_not_translated_when_the_ai_cannot_be_used(db, settings, prefs, loaded, code):
+    fake = FakeOllama(answer=EXPANDED, loaded=loaded)
+    worker = make_worker(db, settings, fake, **prefs)
+    with pytest.raises(OllamaError) as err:
+        run(worker.expand_query("deprem", ["en"]))
+    assert err.value.code == code
+    assert not any(c.url.path == "/api/chat" for c in fake.calls)
+
+
+def test_a_service_error_reaches_the_caller(db, settings):
+    worker = make_worker(db, settings, FakeOllama(raise_exc=httpx.ConnectError))
+    with pytest.raises(OllamaError) as err:
+        run(worker.expand_query("deprem", ["en"]))
+    assert err.value.code == "unreachable"

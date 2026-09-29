@@ -87,6 +87,9 @@ export interface Settings {
   "fulltext.profile": "own" | "main";
   "fulltext.visible": boolean;
   "fulltext.per_site_hour": number;
+  "fulltext.browser_gap_min": number;
+  "fulltext.browser_per_day": number;
+  "fulltext.browser_night_rest": boolean;
   "fulltext.auto_min_score": number;
   "fulltext.auto_per_story": number;
   "history.morning_hour": number;
@@ -476,6 +479,8 @@ export interface StoryQuery {
   turkey?: boolean;
   min_sources?: number;
   q?: string;
+  /** Translations of q (api.searchTranslations): a report matching any of them is found too. */
+  qx?: string[];
   sort?: "score" | "recent";
   limit?: number;
   offset?: number;
@@ -559,6 +564,72 @@ export type SourcePatch = Partial<
 
 export type FeedPatch = Partial<Pick<Feed, "label" | "enabled" | "fetch_interval_min">>;
 
+// -- statistics (repo/stats.py) ----------------------------------------------------------------
+export type StatsHours = 24 | 168 | 720;
+
+export interface StatsCounts {
+  articles: number;
+  sources: number;
+  stories: number;
+}
+
+export interface StatsShare {
+  key: string;
+  articles: number;
+  previous: number;
+}
+
+export interface StatsShares {
+  /** Reports with a key (category known) in this period, and in the previous one. */
+  known: number;
+  known_previous: number;
+  /** All reports of this period. */
+  total: number;
+  items: StatsShare[];
+}
+
+export interface StatsSource {
+  id: number;
+  name: string;
+  region: string;
+  articles: number;
+  previous: number;
+  stories: number;
+  last_at: string | null;
+}
+
+export interface RisingStory {
+  story: Story;
+  recent: number;
+  previous: number;
+  sources: number;
+}
+
+export interface StatsOverview {
+  period: { hours: StatsHours; since: string; until: string; previous_since: string; step_hours: number;
+    comparable: boolean; collecting_since: string | null };
+  totals: StatsCounts & { previous: StatsCounts };
+  timeline: { start: string; articles: number }[];
+  categories: StatsShares;
+  regions: StatsShares;
+  countries: { read: number; items: { key: string; articles: number }[] };
+  sources: StatsSource[];
+  rising: { window_hours: number; items: RisingStory[] };
+}
+
+export interface TopicStats {
+  articles: number;
+  sources: number;
+  previous: number;
+  buckets: { start: string; articles: number; sources: number; share: number }[];
+}
+
+/** The search words in the sources' languages; ``state`` says why there are none ("disabled", "gpu_busy" …). */
+export interface SearchTranslations {
+  state: string;
+  queries: Record<string, string[]>;
+}
+
 export interface ArticleQuery {
   hours?: number;
   source?: number[];
@@ -568,6 +639,8 @@ export interface ArticleQuery {
   category?: string[];
   turkey?: boolean;
   q?: string;
+  /** Translations of q (api.searchTranslations): a report matching any of them is found too. */
+  qx?: string[];
   before?: string | null;
   limit?: number;
   /** One local calendar day (YYYY-MM-DD) instead of hours. */

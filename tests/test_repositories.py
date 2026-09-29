@@ -140,6 +140,22 @@ def test_search_is_turkish_aware(db, sources, articles, query, expected):
     assert found == expected
 
 
+def test_translated_search_words_find_reports_in_other_languages(db, sources, articles):
+    s = seed(sources)["beta"]
+    insert(db, articles, s, [
+        entry("en", "North Korea Is Testing Swarm Attacks Mixing Drones and Missiles"),
+        entry("tr", "Kuzey Kore yeni füze denedi"),
+        entry("other", "South Korea bets big on AI"),
+    ])
+
+    def found(**kw):
+        return {item["url"].rsplit("/", 1)[1] for item in articles.list(ArticleFilter(**kw))}
+
+    assert found(query="kuzey kore") == {"tr"}
+    assert found(query="kuzey kore", alternatives=["North Korea"]) == {"tr", "en"}
+    assert articles.count(ArticleFilter(query="kuzey kore iha", alternatives=["North Korea drone"])) == 1
+
+
 def test_future_and_missing_dates_are_clamped_to_first_seen(db, sources, articles):
     s = seed(sources)["beta"]
     insert(db, articles, s, [entry("future", "Gelecek", minutes_ago=-180), entry("nodate", "Tarihsiz", published=False)])

@@ -6,8 +6,10 @@ import { BulletinDialog } from "../components/BulletinDialog";
 import { Icon } from "../components/Icon";
 import { MultiSelect } from "../components/MultiSelect";
 import { Banner, SearchField, Segmented } from "../components/controls";
+import { SearchLanguagesNote } from "../components/SearchLanguages";
 import { useI18n } from "../i18n";
 import { isTypingTarget, useDebounced } from "../lib/hooks";
+import { useSearchTranslations } from "../lib/searchTranslations";
 import { useAppState } from "../state";
 import { ArticleList } from "./ArticleList";
 import { type FeedQuery } from "./feedShared";
@@ -67,10 +69,12 @@ export function FeedPage() {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
+  const languages = useSearchTranslations(query);
   const feedQuery = useMemo<FeedQuery>(
     () => ({
       hours,
       q: query || undefined,
+      qx: languages.phrases,
       region: filters.regions,
       group: filters.groups,
       lang: filters.langs,
@@ -78,7 +82,7 @@ export function FeedPage() {
       category: filters.categories,
       turkey: filters.turkey,
     }),
-    [hours, query, filters],
+    [hours, query, languages.phrases, filters],
   );
 
   const changeView = (v: "stories" | "articles") => {
@@ -202,6 +206,7 @@ export function FeedPage() {
           ) : null}
         </div>
       </div>
+      <SearchLanguagesNote languages={languages} />
 
       {view === "stories" ? (
         <StoryList query={feedQuery} filtersActive={filtersActive} onClearFilters={() => setFilters(NO_FILTERS)} onTotal={setTotal} />

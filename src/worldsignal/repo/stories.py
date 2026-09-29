@@ -61,6 +61,7 @@ class StoryFilter:
     turkey_only: bool = False
     min_sources: int = 1
     query: str | None = None
+    alternatives: Sequence[str] = field(default_factory=tuple)  # translations of the query (ai/query.py)
     sort: str = "score"  # score | recent
     limit: int = 50
     offset: int = 0
@@ -320,7 +321,7 @@ class StoryRepository:
                 member_conds.append(f"{column} IN ({','.join('?' * len(values))})")
                 member_params.extend(values)
         if f.query:
-            fts = build_fts_query(f.query)
+            fts = build_fts_query(f.query, f.alternatives)
             if fts is None:
                 return [], 0
             member_conds.append(

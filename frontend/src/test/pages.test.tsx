@@ -23,6 +23,9 @@ vi.mock("../api/client", async (importOriginal) => {
       requestAi: vi.fn(),
       retryAi: vi.fn(),
       testOllama: vi.fn(),
+      searchTranslations: vi.fn(),
+      browsers: vi.fn(),
+      fulltextSites: vi.fn(),
     },
   };
 });
@@ -106,6 +109,9 @@ beforeEach(() => {
   mocked.update.mockResolvedValue(UPDATE_IDLE);
   mocked.status.mockResolvedValue(STATUS);
   mocked.sources.mockResolvedValue([]);
+  mocked.searchTranslations.mockResolvedValue({ state: "disabled", queries: {} });
+  mocked.browsers.mockResolvedValue({ browsers: [], chosen: null, own_profile: "C:\WS\browser-profile", main_profile_in_use: false });
+  mocked.fulltextSites.mockResolvedValue({ sites: [], login_window_open: false });
   mocked.updateSettings.mockImplementation(async (p) => ({ ...SETTINGS, ...p }));
 });
 
@@ -139,6 +145,29 @@ describe("FeedPage", () => {
     await userEvent.type(screen.getByRole("searchbox"), "ırak");
     expect(await screen.findByText("“ırak” için sonuç yok")).toBeInTheDocument();
     expect(mocked.articles).toHaveBeenLastCalledWith(expect.objectContaining({ q: "ırak", hours: 24 }));
+    expect(await screen.findByText("Yapay zekâ kapalı; yalnızca yazdığınız kelimelerle arandı.")).toBeInTheDocument();
+  });
+
+  it("searches the translations of the typed words as soon as the AI has written them", async () => {
+    mocked.articles.mockResolvedValue({ items: [], next: null, total: 0 });
+    let answer: (v: { state: string; queries: Record<string, string[]> }) => void = () => undefined;
+    mocked.searchTranslations.mockReturnValue(new Promise((resolve) => (answer = resolve)));
+    wrap(<FeedPage />);
+    await userEvent.type(screen.getByRole("searchbox"), "kuzey kore");
+    // The typed words are searched at once …
+    await waitFor(() => expect(mocked.articles).toHaveBeenLastCalledWith(expect.objectContaining({ q: "kuzey kore", qx: [] })));
+    expect(screen.getByText("Diğer dillerde de aranıyor…")).toBeInTheDocument();
+    // The AI is asked once the typing has stopped, with the whole words.
+    await waitFor(() => expect(mocked.searchTranslations).toHaveBeenCalledWith("kuzey kore"));
+    expect(mocked.searchTranslations).toHaveBeenCalledTimes(1);
+    // … and the translations follow.
+    answer({ state: "ok", queries: { en: ["North Korea"], ru: ["Северная Корея"] } });
+    expect(await screen.findByText("Diğer dillerde de arandı: North Korea · Северная Корея")).toBeInTheDocument();
+    await waitFor(() =>
+      expect(mocked.articles).toHaveBeenLastCalledWith(
+        expect.objectContaining({ q: "kuzey kore", qx: ["North Korea", "Северная Корея"] }),
+      ),
+    );
   });
 
   it("shows an error state with retry when loading fails", async () => {
@@ -229,6 +258,22 @@ describe("SourcesPage", () => {
     expect(within(paid).getByText(/Batı gazeteleri ve yayıncıları · Avrupa/)).toBeInTheDocument();
     expect(within(paid).queryByText("Beta Haber")).not.toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: /Batı gazeteleri/ })).not.toBeInTheDocument();  // its only source moved
+  });
+
+  it("shows the subscription sites below the paid sources", async () => {
+    mocked.sources.mockResolvedValue([source(2, "Paid Times", { paywalled: true, fulltext_mode: "browser" })]);
+    mocked.fulltextSites.mockResolvedValue({
+      sites: [{ id: 2, name: "Paid Times", homepage: "https://paid.example", fulltext_mode: "browser",
+                fulltext_paused_until: null, queued: 0, last: null }],
+      login_window_open: false,
+    });
+    wrap(<SourcesPage />);
+    const list = await screen.findByRole("list", { name: "Abonelik siteleri" });
+    expect(within(list).getByText("Henüz denenmedi")).toBeInTheDocument();
+    expect(within(list).getByRole("button", { name: "Paid Times için tam metni dene" })).toBeInTheDocument();
+    // Searching the sources hides it.
+    await userEvent.type(screen.getByRole("searchbox"), "paid");
+    await waitFor(() => expect(screen.queryByRole("list", { name: "Abonelik siteleri" })).not.toBeInTheDocument());
   });
 
   it("groups sources, separates unverified ones and shows errors", async () => {

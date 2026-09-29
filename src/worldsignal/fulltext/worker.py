@@ -3,7 +3,10 @@
 One page at a time, random pauses between pages (longer for the browser), at most
 ``fulltext.per_site_hour`` pages per site per hour, and a site that shows a bot check,
 refuses access or a paywall is left alone for hours (see ``repo.fulltext.PAUSE_AFTER``).
-Bot checks and CAPTCHAs are never solved.
+Subscription sites, read in the browser, go at a person's pace on top of that: a long gap between
+two pages of one site, a daily limit, no automatic reading at night, and each page is read
+(scrolled through) before its text is taken (``fetch.BrowserSession``). Bot checks and CAPTCHAs are
+never solved.
 """
 
 from __future__ import annotations
@@ -12,13 +15,13 @@ import asyncio
 import logging
 import random
 from collections.abc import Callable
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime, timedelta, tzinfo
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlsplit
 
 from ..db import utc_now_iso
-from ..repo.fulltext import FullTextJob, FullTextRepository
+from ..repo.fulltext import BrowserPace, FullTextJob, FullTextRepository
 from ..repo.notebook import local_today
 from ..repo.settings import SettingsRepository
 from .extract import extract
@@ -33,7 +36,10 @@ IDLE_SECONDS = 30
 PAUSED_SECONDS = 60
 BROWSER_IDLE_CLOSE = timedelta(minutes=5)
 LOGIN_HOLD = timedelta(seconds=30)  # after "open site to sign in": do not reopen the hidden browser meanwhile
-PACE = {"browser": (25.0, 60.0), "http": (6.0, 15.0)}
+PACE = {"browser": (60.0, 180.0), "http": (6.0, 15.0)}
+# A person clicking through articles they asked for: a short gap is enough.
+USER_GAP = timedelta(minutes=3)
+NIGHT_HOURS = range(0, 7)  # local time
 AUTO_WINDOW = timedelta(hours=24)
 
 
@@ -51,7 +57,9 @@ class FullTextWorker:
         clock: Callable[[], datetime] = lambda: datetime.now(UTC),
         sleep: Callable[[float], Any] = asyncio.sleep,
         today: Callable[[], str] = local_today,
+        local_zone: tzinfo | None = None,
     ) -> None:
+        self.local_zone = local_zone  # None: this computer's time zone
         self.repo = repo
         self.settings = settings
         self.own_profile = own_profile
@@ -147,7 +155,8 @@ class FullTextWorker:
         for reason in ("notebook", "auto"):
             await asyncio.to_thread(self.repo.enqueue, picks[reason], reason)
 
-        job = await asyncio.to_thread(self.repo.next_job, now, int(prefs.get("fulltext.per_site_hour", 4)))
+        job = await asyncio.to_thread(self.repo.next_job, now, int(prefs.get("fulltext.per_site_hour", 4)),
+                                      self.browser_pace(prefs, now))
         if job is None:
             if self._session is not None and self._last_browser_use and now - self._last_browser_use > BROWSER_IDLE_CLOSE:
                 await self.close_browser()
@@ -189,6 +198,16 @@ class FullTextWorker:
                 return PAUSED_SECONDS
         low, high = PACE[job.mode]
         return random.uniform(low, high)
+
+    def browser_pace(self, prefs: dict[str, Any], now: datetime) -> BrowserPace:
+        local = now.astimezone(self.local_zone)
+        return BrowserPace(
+            gap=timedelta(minutes=int(prefs.get("fulltext.browser_gap_min", 20))),
+            user_gap=USER_GAP,
+            per_day=int(prefs.get("fulltext.browser_per_day", 15)),
+            day_start=local.replace(hour=0, minute=0, second=0, microsecond=0),
+            resting=bool(prefs.get("fulltext.browser_night_rest", True)) and local.hour in NIGHT_HOURS,
+        )
 
     async def _fetch(self, job: FullTextJob, prefs: dict[str, Any], browser: BrowserInfo | None) -> Page:
         if urlsplit(job.url).hostname in AGGREGATOR_HOSTS:

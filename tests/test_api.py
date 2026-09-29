@@ -232,6 +232,47 @@ def test_meta(client, ctx):
     assert "turkey" in meta["regions"] and meta["languages"] == ["tr"] and meta["ui_languages"] == ["tr", "en"]
 
 
+def test_search_words_are_translated_for_the_lists(client, ctx, monkeypatch):
+    add_articles(ctx)
+    asked = []
+
+    async def expand(text, languages):
+        asked.append((text, languages))
+        return {"en": ["Iraq news"]}
+
+    monkeypatch.setattr(ctx.ai_worker, "expand_query", expand)
+    r = client.get("/api/search/translations", headers=H, params={"q": " ırak "}).json()
+    assert r == {"state": "ok", "queries": {"en": ["Iraq news"]}}
+    # The languages of the enabled sources, the most common first.
+    assert asked == [("ırak", ctx.articles.source_languages())] and asked[0][1]
+    assert client.get("/api/search/translations", headers=H, params={"q": ""}).status_code == 422
+
+    # A translation that matches nothing does not hide what the typed words find, and vice versa.
+    both = {"q": "ırak", "qx": ["Iraq news", " ", "x" * 201]}
+    assert client.get("/api/articles", headers=H, params=both).json()["total"] == 5
+    assert client.get("/api/articles", headers=H, params={"q": "bağdat", "qx": ["irak haberi 3"]}).json()["total"] == 1
+    assert client.get("/api/stories", headers=H, params={"q": "bağdat", "qx": ["irak"]}).status_code == 200
+    assert client.get("/api/articles", headers=H, params={"q": "a", "qx": [str(i) for i in range(30)]}).status_code == 422
+
+
+def test_statistics_endpoints(client, ctx):
+    add_articles(ctx)
+    r = client.get("/api/stats", headers=H, params={"hours": 168}).json()
+    assert r["totals"]["articles"] == 5 and len(r["timeline"]) == 7 and r["period"]["hours"] == 168
+    assert {"categories", "regions", "countries", "sources", "rising"} <= set(r)
+    assert client.get("/api/stats", headers=H, params={"hours": 48}).status_code == 422
+    t = client.get("/api/stats/topic", headers=H, params={"q": "ırak", "qx": ["Iraq"], "hours": 24}).json()
+    assert t["articles"] == 5 and len(t["buckets"]) == 24 and t["buckets"][-1]["share"] == 1.0
+    assert client.get("/api/stats/topic", headers=H, params={"q": "!!!"}).json()["buckets"] == []
+    assert client.get("/api/stats/topic", headers=H, params={"q": ""}).status_code == 422
+
+
+def test_search_words_without_ai_say_why(client, ctx):
+    client.patch("/api/settings", headers=H, json={"ai.enabled": False})
+    assert client.get("/api/search/translations", headers=H, params={"q": "deprem"}).json() == {
+        "state": "disabled", "queries": {}}
+
+
 def test_ai_endpoints(client, ctx, monkeypatch):
     add_articles(ctx)
     status = client.get("/api/ai/status", headers=H).json()

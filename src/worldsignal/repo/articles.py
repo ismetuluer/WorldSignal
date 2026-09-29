@@ -52,6 +52,7 @@ class ArticleFilter:
     categories: Sequence[str] = field(default_factory=tuple)
     turkey_only: bool = False  # only articles related (directly or indirectly) to the user's country
     query: str | None = None
+    alternatives: Sequence[str] = field(default_factory=tuple)  # translations of the query (ai/query.py)
     before: tuple[str, int] | None = None  # pagination cursor (sort_at, id)
     limit: int = 100
 
@@ -113,7 +114,7 @@ class ArticleRepository:
         where: list[str] = []
         params: list[Any] = []
         if f.query:
-            fts = build_fts_query(f.query)
+            fts = build_fts_query(f.query, f.alternatives)
             if fts is None:
                 return None
             # Match the original text or the Turkish AI title/summary.
@@ -228,6 +229,14 @@ class ArticleRepository:
             (since_iso,),
         ).fetchone()
         return {"total": row["total"] or 0, "recent": row["recent"] or 0}
+
+    def source_languages(self) -> list[str]:
+        """Languages the enabled sources publish in, the most common first (search translations, ai/query.py)."""
+        rows = self.db.conn.execute(
+            """SELECT language FROM sources WHERE enabled = 1 AND language IS NOT NULL AND language != ''
+               GROUP BY language ORDER BY COUNT(*) DESC, language"""
+        ).fetchall()
+        return [r["language"] for r in rows]
 
     def languages(self) -> list[str]:
         rows = self.db.conn.execute(

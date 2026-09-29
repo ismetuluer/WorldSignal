@@ -17,6 +17,7 @@ import asyncio
 import logging
 import time
 from collections.abc import Callable
+from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 from functools import partial
 from typing import Any
@@ -28,7 +29,7 @@ from .cloud import make_client as make_cloud_client
 from ..db import utc_now_iso
 from ..repo.ai import AiRepository, Job
 from ..repo.fulltext import FullTextRepository
-from . import translate
+from . import query, translate
 from ..repo.settings import SettingsRepository
 from ..repo.stories import StoryRepository
 from .enrich import PROMPT_VERSION, EnrichInput, EnrichTask, validate
@@ -49,6 +50,20 @@ STORY_WINDOW_HOURS = 48
 # While this many recent reports still wait to be matched into stories (first start, or after a long
 # pause), stories keep growing by the minute: summarising them now would be redone again and again.
 STORY_BACKLOG_LIMIT = 100
+# Translated searches kept for the session (expand_query).
+EXPANSION_CACHE = 200
+
+
+@dataclass
+class Service:
+    """The AI service chosen in the settings (Ollama or a cloud service) and how to reach it."""
+
+    provider: str
+    cloud: bool
+    model: str
+    url: Any
+    unavailable: str | None = None  # disabled | no_key | no_model
+    make: Callable[[], Any] = field(default=lambda: None)
 
 
 class AiWorker:
@@ -88,6 +103,7 @@ class AiWorker:
             "avg_seconds": None,
         }
         self._durations: list[float] = []
+        self._expansions: dict[tuple[str, tuple[str, ...]], dict[str, list[str]]] = {}
 
     # -- public ------------------------------------------------------------------
     def status(self) -> dict[str, Any]:
@@ -120,7 +136,66 @@ class AiWorker:
             self._state["running"] = False
             log.info("AI worker stopped")
 
+    async def expand_query(self, text: str, languages: list[str]) -> dict[str, list[str]]:
+        """Search words translated into ``languages`` (ai/query.py), with the service the user chose.
+
+        Raises :class:`OllamaError` with the reason when there is no answer: ``disabled``, ``no_key``,
+        ``no_model``, ``gpu_busy`` (another model is on the graphics card and the user asked us to yield),
+        or the service's own error. Answers are kept for the session, so the same search again is free.
+        """
+        languages = languages[: query.MAX_LANGUAGES]
+        cache_key = (text.casefold(), tuple(languages))
+        if cache_key in self._expansions:
+            return self._expansions[cache_key]
+        prefs = await asyncio.to_thread(self.settings.get_preferences)
+        service = await self._service(prefs)
+        if service.unavailable:
+            raise OllamaError(service.unavailable)
+        client = service.make()
+        if not service.cloud and prefs.get("ai.yield_gpu", True) and await self._other_gpu_models(client, service.model):
+            raise OllamaError("gpu_busy")
+        answer = await client.chat_json(service.model, query.system_prompt(languages), text, query.schema(languages),
+                                        num_predict=query.NUM_PREDICT, keep_alive="30m")
+        result = query.validate(answer.data, languages)
+        if len(self._expansions) >= EXPANSION_CACHE:
+            self._expansions.pop(next(iter(self._expansions)))
+        self._expansions[cache_key] = result
+        return result
+
     # -- internals ---------------------------------------------------------------------
+    async def _service(self, prefs: dict[str, Any]) -> Service:
+        """The AI service the user chose, or why it cannot be used now."""
+        provider = str(prefs.get("ai.provider") or "ollama")
+        cloud = provider != "ollama"
+        model = str(prefs.get(f"ai.{provider}_model" if cloud else "ai.model") or "").strip()
+        url = prefs.get("ai.openai_url") if provider == "openai" else (provider if cloud else prefs.get("ai.url"))
+        service = Service(provider=provider, cloud=cloud, model=model, url=url)
+        if not prefs.get("ai.enabled"):
+            service.unavailable = "disabled"
+            return service
+        key = ""
+        if cloud:
+            key = (await asyncio.to_thread(self.keys.get, provider) if self.keys is not None else None) or ""
+            # An OpenAI-compatible service on the local network (LM Studio …) may need no key.
+            if not key and not (provider == "openai" and prefs.get("ai.openai_url") != OPENAI_URL):
+                service.unavailable = "no_key"
+                return service
+        if not model:
+            service.unavailable = "no_model"
+            return service
+        if cloud:
+            service.make = lambda: self.cloud_factory(provider, key, str(prefs.get("ai.openai_url") or ""))
+        else:
+            service.make = lambda: self.client_factory(url)
+        return service
+
+    @staticmethod
+    async def _other_gpu_models(client: OllamaClient, model: str) -> list[str]:
+        """Other models on the graphics card. Being polite, we wait instead of pushing them out of its memory;
+        models running on the CPU (size_vram 0, e.g. our own embedding model) leave the GPU free."""
+        return [m["name"] for m in await client.loaded_models()
+                if m.get("name") != model and m.get("size_vram", 1) != 0]
+
     async def _sleep(self, seconds: float) -> None:
         assert self._wake is not None
         try:
@@ -131,26 +206,12 @@ class AiWorker:
     async def step(self) -> float:
         """Do at most one unit of work. Returns how long to wait before the next step."""
         prefs = await asyncio.to_thread(self.settings.get_preferences)
-        provider = str(prefs.get("ai.provider") or "ollama")
-        cloud = provider != "ollama"
-        model = str(prefs.get(f"ai.{provider}_model" if cloud else "ai.model") or "").strip()
-        url = prefs.get("ai.openai_url") if provider == "openai" else (provider if cloud else prefs.get("ai.url"))
-        self._state.update(model=model or None, url=url, provider=provider)
-        if not prefs.get("ai.enabled"):
-            self._state.update(state="disabled", current_article_id=None)
+        service = await self._service(prefs)
+        self._state.update(model=service.model or None, url=service.url, provider=service.provider)
+        if service.unavailable:
+            self._state.update(state=service.unavailable, current_article_id=None)
             return PAUSED_SECONDS
-        key = ""
-        if cloud:
-            key = (await asyncio.to_thread(self.keys.get, provider) if self.keys is not None else None) or ""
-            # An OpenAI-compatible service on the local network (LM Studio …) may need no key.
-            if not key and not (provider == "openai" and prefs.get("ai.openai_url") != OPENAI_URL):
-                self._state.update(state="no_key", current_article_id=None)
-                return PAUSED_SECONDS
-        if not model:
-            self._state.update(state="no_model", current_article_id=None)
-            return PAUSED_SECONDS
-        make = (lambda: self.cloud_factory(provider, key, str(prefs.get("ai.openai_url") or ""))) if cloud else (
-            lambda: self.client_factory(url))
+        cloud, model, make = service.cloud, service.model, service.make
         pace = 60.0 / max(1, int(prefs.get("ai.cloud_rpm") or 10)) if cloud else 0.0
 
         languages = tuple(effective(prefs))
@@ -177,14 +238,8 @@ class AiWorker:
 
         client = make()
         if not cloud and prefs.get("ai.yield_gpu", True):
-            # Be polite: if the user (or another program) has a different model loaded,
-            # wait instead of pushing it out of the graphics card's memory.
             try:
-                # Models running on the CPU (size_vram 0, e.g. our own embedding model) leave the GPU free.
-                others = [
-                    m["name"] for m in await client.loaded_models()
-                    if m.get("name") != model and m.get("size_vram", 1) != 0
-                ]
+                others = await self._other_gpu_models(client, model)
             except OllamaError as exc:
                 self._state.update(state="unreachable", last_error=exc.code, current_article_id=None, busy_with=None)
                 return PAUSED_SECONDS

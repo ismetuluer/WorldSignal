@@ -95,6 +95,17 @@ tests/                   Arka uç + uçtan uca testler
 - **Arama**: `articles_fts` (FTS5). SQLite'ın hazır büyük/küçük harf katlaması Türkçede yanlış çalıştığı için
   (`IRAK` ≠ `ırak`, test edildi) metin Python'da `fold_for_search` ile normalleştirilip indekslenir; arama
   sorgusuna da aynı işlem uygulanır. Kullanıcı girdisi FTS sözdizimine hiçbir zaman doğrudan geçmez.
+- **İstatistik** (0.12, `repo/stats.py`, `GET /api/stats`, `GET /api/stats/topic`): istek anında SQL ile sayılır,
+  saklanmaz (30 günlük dönem ~20.000 haberde ~0,25 sn). Dönemler yerel saate hizalı; önceki dönem eşit uzunlukta
+  (süren gün yarım günle kıyaslanır) ve toplamanın başladığı andan (`MIN(first_seen_at)`) eskiyse karşılaştırma
+  kapatılır. Bağımsız kaynak = skordaki gibi medya grubu. Haberin kategorisi: kendi YZ kategorisi, yoksa hikâyesininki.
+  Grafikler kütüphanesiz SVG (`components/charts.tsx`), tek renk `--chart-1`, her grafiğin tablo karşılığı var.
+- **Başka dillerde arama** (0.12): çoğu haber hiç özetlenmediği için Türkçe kelime yabancı haberi bulamıyordu.
+  Arayüz `GET /api/search/translations?q=` ile arama kelimelerini seçili YZ hizmetine (`AiWorker.expand_query`,
+  `ai/query.py`) etkin kaynakların dillerine (en çok 8) çevirtir; listeler çevirileri `qx` olarak alır ve
+  `build_fts_query` her ifadeyi ayrı bir `AND` grubu yapıp `OR` ile bağlar. Yazılan kelimeler hemen aranır, çeviri
+  gelince liste genişler. Yanıtlar oturum boyunca bellekte tutulur. bge-m3 ile anlamsal arama ölçülüp elendi: kısa
+  Türkçe sorgularda aynı dildeki başlıkları öne çıkarıyor, yabancı haberi bulmuyordu.
 
 ### Tablolar (şema v1)
 

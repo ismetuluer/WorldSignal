@@ -50,9 +50,11 @@ from ..notify import Notifier
 from ..repo.notebook import MAX_COMMENT, MAX_NOTE, NotebookRepository, valid_day
 from ..repo.settings import DEFAULTS, SettingsRepository
 from ..repo.sources import CATALOG_GROUPS, REGIONS, Conflict, NotFound, SourceRepository
+from ..repo.stats import PERIODS, StatsRepository, period as stats_period
 from ..repo.stories import StoryFilter, StoryRepository
 from ..stories.embedding import recommended_settings
 from ..stories.worker import StoryWorker, interest_from, weights_from
+from ..textnorm import MAX_ALTERNATIVES
 from ..updater import UpdateError, Updater
 from ..apikeys import SecretStore
 from ..ai.cloud import OPENAI_URL, make_client as make_cloud_client
@@ -100,6 +102,11 @@ class AppContext:
     home_sync: HomeSync | None = None
     keys: SecretStore | None = None  # API keys of cloud AI services
     extra: dict[str, Any] = field(default_factory=dict)
+
+
+def search_alternatives(qx: list[str] | None) -> tuple[str, ...]:
+    """The translations of a search (``qx``, from /search/translations): trimmed, empty and overlong ones left out."""
+    return tuple(t for t in (x.strip() for x in qx or ()) if 0 < len(t) <= 200)
 
 
 def api_error(status: int, code: str, message: str = "") -> HTTPException:
@@ -163,6 +170,9 @@ class SettingsPatch(BaseModel):
     fulltext_profile: Literal["own", "main"] | None = Field(None, alias="fulltext.profile")
     fulltext_visible: bool | None = Field(None, alias="fulltext.visible")
     fulltext_per_site_hour: int | None = Field(None, alias="fulltext.per_site_hour", ge=1, le=20)
+    fulltext_browser_gap_min: int | None = Field(None, alias="fulltext.browser_gap_min", ge=5, le=240)
+    fulltext_browser_per_day: int | None = Field(None, alias="fulltext.browser_per_day", ge=1, le=100)
+    fulltext_browser_night_rest: bool | None = Field(None, alias="fulltext.browser_night_rest")
     fulltext_auto_min_score: float | None = Field(None, alias="fulltext.auto_min_score", ge=0, le=100)
     fulltext_auto_per_story: int | None = Field(None, alias="fulltext.auto_per_story", ge=0, le=5)
     history_morning_hour: int | None = Field(None, alias="history.morning_hour", ge=0, le=23)
@@ -445,6 +455,7 @@ def create_app(ctx: AppContext) -> FastAPI:
         category: Annotated[list[str] | None, Query()] = None,
         turkey: bool = False,
         q: Annotated[str | None, Query(max_length=200)] = None,
+        qx: Annotated[list[str] | None, Query(max_length=MAX_ALTERNATIVES, description="translations of q")] = None,
         before: Annotated[str | None, Query(pattern=r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z\|\d+$")] = None,
         limit: Annotated[int, Query(ge=1, le=500)] = 100,
         day: Annotated[str | None, Query(description="one local calendar day (YYYY-MM-DD) instead of hours")] = None,
@@ -461,13 +472,51 @@ def create_app(ctx: AppContext) -> FastAPI:
         filt = ArticleFilter(
             since=since, until=until, source_ids=source or (), regions=region or (), groups=group or (),
             languages=lang or (), categories=category or (), turkey_only=turkey,
-            query=(q or "").strip() or None, before=cursor, limit=limit,
+            query=(q or "").strip() or None, alternatives=search_alternatives(qx), before=cursor, limit=limit,
         )
         items = ctx.articles.list(filt)
         next_cursor = f"{items[-1]['sort_at']}|{items[-1]['id']}" if len(items) == limit else None
         # The total is only needed for the first page (shown in the header).
         total = ctx.articles.count(filt) if cursor is None else None
         return {"items": items, "next": next_cursor, "total": total}
+
+    # -- statistics -------------------------------------------------------------------------------
+    stats = StatsRepository(ctx.db, ctx.stories)
+
+    def check_period(hours: int) -> int:
+        if hours not in PERIODS:
+            raise api_error(422, "bad_period")
+        return hours
+
+    @api.get("/stats")
+    def get_stats(hours: int = 24) -> dict[str, Any]:
+        """Reports, stories and sources of the period; shares by category and region; countries; rising stories."""
+        return stats.overview(stats_period(check_period(hours), datetime.now().astimezone()))
+
+    @api.get("/stats/topic")
+    def get_topic_stats(
+        q: Annotated[str, Query(min_length=1, max_length=200)],
+        qx: Annotated[list[str] | None, Query(max_length=MAX_ALTERNATIVES)] = None,
+        hours: int = 24,
+    ) -> dict[str, Any]:
+        """One topic (the search, with its translations ``qx``) per hour or day, and its share of all reports."""
+        found = stats.topic(stats_period(check_period(hours), datetime.now().astimezone()), q.strip(),
+                            search_alternatives(qx))
+        return found if found is not None else {"articles": 0, "sources": 0, "previous": 0, "buckets": []}
+
+    @api.get("/search/translations")
+    async def search_translations(q: Annotated[str, Query(min_length=1, max_length=200)]) -> dict[str, Any]:
+        """The search words in the languages the sources publish in (ai/query.py), for ``qx`` of the lists.
+
+        ``state`` is ``ok``, or why there are no translations (``disabled``, ``no_model``, ``gpu_busy``,
+        ``unreachable`` …); the search then runs on the typed words alone."""
+        languages = await asyncio.to_thread(ctx.articles.source_languages)
+        try:
+            queries = await ctx.ai_worker.expand_query(q.strip(), languages)
+        except OllamaError as exc:
+            log.info("Search words not translated: %s", exc.code)
+            return {"state": exc.code, "queries": {}}
+        return {"state": "ok", "queries": queries}
 
     @api.post("/articles/{article_id}/ai")
     def request_ai(article_id: int) -> dict[str, Any]:
@@ -495,6 +544,7 @@ def create_app(ctx: AppContext) -> FastAPI:
         turkey: bool = False,
         min_sources: Annotated[int, Query(ge=1, le=50)] = 1,
         q: Annotated[str | None, Query(max_length=200)] = None,
+        qx: Annotated[list[str] | None, Query(max_length=MAX_ALTERNATIVES, description="translations of q")] = None,
         sort: Literal["score", "recent"] = "score",
         limit: Annotated[int, Query(ge=1, le=200)] = 40,
         offset: Annotated[int, Query(ge=0)] = 0,
@@ -503,7 +553,7 @@ def create_app(ctx: AppContext) -> FastAPI:
         items, total = ctx.stories.list(StoryFilter(
             since=since, source_ids=source or (), regions=region or (), groups=group or (), languages=lang or (),
             categories=category or (), turkey_only=turkey, min_sources=min_sources, query=(q or "").strip() or None,
-            sort=sort, limit=limit, offset=offset,
+            alternatives=search_alternatives(qx), sort=sort, limit=limit, offset=offset,
         ))
         return {"items": items, "total": total}
 

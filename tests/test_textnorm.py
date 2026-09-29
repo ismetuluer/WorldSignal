@@ -44,6 +44,15 @@ def test_build_fts_query_empty():
     assert build_fts_query("!!!") is None
 
 
+def test_build_fts_query_with_translations():
+    q = build_fts_query("kuzey kore iha", ["North Korea drone", "Северная Корея", "KUZEY KORE İHA", "!!!"])
+    # Any one phrasing matches; the same words twice and empty phrasings are left out.
+    assert q == ('("kuzey"* AND "kore"* AND "iha"*) OR ("north"* AND "korea"* AND "drone"*)'
+                 ' OR ("северная"* AND "корея"*)')
+    assert build_fts_query("!!!", ["North Korea"]) == '"north"* AND "korea"*'
+    assert build_fts_query("deprem", []) == '"deprem"*'
+
+
 def test_build_fts_query_limits_terms():
     q = build_fts_query(" ".join(f"w{i}" for i in range(50)))
     assert q.count(" AND ") == 11

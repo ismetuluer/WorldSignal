@@ -8,6 +8,7 @@ import { describeError, useI18n } from "../i18n";
 import { useAppState } from "../state";
 import { AddSourceDialog } from "./AddSourceDialog";
 import { SourceEditor } from "./SourceEditor";
+import { SubscriptionSitesSection } from "./SubscriptionSites";
 
 type View = "all" | "errors" | "disabled";
 
@@ -143,6 +144,7 @@ export function SourcesPage() {
             </div>
           </section>
         ) : null}
+        {view === "all" && !search ? <SubscriptionSitesSection /> : null}
         {unverified.length > 0 ? (
           <section className="section">
             <h2 className="section-title">

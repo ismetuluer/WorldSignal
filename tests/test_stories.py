@@ -195,6 +195,8 @@ def test_story_filters(db, sources, articles, settings):
     assert repo.list(StoryFilter(regions=["asia"]))[1] == 1  # only the Hormuz story has Gamma Live
     assert repo.list(StoryFilter(query="neutrality"))[0][0]["id"] == repo.story_of(ids["a2"])
     assert repo.list(StoryFilter(query="!!!")) == ([], 0)
+    assert repo.list(StoryFilter(query="tarafsızlık"))[1] == 0
+    assert repo.list(StoryFilter(query="tarafsızlık", alternatives=["neutrality"]))[0][0]["id"] == repo.story_of(ids["a2"])
     # Most recent activity: the Hormuz story's latest report is 20 minutes old.
     assert repo.list(StoryFilter(sort="recent"))[0][0]["id"] == repo.story_of(ids["a1"])
 

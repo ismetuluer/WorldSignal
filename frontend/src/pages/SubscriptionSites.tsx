@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { api, ApiError } from "../api/client";
-import type { FullTextSite } from "../api/types";
+import type { BrowserList, FullTextSite } from "../api/types";
 import { Icon } from "../components/Icon";
 import { useToast } from "../components/Toasts";
 import { Banner, Spinner } from "../components/controls";
@@ -9,6 +9,24 @@ import { fulltextErrorKey } from "../lib/fulltext";
 import { useAppState } from "../state";
 
 const POLL_MS = 4000;
+
+/** The subscription sites on the Sources page: whether a site can be opened to sign in depends on the
+ * browser found and the profile chosen in Settings → Full text. */
+export function SubscriptionSitesSection() {
+  const { settings } = useAppState();
+  const [browsers, setBrowsers] = useState<BrowserList | null>(null);
+  const browserPath = settings["fulltext.browser_path"];
+  useEffect(() => {
+    api.browsers().then(setBrowsers, () => setBrowsers(null));
+  }, [browserPath]);
+  return (
+    <section className="section">
+      <div className="settings-card">
+        <SubscriptionSites canOpen={settings["fulltext.profile"] === "own" && !!browsers?.chosen} />
+      </div>
+    </section>
+  );
+}
 
 /**
  * Subscription sites: open each one in World Signal's browser profile to sign in, then try it and

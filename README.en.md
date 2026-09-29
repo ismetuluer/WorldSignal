@@ -38,6 +38,7 @@ Portuguese. It also has a meeting list, a notebook, past days and printable outp
 | **Meeting and notes** | Add a story to the meeting list with one key, reorder it by dragging, add notes to stories and keep a notebook by day. |
 | **Outputs** | Meeting list, story detail, morning briefing and notes. Copy formatted (Word/Outlook), copy plain text (WhatsApp), print/PDF or **send by e-mail**. |
 | **History** | Pick a day in the calendar to see that morning's ranking, search all days, and follow a story day by day. |
+| **Statistics** | A topic hour by hour or day by day and its share of the news, the spread over categories and regions, rising stories, and counts per source and country. |
 | **Full text** | Read and translate whole articles inside the app, from open sites and from sites **you subscribe to**. |
 | **In the background** | The app keeps scanning from the system tray after the window closes. If an important story spreads fast, it sends a Windows notification. |
 
@@ -178,8 +179,20 @@ checked against the source. If a number does not appear in the source, a "Check"
 
   You also choose the output language from your summary languages. The **morning briefing** lists the most important
   stories of the chosen time range by category.
+- **Statistics.** Choose a period at the top (24 hours, 7 days, 30 days); everything is counted for it. Type a topic
+  under *Topic trend* (it is also searched in your sources' languages) to see in how many reports it appears per hour
+  or day and its share of all reports. *News by category* counts only reports whose category the AI has decided, and
+  says how many that is. *Region of the reporting press* is the source's region, not where the event happened.
+  *Rising* lists the stories that grew fastest in the last hours; click one to open it. The *Sources* table also shows
+  sources that sent nothing. Changes are against the previous period of equal length, and are not shown while
+  collection does not reach that far back. Every chart can also be shown as a table.
 - **History.** Pick a day in the calendar. *Morning 09:00* shows that morning's ranking and *Whole day* the ranking at
   the end of the day. Search covers all days and ignores case and Turkish-specific letters.
+- **Search also runs in other languages.** The words you type are searched at once. If the AI is on, they are
+  translated within a few seconds into the languages your sources publish in ("kuzey kore iha" → "North Korea drone",
+  "Северная Корея беспилотник" …), and those reports are added to the list. The line under the search box shows the
+  translations used. Most foreign reports have no summary in your language, so without this a search only finds
+  reports in the language you typed or ones the AI has summarised.
 - **Sources.** Turn sources on and off, and give them a reliability weight and a media group; sources of the same group
   count as one. Use **Add source** to test and add your own RSS address. If you do not know the RSS address, type the
   site's address: the app suggests the site's RSS links and the news sitemaps it is allowed to read. Broken feeds are
@@ -200,11 +213,15 @@ World Signal republishes nobody's content; it shows it only on **your** screen.
 - Some sites without RSS are read from the **news sitemap** they publish for search engines. This is done only if the
   site's robots.txt allows automated readers.
 - **Paid sites:** you can read a whole article only if **you** subscribe to that site. Open the site from
-  **Settings → Full text → Subscription sites** and sign in once with your own account. The session is kept only on this
+  **Sources → Subscription sites** and sign in once with your own account. The session is kept only on this
   computer, in a separate browser profile that belongs to World Signal. Without a subscription you see only the
   headline, the short summary and the link.
 - The app does not get around paywalls, does not solve robot checks (CAPTCHAs), and does not use archive or
-  paywall-bypass sites. It opens pages at a human pace: a few pages per site per hour, one page at a time.
+  paywall-bypass sites. It opens pages at a human pace: one page at a time, a few pages per site per hour.
+  Subscription sites (read in the browser) go slower still: at least 20 minutes between two pages of one site
+  (3 minutes for pages you ask for), at most 15 pages per site per day, no pages opened by themselves between 00:00
+  and 07:00, and each page is read and scrolled for 20-60 seconds after it opens. These can be changed under
+  Settings → Full text.
 - **Full texts never go into any output.** Copies, prints, PDFs and e-mails contain only the summaries, source names
   and links.
 - If you choose a [cloud AI](#cloud-ai) service, you are responsible for the texts sent to it for summarising,
@@ -219,7 +236,7 @@ The app talks only to:
 - the sources' RSS feeds and, when you ask for a full text, the article pages;
 - the Ollama address (by default your own computer: `localhost`);
 - **only if you choose one**, a cloud AI service (Google Gemini, an OpenAI-compatible service or Anthropic Claude),
-  which receives the article texts to summarise, full texts included;
+  which receives the article texts to summarise (full texts included) and the search words to translate;
 - GitHub, only for new-version information and downloads (can be turned off).
 
 No usage data, statistics or personal information is collected or sent. The app's interface is a local server that is
@@ -240,7 +257,7 @@ into backups.
 | "The API key was not accepted" / "rate limit reached" | If the key is invalid or expired, enter a new one under Settings → Artificial intelligence. At a rate limit the app waits and continues. If it happens often, lower **Requests per minute (max.)**. |
 | Summaries are very slow and the graphics card gets hot | Choose a smaller model (see the [table](#setting-up-ollama)). |
 | A source is shown in red | The Sources page gives the reason: site down, address changed, closed to automated readers… |
-| Full text says "paywall" | Sign in to that site under Settings → Full text → Subscription sites. Without a subscription, no full text can be fetched. |
+| Full text says "paywall" | Sign in to that site under Sources → Subscription sites. Without a subscription, no full text can be fetched. |
 | "The update failed" | A file in the program folder was in use, and the next attempt will try again. If it keeps failing, download the new zip and extract it. |
 | Something went wrong | Under Settings → **Backups**, restore the backup of an earlier day; the app restarts. |
 

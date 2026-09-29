@@ -248,7 +248,7 @@ describe("Cloud AI", () => {
     wrap(<SettingsPage />);
     await userEvent.selectOptions(await screen.findByRole("combobox", { name: "Yapay zekâ nerede çalışsın?" }), "gemini");
     expect(mocked.updateSettings).toHaveBeenLastCalledWith({ "ai.provider": "gemini" });
-    expect(await screen.findByText(/abonelikle okunan tam metinler dahil\) Google Gemini hizmetine gönderilir/)).toBeInTheDocument();
+    expect(await screen.findByText(/abonelikle okunan tam metinler dahil\) ve arama kelimeleriniz Google Gemini hizmetine gönderilir/)).toBeInTheDocument();
     expect(screen.queryByRole("textbox", { name: "Ollama adresi" })).not.toBeInTheDocument();
 
     const keyInput = await screen.findByLabelText("API anahtarı");
