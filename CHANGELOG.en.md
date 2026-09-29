@@ -3,6 +3,18 @@
 English version of [CHANGELOG.md](CHANGELOG.md), from 0.10.0 on. Version numbers follow
 [Semantic Versioning](https://semver.org/).
 
+## [0.11.2] — 2026-09-29 — Downloaded zip and "What's new" fix
+
+### Fixed
+- **The app did not start when extracted from a zip downloaded from the internet** ("Failed to resolve
+  Python.Runtime.Loader.Initialize"). Windows marks every file extracted from a downloaded zip as "from the internet",
+  and .NET then refused to load the libraries that draw the window (Python.Runtime, WebView2). The new
+  `WorldSignal.exe.config` in the package lets them load like local files; no package is made without it.
+- **In "What's new", sentences broke off in the middle of the line**, and marks such as `###` and `**` were shown. The
+  release notes now appear with headings, bullets and bold text, and the lines flow with the window width.
+- Reports marked "(Exclusive)" at the **end** of the headline (Trend News Agency's style) did not get the
+  **Exclusive** badge.
+
 ## [0.11.1] — 2026-09-28 — Update fix
 
 ### Fixed

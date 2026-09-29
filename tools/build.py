@@ -43,6 +43,7 @@ def main() -> str:
          "--workpath", str(ROOT / "build"), str(ROOT / "packaging" / "worldsignal.spec")], ROOT)
     (APP / "version.txt").write_text(__version__, encoding="utf-8")
     (APP / "build.txt").write_text(build_id, encoding="utf-8")
+    shutil.copy2(ROOT / "packaging" / "WorldSignal.exe.config", APP / "WorldSignal.exe.config")
     files = [p for p in APP.rglob("*") if p.is_file()]
     size = sum(p.stat().st_size for p in files) / 1_000_000
     print(f"Built {build_id}: {APP} - {len(files)} files, {size:.0f} MB; {time.monotonic() - t0:.0f} s")

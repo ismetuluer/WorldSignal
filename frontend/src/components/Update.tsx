@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { api, ApiError } from "../api/client";
 import type { UpdateStatus } from "../api/types";
 import { describeError, useI18n, type MessageKey } from "../i18n";
+import { parseInline, parseNotes } from "../lib/releaseNotes";
 import { useAppState } from "../state";
 import { Banner, Dialog, Spinner, Switch } from "./controls";
 import { Icon } from "./Icon";
@@ -45,11 +46,38 @@ export function notesIn(notes: string, lang: string): string {
   return part.replace(/^## .*\r?\n/, "").trim();
 }
 
+function Inline({ text }: { text: string }) {
+  return (
+    <>
+      {parseInline(text).map((part, i) =>
+        part.bold ? <strong key={i}>{part.text}</strong> : part.code ? <code key={i}>{part.text}</code> : part.text,
+      )}
+    </>
+  );
+}
+
+/** The notes as headings, bullets and paragraphs; the CHANGELOG's wrapped lines flow as one sentence. */
+export function ReleaseNotes({ notes }: { notes: string }) {
+  return (
+    <div className="release-notes">
+      {parseNotes(notes).map((block, i) =>
+        block.kind === "heading" ? (
+          <h4 key={i}><Inline text={block.text} /></h4>
+        ) : block.kind === "item" ? (
+          <div key={i} className={`release-item level-${block.level}`}><Inline text={block.text} /></div>
+        ) : (
+          <p key={i}><Inline text={block.text} /></p>
+        ),
+      )}
+    </div>
+  );
+}
+
 function NotesDialog({ title, notes, onClose }: { title: string; notes: string; onClose: () => void }) {
   const { lang } = useI18n();
   return (
     <Dialog title={title} onClose={onClose}>
-      <div className="release-notes">{notesIn(notes, lang)}</div>
+      <ReleaseNotes notes={notesIn(notes, lang)} />
     </Dialog>
   );
 }

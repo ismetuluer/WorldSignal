@@ -12,6 +12,8 @@ from worldsignal.flags import has_breaking_marker, is_breaking, is_exclusive
     "ÖZEL HABER | Ankara'da kritik toplantı", "Özel: Bakan açıkladı", "Özel haber - Yeni gelişme",
     "Exclusif : l'Élysée prépare", "Exklusiv: Gespräch", "Exclusiva: el plan", "Esclusiva: il piano",
     "Эксклюзив: интервью", "حصري: وثائق", "Reuters EXCLUSIVE shows",
+    # Trend News Agency marks it at the end.
+    "JAC Motors supplies vehicles to Kyrgyzstan (Exclusive)", "Caspian priorities [exclusive] ",
 ])
 def test_exclusive_markers(title):
     assert is_exclusive(title)
@@ -19,6 +21,7 @@ def test_exclusive_markers(title):
 
 @pytest.mark.parametrize("title", [
     "Exclusive rights deal signed", "Özel sektör kredisi arttı", "Özel harekât polisi", "The most exclusive club",
+    "Talks on exclusive (rights)", "Club goes exclusive",
     "", None,
 ])
 def test_everyday_words_are_not_exclusive(title):

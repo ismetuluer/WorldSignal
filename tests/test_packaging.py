@@ -18,6 +18,7 @@ TOP = "WorldSignal"
 GOOD = {
     f"{TOP}/WorldSignal.exe": "exe",
     f"{TOP}/version.txt": "0.8.0",
+    f"{TOP}/WorldSignal.exe.config": "<configuration/>",
     f"{TOP}/_internal/worldsignal/ui/index.html": "<html>",
     f"{TOP}/_internal/worldsignal/catalog/sources.json": "{}",
     f"{TOP}/_internal/worldsignal/catalog/countries.json": "{}",
@@ -43,6 +44,7 @@ def test_a_complete_package_passes(tmp_path):
 @pytest.mark.parametrize("change", [
     {"drop": f"{TOP}/_internal/patchright/driver/node.exe"},
     {"drop": f"{TOP}/version.txt"},
+    {"drop": f"{TOP}/WorldSignal.exe.config"},
     {"add": ("stray.txt", "outside the top folder")},
     {"add": (f"{TOP}/worldsignal.db", "a database")},
     {"add": (f"{TOP}/logs/worldsignal.log", "a log")},

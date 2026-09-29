@@ -56,6 +56,8 @@ Microsoft Edge WebView2 Windows'ta hazır gelir.
 3. Ayıklanan `WorldSignal` klasöründeki **`WorldSignal.exe`** dosyasına çift tıklayın.
    - İlk açılışta Windows "Windows bilgisayarınızı korudu" diyebilir; program imzalı olmadığı için bu normaldir.
      **Ek bilgi → Yine de çalıştır** deyin. Bu uyarı bir kez çıkar.
+   - Bazı antivirüs programları (ör. Trend Micro) da tanımadıkları programı ilk açılışta durdurup sorar; güveniyorsanız
+     izin verin.
 4. Masaüstüne kısayol: `WorldSignal.exe`'ye sağ tıklayın → **Daha fazla seçenek göster → Gönder → Masaüstü (kısayol oluştur)**.
 
 İlk açılışta kaynaklar hemen taranır; haberler birkaç saniyede, hikâyeler birkaç dakikada dolar.
@@ -226,6 +228,7 @@ aynı klasörde, Windows'un kullanıcı hesabınıza bağlı şifrelemesiyle (`s
 | Durum | Ne yapmalı |
 |---|---|
 | Program açılmıyor | Bir uyarı penceresi nedenini ve günlük dosyasının yerini gösterir: `%LOCALAPPDATA%\WorldSignal\logs\worldsignal.log`. |
+| "Failed to resolve Python.Runtime.Loader.Initialize" | 0.11.2'den eski bir sürüm internetten indirilen zip'ten açılıyor. En yeni sürümü indirin; ya da zip'e sağ tıklayıp **Özellikler → Engellemeyi kaldır**'ı işaretleyip yeniden ayıklayın. |
 | İkinci kez çift tıklayınca bir şey olmuyor | Program zaten açık (tepside); var olan pencere öne gelir. Tamamen kapatmak için tepsi simgesine sağ tıklayın → **Çıkış**. |
 | Başlıklar ve özetler kendi dilimde değil | Başlık ve özetleri yapay zekâ yazar (Ollama ya da bir bulut hizmeti). Hiçbiri yoksa haberler orijinal dillerinde görünür (bkz. [Yapay zekâ](#yapay-zekâ-isteğe-bağlı)). Dilinizin **Özet dilleri**'nde seçili olduğunu da denetleyin. |
 | "Özetler hazırlanamıyor: Ollama hizmetine ulaşılamıyor" | Ollama kapalı ya da kurulu değil. Açın, bir bulut hizmeti seçin ya da Ayarlar → Yapay zekâ'dan özetlemeyi kapatın. |

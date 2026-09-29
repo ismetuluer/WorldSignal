@@ -2,7 +2,8 @@
 
 * **Exclusive**: the publisher marks the headline itself ("Exclusive:", "ÖZEL HABER", "Exclusif :", "Эксклюзив",
   "حصري" …). Only a marker at the start of the headline counts, so everyday words such as "özel sektör" or
-  "exclusive rights" in the middle of a headline do not.
+  "exclusive rights" in the middle of a headline do not. A bracketed marker closing the headline ("… (Exclusive)")
+  counts too.
 * **Breaking**: a story is spreading right now — at least ``BREAKING_SOURCES`` independent sources (media groups
   counted once, as in the score) reported it within the last ``BREAKING_WINDOW`` — or a report of the last
   ``MARKER_WINDOW`` is marked "BREAKING" / "Son dakika" / "عاجل" … by its publisher.
@@ -30,9 +31,13 @@ BREAKING_WORDS = (
 )
 
 
+def _alternatives(words: Iterable[str]) -> str:
+    return "|".join(re.escape(w) for w in sorted(set(words), key=len, reverse=True))
+
+
 def _marker(words: Iterable[str], separator: str) -> re.Pattern[str]:
     """A marker word at the very start: "[Word] …", "(Word) …", or "Word" followed by ``separator``."""
-    alternatives = "|".join(re.escape(w) for w in sorted(set(words), key=len, reverse=True))
+    alternatives = _alternatives(words)
     return re.compile(rf"^\s*(?:[\[(]\s*(?:{alternatives})\s*[\])]|(?:{alternatives}){separator})", re.IGNORECASE)
 
 
@@ -42,12 +47,14 @@ _EXCLUSIVE = _marker(EXCLUSIVE_WORDS, r"\s*(?:[:|\-–—]|$)")
 _BREAKING = _marker(BREAKING_WORDS, r"\s*(?:[:|–—]|\s-\s|$)")
 # Upper-case "EXCLUSIVE" / "ÖZEL HABER" among the first words is also the publisher's marker.
 _EXCLUSIVE_CAPS = re.compile(r"(?:^|\s)(?:EXCLUSIVE|ÖZEL HABER|EXCLUSIF|EXKLUSIV)(?:\s|:|$)")
+# … and so is "(Exclusive)" / "[Exclusive]" closing the headline (Trend News Agency's style).
+_EXCLUSIVE_END = re.compile(rf"[\[(]\s*(?:{_alternatives(EXCLUSIVE_WORDS)})\s*[\])]\s*$", re.IGNORECASE)
 
 
 def is_exclusive(title: str | None) -> bool:
     if not title:
         return False
-    return bool(_EXCLUSIVE.search(title) or _EXCLUSIVE_CAPS.search(title[:40]))
+    return bool(_EXCLUSIVE.search(title) or _EXCLUSIVE_CAPS.search(title[:40]) or _EXCLUSIVE_END.search(title))
 
 
 def has_breaking_marker(title: str | None) -> bool:

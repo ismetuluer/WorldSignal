@@ -2336,13 +2336,56 @@ a.member-title svg {
   gap: 6px;
 }
 
-/* Release notes of an update (GitHub markdown shown as plain text). */
+/* Release notes of an update (the CHANGELOG's markdown: headings, bullets, paragraphs; lib/releaseNotes.ts). */
 .release-notes {
-  white-space: pre-wrap;
   font-size: 13.5px;
   line-height: 1.55;
   max-height: 60vh;
   overflow: auto;
+  overflow-wrap: anywhere;
+}
+
+.release-notes h4 {
+  margin: 14px 0 6px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.release-notes h4:first-child {
+  margin-top: 0;
+}
+
+.release-notes p {
+  margin: 0 0 8px;
+}
+
+.release-item {
+  position: relative;
+  margin: 0 0 6px;
+  padding-left: 16px;
+}
+
+.release-item::before {
+  content: "•";
+  position: absolute;
+  left: 3px;
+  color: var(--text-3);
+}
+
+.release-item.level-1 {
+  margin-left: 18px;
+}
+
+.release-item.level-2 {
+  margin-left: 36px;
+}
+
+.release-notes code {
+  font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
+  font-size: 12.5px;
+  padding: 1px 4px;
+  border-radius: 4px;
+  background: var(--surface-2);
 }
 
 /* "Breaking" and "Exclusive" badges. The breaking signal's arcs light up one after another, like a wave. */

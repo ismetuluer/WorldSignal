@@ -54,6 +54,8 @@ Edge WebView2 ships with Windows.
 3. Double-click **`WorldSignal.exe`** in the extracted `WorldSignal` folder.
    - On the first start Windows may say "Windows protected your PC". This is normal because the app is not signed.
      Choose **More info → Run anyway**. The warning appears only once.
+   - Some antivirus programs (e.g. Trend Micro) also stop an unknown program on its first start and ask. If you trust
+     it, allow it.
 4. To add a desktop shortcut, right-click `WorldSignal.exe` → **Show more options → Send to → Desktop (create shortcut)**.
 
 On the first start the sources are scanned at once. Articles appear within seconds and stories within minutes.
@@ -231,6 +233,7 @@ into backups.
 | Problem | What to do |
 |---|---|
 | The app does not start | A message window gives the reason and the location of the log file: `%LOCALAPPDATA%\WorldSignal\logs\worldsignal.log`. |
+| "Failed to resolve Python.Runtime.Loader.Initialize" | A version older than 0.11.2 was extracted from a zip downloaded from the internet. Download the newest version, or right-click the zip → **Properties → Unblock**, and extract it again. |
 | Nothing happens on a second double-click | The app is already running in the tray, and the existing window comes to the front. To quit completely, right-click the tray icon → **Exit**. |
 | Headlines and summaries are not in my language | They are written by the AI (Ollama or a cloud service). Without either, articles appear in their original languages (see [AI](#artificial-intelligence-optional)). Also check that your language is selected under **Summary languages**. |
 | "Summaries unavailable: Ollama cannot be reached" | Ollama is closed or not installed. Start it, choose a cloud service, or turn summaries off under Settings → Artificial intelligence. |

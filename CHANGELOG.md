@@ -3,6 +3,17 @@
 Sürüm numaraları [Anlamsal Sürümleme](https://semver.org/lang/tr/) izler. 1.0'a kadar her faz bir ara sürümdür.
 İngilizcesi (0.10.0'dan itibaren): [CHANGELOG.en.md](CHANGELOG.en.md).
 
+## [0.11.2] — 2026-09-29 — İndirilen zip ve Yenilikler düzeltmesi
+
+### Düzeltildi
+- **İnternetten indirilen zip'ten çıkarılan program açılmıyordu** ("Failed to resolve Python.Runtime.Loader.Initialize").
+  Windows, indirilen zip'ten çıkan her dosyayı "internetten geldi" diye işaretliyor; .NET de pencereyi çizen
+  kitaplıkları (Python.Runtime, WebView2) bu işaret yüzünden yüklemiyordu. Paketteki yeni `WorldSignal.exe.config`
+  bunlara yerel dosya gibi yüklenme izni veriyor; bu dosya olmadan paket hazırlanmıyor.
+- **"Yenilikler" penceresinde cümleler yarıda alt satıra geçiyordu** ve `###`, `**` gibi işaretler görünüyordu. Sürüm
+  notları artık başlık, madde ve kalın yazıyla düzgün gösteriliyor; satırlar pencere genişliğine göre akıyor.
+- Başlığın **sonunda** "(Exclusive)" yazan haberler (Trend News Agency'nin yazımı) **Özel** rozeti almıyordu.
+
 ## [0.11.1] — 2026-09-28 — Güncelleme düzeltmesi
 
 ### Düzeltildi

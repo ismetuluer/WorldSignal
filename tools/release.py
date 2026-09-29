@@ -32,6 +32,7 @@ FORBIDDEN = re.compile(r"(\.db|\.db-wal|\.db-shm|\.log|instance\.json|instance\.
 REQUIRED = {
     "program (WorldSignal.exe)": f"{TOP}/WorldSignal.exe",
     "sürüm bilgisi": f"{TOP}/version.txt",
+    "indirilen zip'te açılış ayarı (WorldSignal.exe.config)": f"{TOP}/WorldSignal.exe.config",
     "arayüz dosyaları": f"{TOP}/_internal/worldsignal/ui/index.html",
     "kaynak kataloğu": f"{TOP}/_internal/worldsignal/catalog/sources.json",
     "ülke verisi": f"{TOP}/_internal/worldsignal/catalog/countries.json",
