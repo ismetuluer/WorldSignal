@@ -3,6 +3,15 @@
 Sürüm numaraları [Anlamsal Sürümleme](https://semver.org/lang/tr/) izler. 1.0'a kadar her faz bir ara sürümdür.
 İngilizcesi (0.10.0'dan itibaren): [CHANGELOG.en.md](CHANGELOG.en.md).
 
+## [0.14.2] — 2026-10-02 — The Independent akışı yeniden çekiliyor
+
+### Düzeltildi
+- **The Independent'ın RSS akışı 429 ("çok sık istek") veriyordu ve hiç çekilemiyordu.** Site, Python'un HTTP istemcisinin
+  bağlantı kuruş biçimini tanıyıp geri çeviriyordu (başlıklar önemli değildi; aynı adres `curl` ile 200 veriyordu). Bu
+  akış artık Windows'la gelen `curl.exe` ile çekiliyor: kimlik taklidi yok, herkese açık RSS adresi sıradan ve adıyla
+  gelen bir araçla alınıyor. Site bunu da reddederse akış "başarısız" kalır, başka yol denenmez. `curl.exe` yoksa
+  hata görünür. Gerçek akışla denendi (84 haber).
+
 ## [0.14.1] — 2026-10-02 — Eklenti arka planda okur; yabancı yazılı haberlerin dili doğru
 
 ### Değişti

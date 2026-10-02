@@ -7,11 +7,16 @@ Conditional GET (ETag / Last-Modified) avoids re-downloading unchanged feeds.
 
 from __future__ import annotations
 
+import asyncio
 import calendar
 import logging
+import os
+import shutil
+import subprocess
 from collections import Counter
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
+from pathlib import Path
 from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 import feedparser
@@ -197,10 +202,66 @@ def make_client() -> httpx.AsyncClient:
     )
 
 
+# Publishers' feeds that answer 429 to every request of Python's HTTP client (the refusal follows the way the
+# connection is made, not the headers: the same address answers curl with 200). They are fetched with the curl.exe
+# that comes with Windows: an ordinary, honestly named tool asking for the public feed, nothing disguised. If the
+# site refuses that too, the feed stays failed; no other way around it is tried.
+CURL_HOSTS = frozenset({"www.independent.co.uk"})
+_CURL_MARK = b"\n@@worldsignal-curl@@"  # printable: a Windows command line cannot carry a NUL
+
+
+def _curl_path() -> str | None:
+    found = shutil.which("curl.exe") or shutil.which("curl")
+    if found:
+        return found
+    system = Path(os.environ.get("SystemRoot", r"C:\Windows")) / "System32" / "curl.exe"
+    return str(system) if system.is_file() else None
+
+
+async def _run_curl(url: str) -> bytes:
+    """curl's output: the body, the mark, the HTTP status, a newline and the final address."""
+    exe = _curl_path()
+    if exe is None:
+        raise FetchError("network", "curl_missing")
+    args = [exe, "-sS", "-L", "--compressed", "--max-redirs", "5", "--max-time", "20", "--max-filesize", str(MAX_FEED_BYTES),
+            "-A", USER_AGENT, "-H", "Accept: application/rss+xml, application/atom+xml, application/xml;q=0.9, */*;q=0.5",
+            "-w", _CURL_MARK.decode("latin-1") + "%{http_code}\n%{url_effective}", url]
+    flags = getattr(subprocess, "CREATE_NO_WINDOW", 0)
+    try:
+        proc = await asyncio.create_subprocess_exec(*args, stdout=asyncio.subprocess.PIPE,
+                                                    stderr=asyncio.subprocess.PIPE, creationflags=flags)
+    except OSError as exc:
+        raise FetchError("network", f"curl could not start: {exc}") from exc
+    try:
+        out, err = await asyncio.wait_for(proc.communicate(), timeout=30)
+    except TimeoutError as exc:
+        proc.kill()
+        raise FetchError("timeout", "curl") from exc
+    if proc.returncode not in (0, 63):  # 63: larger than --max-filesize
+        raise FetchError("network", f"curl exit {proc.returncode}: {err.decode('utf-8', 'replace')[:120]}")
+    if proc.returncode == 63:
+        raise FetchError("too_large", "curl")
+    return out
+
+
+async def download_with_curl(url: str) -> tuple[int, bytes, str, str | None, str | None]:
+    out = await _run_curl(url)
+    body, mark, tail = out.rpartition(_CURL_MARK)
+    if not mark:
+        raise FetchError("network", "curl gave no status")
+    code, _, final = tail.decode("utf-8", "replace").partition("\n")
+    status = int(code) if code.isdigit() else 0
+    if status >= 400 or status == 0:
+        raise FetchError(f"http_{status}" if status else "network", "curl")
+    return status, body, final or url, None, None
+
+
 async def download(
     client: httpx.AsyncClient, url: str, headers: dict[str, str] | None = None
 ) -> tuple[int, bytes, str, str | None, str | None]:
     """(status, body, final URL, ETag, Last-Modified). Errors become FetchError; 304 comes back with an empty body."""
+    if urlsplit(url).hostname in CURL_HOSTS:
+        return await download_with_curl(url)
     try:
         async with client.stream("GET", url, headers=headers or {}) as resp:
             if resp.status_code == 304:

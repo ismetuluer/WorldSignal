@@ -3,6 +3,15 @@
 English version of [CHANGELOG.md](CHANGELOG.md), from 0.10.0 on. Version numbers follow
 [Semantic Versioning](https://semver.org/).
 
+## [0.14.2] — 2026-10-02 — The Independent's feed is fetched again
+
+### Fixed
+- **The Independent's RSS feed answered 429 ("too many requests") and could never be fetched.** The site recognised the
+  way Python's HTTP client makes its connection and turned it away (the headers did not matter; the same address answered
+  `curl` with 200). This feed is now fetched with the `curl.exe` that comes with Windows: no disguise, the public RSS
+  address is asked for by an ordinary tool under its own name. If the site refuses that too, the feed stays failed and
+  nothing else is tried. If `curl.exe` is missing the error is shown. Tried with the real feed (84 reports).
+
 ## [0.14.1] — 2026-10-02 — The extension reads in the background; reports in other scripts get the right language
 
 ### Changed
