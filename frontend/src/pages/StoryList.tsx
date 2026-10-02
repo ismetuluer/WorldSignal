@@ -142,7 +142,7 @@ export function StoryList({
     items.length,
     loadMore,
     (_, index) => setOpenId(items[index]?.id ?? null),
-    meeting.available ? { t: (index) => items[index] && void meeting.toggle(items[index].id) } : {},
+    meeting.available ? { meeting: (index) => items[index] && void meeting.toggle(items[index].id) } : {},
   );
 
   const hasMore = items.length < total;

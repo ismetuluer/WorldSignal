@@ -8,9 +8,11 @@ phrasing ("kuzey kore iha" also finds "North Korea … drones"). Search words on
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from typing import Any
 
 from .languages import name as lang_name
+from .prompts import render
 
 MAX_LANGUAGES = 8
 PER_LANGUAGE = 2
@@ -23,19 +25,9 @@ def schema(languages: list[str]) -> dict[str, Any]:
     return {"type": "object", "properties": {lang: phrases for lang in languages}, "required": list(languages)}
 
 
-def system_prompt(languages: list[str]) -> str:
+def system_prompt(languages: list[str], custom: Mapping[str, str] | None = None) -> str:
     names = ", ".join(f"{code} = {lang_name(code)}" for code in languages)
-    return f"""You translate search words for a news search engine.
-The user types a few words; translate them into these languages: {names}.
-
-Rules:
-- For each language give the translation, plus one other wording only if headlines often use it
-  (for example "drone" and "UAV"). Expand abbreviations (İHA = drone) and spell names the way that language does.
-- The search matches the beginnings of words, so use the shortest base form of every word: singular nouns,
-  "North Korea drone", not "North Korean drones".
-- Only the words that were typed: never add words such as "news", "latest" or "results".
-- If the words are already in that language, repeat them.
-- Return JSON with one list per language code."""
+    return render("query", custom, languages=names)
 
 
 def validate(data: dict[str, Any], languages: list[str]) -> dict[str, list[str]]:

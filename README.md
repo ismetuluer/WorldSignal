@@ -174,6 +174,14 @@ kurallar verir.
 dilini de bunlardan seçersiniz. Sonradan dil eklerseniz eski haberler arka planda tamamlanır. Her dil işi uzatır:
 Ollama'da dört dil, tek dilin yaklaşık üç katı sürer.
 
+### Talimatları değiştirmek
+
+**Ayarlar → Yapay zekâ talimatları**'nda modele (yerel ya da bulut) her istekle giden talimat metinlerini kendi
+yönergenize göre yeniden yazabilirsiniz: haber özeti, hikâye özeti, tam metin çevirisi ve arama sözcükleri. Her birinin
+varsayılan metni düzenleyicide görünür; "Talimatı varsayılana döndür" onu geri getirir. Metindeki `{languages}`,
+`{fields}` gibi yer tutucuları program doldurur. Cevabın biçimi, rakamların kaynakta bulunup bulunmadığı denetimi ve
+uzunluk sınırları sabittir; değişiklik yalnızca bundan sonraki işleri etkiler, yazılmış özetler değişmez.
+
 ### Bulut yapay zekâ
 
 Ekran kartınız yoksa ya da yetmiyorsa başlık ve özetleri bir bulut hizmetine yazdırabilirsiniz. **Ayarlar → Yapay zekâ

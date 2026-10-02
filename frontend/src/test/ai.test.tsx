@@ -61,7 +61,7 @@ const META: Meta = {
   kinds: ["exclusive", "opinion"],
   languages: ["en", "tr"],
   categories: ["politics", "economy", "diplomacy"],
-  ui_languages: ["tr", "en"], home_country: "TR", system_country: "TR", ai_output_languages: ["tr", "en", "pt", "ar"],
+  ui_languages: ["tr", "en"], home_country: "TR", system_country: "TR", ai_output_languages: ["tr", "en", "pt", "ar"], ai_prompt_defaults: { article: "Default article. {fields}", translate: "Into {language}." }, ai_input_defaults: { article: "Source: {source}\nHeadline: {title}" }, ai_limit_ranges: { batch_size: [10, 2, 25], article_chars: [6000, 200, 60000], batch_chars: [600, 100, 6000], story_reports: [8, 2, 30], story_report_chars: [700, 100, 6000] },
   data_dir: "C:\\data",
   version: "0.2.0",
 };
@@ -109,6 +109,12 @@ function wrap(ui: ReactNode, settings: Settings = SETTINGS) {
       </I18nProvider>
     </AppStateProvider>,
   );
+}
+
+/** The settings page is split into categories; the page remembers the one that was open. */
+function openSettings(category: string) {
+  localStorage.setItem("worldsignal.settings.category", category);
+  return wrap(<SettingsPage />);
 }
 
 beforeEach(() => {
@@ -222,23 +228,24 @@ describe("AI settings", () => {
         { name: "qwen3:14b", size_gb: 9.3, parameters: "14.8B", capabilities: null },
       ],
     });
-    wrap(<SettingsPage />);
+    openSettings("ai");
     expect(await screen.findByText("Bağlantı başarılı: Ollama 0.34.3, 3 model yüklü.")).toBeInTheDocument();
     const select = screen.getByRole("combobox", { name: "Model" });
     expect(select).toHaveValue("qwen3:14b");
     // The embedding model is not offered for summaries, and chat models are not offered for clustering.
     const chatOptions = within(select).getAllByRole("option").map((o) => o.getAttribute("value"));
     expect(chatOptions).toEqual(["gemma4:12b", "qwen3:14b"]);
-    const embedSelect = screen.getByRole("combobox", { name: "Birleştirme modeli" });
-    await waitFor(() => expect(embedSelect).toHaveValue("bge-m3:latest"));
-    expect(within(embedSelect).getAllByRole("option").map((o) => o.getAttribute("value"))).toEqual(["bge-m3:latest", "qwen3:14b"]);
     await userEvent.selectOptions(select, "gemma4:12b");
     expect(mocked.updateSettings).toHaveBeenCalledWith({ "ai.model": "gemma4:12b" });
     expect(await screen.findByText("Durum: Hazır, sırada iş yok")).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Haber toplama" }));
+    const embedSelect = screen.getByRole("combobox", { name: "Birleştirme modeli" });
+    await waitFor(() => expect(embedSelect).toHaveValue("bge-m3:latest"));
+    expect(within(embedSelect).getAllByRole("option").map((o) => o.getAttribute("value"))).toEqual(["bge-m3:latest", "qwen3:14b"]);
   });
 
   it("chooses how much the AI writes", async () => {
-    wrap(<SettingsPage />);
+    openSettings("ai");
     const group = await screen.findByRole("group", { name: "Özetleme kapsamı" });
     expect(within(group).getByRole("button", { name: "Hızlı" })).toHaveAttribute("aria-pressed", "true");
     expect(screen.getByText(/tek kaynaklı haberler 10’arlı işlenir/)).toBeInTheDocument();
@@ -248,15 +255,16 @@ describe("AI settings", () => {
 
   it("does not call the models 'not installed' before Ollama has answered", async () => {
     mocked.testOllama.mockReturnValue(new Promise(() => undefined));
-    wrap(<SettingsPage />);
+    openSettings("ai");
     expect(await screen.findByRole("option", { name: "qwen3:14b" })).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Haber toplama" }));
     expect(screen.getByRole("option", { name: "bge-m3:latest" })).toBeInTheDocument();
     expect(screen.queryByText(/yüklü değil/)).not.toBeInTheDocument();
   });
 
   it("marks a configured model that is not installed and explains the connection error", async () => {
     mocked.testOllama.mockResolvedValue({ ok: false, error_code: "unreachable", version: null, models: [] });
-    wrap(<SettingsPage />);
+    openSettings("ai");
     expect(await screen.findByText("Bağlantı kurulamadı: Ollama hizmetine ulaşılamıyor")).toBeInTheDocument();
     expect(screen.getByRole("option", { name: "qwen3:14b (yüklü değil)" })).toBeInTheDocument();
   });
@@ -269,7 +277,7 @@ describe("Cloud AI", () => {
     mocked.setAiKey.mockResolvedValue({ gemini: true, openai: false, anthropic: false });
     mocked.deleteAiKey.mockResolvedValue({ gemini: false, openai: false, anthropic: false });
     mocked.testCloud.mockResolvedValue({ ok: true, error_code: null, models: ["gemini-a", "gemini-b"] });
-    wrap(<SettingsPage />);
+    openSettings("ai");
     await userEvent.selectOptions(await screen.findByRole("combobox", { name: "Yapay zekâ nerede çalışsın?" }), "gemini");
     expect(mocked.updateSettings).toHaveBeenLastCalledWith({ "ai.provider": "gemini" });
     expect(await screen.findByText(/abonelikle okunan tam metinler dahil\) ve arama kelimeleriniz Google Gemini hizmetine gönderilir/)).toBeInTheDocument();
@@ -296,7 +304,7 @@ describe("Cloud AI", () => {
 describe("AI languages", () => {
   it("adds and removes the languages the AI writes in, keeping at least one", async () => {
     mocked.testOllama.mockResolvedValue({ ok: false, error_code: "unreachable", version: null, models: [] });
-    wrap(<SettingsPage />);
+    openSettings("ai");
     const list = await screen.findByRole("list", { name: "Özet dilleri" });
     // Not set yet: the interface language and English.
     expect(within(list).getAllByRole("listitem").map((li) => li.textContent)).toEqual(["Türkçe", "İngilizce"]);
@@ -333,7 +341,7 @@ function StatusRefresher() {
 describe("My country", () => {
   it("shows the country the rules use and saves another one", async () => {
     mocked.testOllama.mockResolvedValue({ ok: false, error_code: "unreachable", version: null, models: [] });
-    wrap(<SettingsPage />);
+    openSettings("collect");
     const select = await screen.findByRole("combobox", { name: "Ülke" });
     await waitFor(() => expect(select).toBeEnabled());
     expect(within(select).getByRole("option", { name: "Sistem (Türkiye)" })).toHaveValue("");
@@ -345,7 +353,7 @@ describe("My country", () => {
 
   it("adds and removes topics, including the user's own, and can return to the defaults", async () => {
     mocked.testOllama.mockResolvedValue({ ok: false, error_code: "unreachable", version: null, models: [] });
-    wrap(<SettingsPage />);
+    openSettings("collect");
     const topics = await screen.findByRole("list", { name: "Konular" });
     expect(within(topics).getByText("Karadeniz")).toBeInTheDocument();
     await userEvent.click(within(topics).getByRole("button", { name: "NATO kaldır" }));
@@ -437,5 +445,32 @@ describe("AI switched off", () => {
     wrap(<FeedPage />);
     await screen.findByText("Story");
     await waitFor(() => expect(screen.queryByRole("button", { name: "Özetle" })).not.toBeInTheDocument());
+  });
+});
+
+describe("Settings page layout", () => {
+  beforeEach(() => localStorage.clear());
+
+  it("shows one category at a time, starting with General, and remembers the last one", async () => {
+    const first = wrap(<SettingsPage />);
+    expect(await screen.findByRole("heading", { name: "Görünüm" })).toBeInTheDocument();
+    expect(screen.queryByRole("combobox", { name: "Model" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Genel" })).toHaveAttribute("aria-current", "page");
+    await userEvent.click(screen.getByRole("button", { name: "Yapay zekâ" }));
+    expect(await screen.findByRole("combobox", { name: "Model" })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Görünüm" })).not.toBeInTheDocument();
+    first.unmount();
+    wrap(<SettingsPage />);
+    expect(await screen.findByRole("combobox", { name: "Model" })).toBeInTheDocument();
+  });
+
+  it("searches every category and hides what does not match", async () => {
+    wrap(<SettingsPage />);
+    await userEvent.type(await screen.findByRole("searchbox", { name: "Ayar ara" }), "özet dilleri");
+    expect(await screen.findByRole("list", { name: "Özet dilleri" })).toBeInTheDocument();
+    expect(screen.queryByText("Arayüz dili")).not.toBeVisible();
+    await userEvent.clear(screen.getByRole("searchbox", { name: "Ayar ara" }));
+    await userEvent.type(screen.getByRole("searchbox", { name: "Ayar ara" }), "zzzyok");
+    expect(await screen.findByText("“zzzyok” ile eşleşen ayar yok.")).toBeInTheDocument();
   });
 });

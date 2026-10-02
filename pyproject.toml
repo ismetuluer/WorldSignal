@@ -1,6 +1,6 @@
 [project]
 name = "worldsignal"
-version = "0.14.3"
+version = "0.15.0"
 description = "World Signal - haber toplama, birleştirme ve özetleme masaüstü uygulaması"
 requires-python = ">=3.12,<3.13"
 dependencies = [

@@ -16,6 +16,7 @@ import contextlib
 import hmac
 import logging
 import os
+import re
 import subprocess
 from collections.abc import AsyncIterator, Callable
 from dataclasses import dataclass, field
@@ -32,6 +33,7 @@ from pydantic import BaseModel, Field, HttpUrl, field_validator
 from .. import __version__
 from ..ai.enrich import CATEGORIES
 from ..ai.ollama import OllamaClient, OllamaError
+from ..ai import prompts as ai_prompts
 from ..ai.worker import AiWorker
 from ..collector.rss import FetchError, download, fetch_feed, make_client
 from ..collector.sitemap import discover
@@ -119,6 +121,11 @@ def api_error(status: int, code: str, message: str = "") -> HTTPException:
 
 
 # -- request models -------------------------------------------------------------
+SHORTCUT_ACTIONS = ("search", "next", "prev", "open", "meeting")
+# A key as KeyboardEvent.key names it, lower-case: one character, or one of the named keys below. Escape closes dialogs
+# and Tab moves the focus, so neither can be given away.
+SHORTCUT_KEY = re.compile(r"^(\S|space|enter|arrow(up|down|left|right)|home|end|page(up|down)|f([1-9]|1[0-2]))$")
+SHORTCUT_RESERVED = {"escape", "tab"}
 Region = Literal[REGIONS]  # type: ignore[valid-type]
 Group = Literal[CATALOG_GROUPS]  # type: ignore[valid-type]
 FeedGroup = Literal[CATALOG_GROUPS + KINDS]  # type: ignore[valid-type]
@@ -141,6 +148,34 @@ class SettingsPatch(BaseModel):
 
     ui_language: Literal[SUPPORTED_LANGUAGES] | None = Field(None, alias="ui.language")  # type: ignore[valid-type]
     ui_theme: Literal["system", "light", "dark"] | None = Field(None, alias="ui.theme")
+    # Type: a font-family list as written in CSS ("Georgia, serif"); "" = the program's own. Only names, no CSS syntax.
+    ui_font: str | None = Field(None, alias="ui.font", max_length=120, pattern=r"^[\w \-,.'\"]*$")
+    # Keyboard shortcuts: action -> keys (event.key, lower-case). Missing action = its default (frontend/src/lib/shortcuts.ts).
+    ui_shortcuts: dict[str, list[str]] | None = Field(None, alias="ui.shortcuts")
+
+    @field_validator("ui_shortcuts")
+    @classmethod
+    def _shortcuts(cls, value: dict[str, list[str]] | None) -> dict[str, list[str]] | None:
+        """Known actions, plausible single keys, at most four per action, and no key on two actions."""
+        if value is None:
+            return None
+        taken: dict[str, str] = {}
+        for action, keys in value.items():
+            if action not in SHORTCUT_ACTIONS:
+                raise ValueError(f"unknown_action:{action}")
+            if not 1 <= len(keys) <= 4:
+                raise ValueError(f"bad_count:{action}")
+            for key in keys:
+                if not SHORTCUT_KEY.fullmatch(key) or key in SHORTCUT_RESERVED:
+                    raise ValueError(f"bad_key:{key}")
+                if taken.setdefault(key, action) != action or keys.count(key) > 1:
+                    raise ValueError(f"duplicate_key:{key}")
+        return value
+
+    ui_font_scale: int | None = Field(None, alias="ui.font_scale", ge=70, le=160)  # percent of the normal size
+    # Colour of the text per theme, "#rrggbb"; "" = the theme's own.
+    ui_text_color_light: str | None = Field(None, alias="ui.text_color_light", pattern=r"^(#[0-9a-fA-F]{6})?$")
+    ui_text_color_dark: str | None = Field(None, alias="ui.text_color_dark", pattern=r"^(#[0-9a-fA-F]{6})?$")
     feed_window_hours: int | None = Field(None, alias="feed.window_hours", ge=1, le=168)
     feed_view: Literal["stories", "articles"] | None = Field(None, alias="feed.view")
     feed_filters: FeedFilters | None = Field(None, alias="feed.filters")
@@ -171,6 +206,58 @@ class SettingsPatch(BaseModel):
     ai_max_age_hours: int | None = Field(None, alias="ai.max_age_hours", ge=1, le=168)
     ai_yield_gpu: bool | None = Field(None, alias="ai.yield_gpu")
     ai_depth: Literal["full", "stories", "fast"] | None = Field(None, alias="ai.depth")
+    ai_prompts: dict[str, str] | None = Field(None, alias="ai.prompts")  # the instructions the user rewrote (ai/prompts.py)
+
+    ai_inputs: dict[str, str] | None = Field(None, alias="ai.inputs")  # how a report is laid out in the request
+    ai_limits: dict[str, int] | None = Field(None, alias="ai.limits")  # how much of it is sent (ai/prompts.py LIMITS)
+
+    @field_validator("ai_inputs")
+    @classmethod
+    def _inputs(cls, value: dict[str, str] | None) -> dict[str, str] | None:
+        if value is None:
+            return None
+        clean: dict[str, str] = {}
+        for kind, text in value.items():
+            if kind not in ai_prompts.INPUT_TASKS:
+                raise ValueError(f"unknown_input:{kind}")
+            if not text.strip():
+                continue
+            wrong = ai_prompts.input_problems(kind, text)
+            if wrong:
+                raise ValueError(wrong[0])
+            clean[kind] = text
+        return clean
+
+    @field_validator("ai_limits")
+    @classmethod
+    def _limits(cls, value: dict[str, int] | None) -> dict[str, int] | None:
+        if value is None:
+            return None
+        for name, amount in value.items():
+            if name not in ai_prompts.LIMITS:
+                raise ValueError(f"unknown_limit:{name}")
+            _, low, high = ai_prompts.LIMITS[name]
+            if isinstance(amount, bool) or not low <= amount <= high:
+                raise ValueError(f"out_of_range:{name}")
+        return value
+
+    @field_validator("ai_prompts")
+    @classmethod
+    def _prompts(cls, value: dict[str, str] | None) -> dict[str, str] | None:
+        """Only known tasks, a blank text means "the default", and a text the model could not work with is refused."""
+        if value is None:
+            return None
+        clean: dict[str, str] = {}
+        for task, text in value.items():
+            if task not in ai_prompts.TASKS:
+                raise ValueError(f"unknown_task:{task}")
+            if not text.strip():
+                continue
+            wrong = [p for p in ai_prompts.problems(task, text) if p != "no_fields"]  # {fields} is added when missing
+            if wrong:
+                raise ValueError(wrong[0])
+            clean[task] = text
+        return clean
     stories_embed_model: str | None = Field(None, alias="stories.embed_model", min_length=1, max_length=200)
     stories_embed_summary: bool | None = Field(None, alias="stories.embed_summary")
     stories_threshold: float | None = Field(None, alias="stories.threshold", ge=0.5, le=0.95)
@@ -394,6 +481,9 @@ def create_app(ctx: AppContext) -> FastAPI:
             # The user's country: settings "home.country", or this when it is "" (Windows' region).
             "home_country": ctx.home.profile().code if ctx.home is not None else "TR",
             "ai_output_languages": list(OUTPUT_LANGUAGES),
+            "ai_prompt_defaults": dict(ai_prompts.DEFAULTS),
+            "ai_input_defaults": dict(ai_prompts.INPUT_DEFAULTS),
+            "ai_limit_ranges": {k: list(v) for k, v in ai_prompts.LIMITS.items()},  # [default, lowest, highest]
             "system_country": country_profile({}, ctx.home.system_country).code if ctx.home is not None else "TR",
             "version": __version__,
         }

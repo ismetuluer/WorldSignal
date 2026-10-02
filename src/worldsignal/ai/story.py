@@ -10,16 +10,16 @@ facts for "my country" the same way (countries, the home country, the user's top
 from __future__ import annotations
 
 import re
+from collections.abc import Mapping
 from dataclasses import dataclass, field
 from typing import Any
 
 from .enrich import CATEGORIES, MAX_COUNTRIES, EnrichTask, clean_title, fidelity_issues
 from .languages import DEFAULT_LANGUAGES
 from .languages import name as lang_name
+from .prompts import limit, render, render_input
 
 STORY_PROMPT_VERSION = 5  # 5: key points for the meeting
-MAX_REPORTS = 8
-REPORT_CHARS = 700
 MAX_POINTS = 5
 
 
@@ -37,7 +37,7 @@ def story_schema(languages: tuple[str, ...], facts: EnrichTask | None = None) ->
     return {"type": "object", "properties": props, "required": list(props)}
 
 
-def story_prompt(languages: tuple[str, ...], facts: EnrichTask | None = None) -> str:
+def story_prompt(languages: tuple[str, ...], facts: EnrichTask | None = None, custom: Mapping[str, str] | None = None) -> str:
     first, name = languages[0], lang_name(languages[0])
     fields = [
         f"- title_{first}: a natural {name} headline for the event in sentence case, max 110 characters.",
@@ -62,17 +62,7 @@ def story_prompt(languages: tuple[str, ...], facts: EnrichTask | None = None) ->
     fields.append("- category: one of " + ", ".join(CATEGORIES) + ".")
     if facts is not None:
         fields.extend(facts.fact_fields("reports"))
-    return f"""You are the foreign news editor of a newsroom preparing the morning editorial meeting.
-You receive several reports from different outlets, in different languages, about ONE news event.
-Write output in {", ".join(lang_name(lang) for lang in languages)} as JSON.
-
-Strict rules:
-- Use ONLY information present in the reports. Never add facts, numbers, names, dates, causes or background from your own knowledge.
-- When reports disagree, say so briefly (according to X ..., while Y reported ...) instead of choosing one.
-- Keep numbers and names exactly as in the reports. Neutral news language, no exclamation marks.
-
-Fields:
-""" + "\n".join(fields)
+    return render("story", custom, languages=", ".join(lang_name(lang) for lang in languages), fields="\n".join(fields))
 
 
 @dataclass
@@ -95,17 +85,19 @@ class StoryResult:
     mentions_home: bool = False
 
 
-def render_reports(reports: list[StoryReport], source_count: int) -> str:
-    parts = [f"The event is covered by {source_count} independent outlets. Reports:"]
-    for n, r in enumerate(reports[:MAX_REPORTS], 1):
+def render_reports(reports: list[StoryReport], source_count: int, task: EnrichTask | None = None) -> str:
+    task = task or EnrichTask()
+    parts = [render_input("story_intro", task.inputs, count=source_count)]
+    for n, r in enumerate(reports[: limit(task.limits, "story_reports")], 1):
         text = r.text.strip()
         if text == r.title.strip():
             text = ""
-        parts.append(f"[{n}] {r.source_name} ({r.language}): {r.title.strip()}\n{text[:REPORT_CHARS]}".rstrip())
+        parts.append(render_input("story_report", task.inputs, n=n, source=r.source_name, language=r.language,
+                                  title=r.title.strip(), text=text[: limit(task.limits, "story_report_chars")]).rstrip())
     return "\n\n".join(parts)
 
 
-def pick_reports(members: list[dict[str, Any]]) -> list[StoryReport]:
+def pick_reports(members: list[dict[str, Any]], task: EnrichTask | None = None) -> list[StoryReport]:
     """One report per source first (most recent), so the model sees different outlets."""
     seen: set[str] = set()
     first, rest = [], []
@@ -113,7 +105,7 @@ def pick_reports(members: list[dict[str, Any]]) -> list[StoryReport]:
         report = StoryReport(m["source_name"], m["language"], m["title"], m.get("summary") or "")
         (rest if m["source_name"] in seen else first).append(report)
         seen.add(m["source_name"])
-    return (first + rest)[:MAX_REPORTS]
+    return (first + rest)[: limit((task or EnrichTask()).limits, "story_reports")]
 
 
 def clean_points(value: Any) -> list[str]:

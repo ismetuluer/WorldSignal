@@ -5,7 +5,7 @@ first; then single articles, newest first.
 
 How much is written (``ai.depth``): "full" reads every report on its own; "stories" leaves out the reports of
 a story with a summary (the summary extracts the facts for "my country" itself); "fast" also reads single
-reports ``BATCH_SIZE`` at a time for their headline, category and facts, and writes a summary only when the
+reports ``batch_size`` (ai.limits) at a time for their headline, category and facts, and writes a summary only when the
 user asks for it. A slow computer cannot read every report of the day on its own (~8 s each).
 
 The AI runs in Ollama on this (or another) computer, or at a cloud service the user chose (``ai.provider``,
@@ -39,10 +39,11 @@ from . import query, translate
 from ..repo.settings import SettingsRepository
 from ..repo.stories import StoryFacts, StoryRepository, story_text
 from .enrich import (
-    BATCH_SIZE, PROMPT_VERSION, EnrichInput, EnrichTask, batch_prompt, batch_schema, render_batch, validate,
+    PROMPT_VERSION, EnrichInput, EnrichTask, batch_prompt, batch_schema, render_batch, validate,
     validate_batch,
 )
 from .languages import effective
+from .prompts import limit
 from .story import StoryReport, StoryResult, pick_reports, render_reports, story_prompt, story_schema, validate_story
 from .ollama import OllamaClient, OllamaError
 
@@ -165,7 +166,7 @@ class AiWorker:
         client = service.make()
         if not service.cloud and prefs.get("ai.yield_gpu", True) and await self._other_gpu_models(client, service.model):
             raise OllamaError("gpu_busy")
-        answer = await client.chat_json(service.model, query.system_prompt(languages), text, query.schema(languages),
+        answer = await client.chat_json(service.model, query.system_prompt(languages, prefs.get("ai.prompts")), text, query.schema(languages),
                                         num_predict=query.NUM_PREDICT, keep_alive="30m")
         result = query.validate(answer.data, languages)
         if len(self._expansions) >= EXPANSION_CACHE:
@@ -273,14 +274,14 @@ class AiWorker:
         self._state["busy_with"] = None
 
         if translation is not None:  # the user is waiting for it
-            delay = await self._run_translation(client, model, translation, languages)
+            delay = await self._run_translation(client, model, translation, languages, prefs.get("ai.prompts"))
         elif story_job is not None:
             delay = await self._run_story(client, model, story_job, prefs, languages)
         else:
             assert job is not None
             batch = []
             if depth == "fast" and not job.requested and not job.upgrade:
-                batch = await asyncio.to_thread(self.ai.next_jobs, BATCH_SIZE, automatic_only=True)
+                batch = await asyncio.to_thread(self.ai.next_jobs, limit(prefs.get("ai.limits"), "batch_size"), automatic_only=True)
             if len(batch) > 1:
                 delay = await self._run_batch(client, model, batch, prefs, languages)
             else:
@@ -294,7 +295,7 @@ class AiWorker:
         task = self.task(prefs, languages)
         started = time.perf_counter()
         try:
-            result = await client.chat_json(model, task.system_prompt, inp.render(), task.schema, keep_alive="30m",
+            result = await client.chat_json(model, task.system_prompt, inp.render(task), task.schema, keep_alive="30m",
                                             num_predict=300 + TOKENS_PER_LANGUAGE * len(languages))
             enriched = validate(result.data, inp, task)
         except OllamaError as exc:
@@ -333,7 +334,7 @@ class AiWorker:
         task = replace(self.task(prefs, languages), with_summary=False)
         started = time.perf_counter()
         try:
-            answer = await client.chat_json(model, batch_prompt(task), render_batch(inputs), batch_schema(task),
+            answer = await client.chat_json(model, batch_prompt(task), render_batch(inputs, task), batch_schema(task),
                                             keep_alive="30m", num_predict=200 + len(jobs) * (80 + 40 * len(languages)))
             results = validate_batch(answer.data, inputs, task)
         except OllamaError as exc:
@@ -371,10 +372,11 @@ class AiWorker:
         home = self.home() if self.home is not None else None
         topics = tuple(home.topics) if home is not None else ()
         return EnrichTask(languages, topics, ask_turkey=home is None or home.code == "TR",
-                          facts=prefs.get("home.enabled") is not False)
+                          facts=prefs.get("home.enabled") is not False, instructions=prefs.get("ai.prompts"),
+                          inputs=prefs.get("ai.inputs"), limits=prefs.get("ai.limits"))
 
     async def _run_translation(self, client: OllamaClient, model: str, item: dict[str, Any],
-                               languages: tuple[str, ...]) -> float:
+                               languages: tuple[str, ...], instructions: dict[str, str] | None = None) -> float:
         """Full text into the user's languages, chunk by chunk; the article's own language is not translated."""
         assert self.fulltext is not None
         self._state["current_translation_id"] = item["article_id"]
@@ -387,7 +389,7 @@ class AiWorker:
                 parts = []
                 for chunk in translate.chunks(text):
                     answer = await client.chat_json(
-                        model, translate.system_prompt(lang), chunk, translate.SCHEMA,
+                        model, translate.system_prompt(lang, instructions), chunk, translate.SCHEMA,
                         num_predict=translate.NUM_PREDICT, keep_alive="30m",
                     )
                     translated = str(answer.data.get("translation", "")).strip()
@@ -431,13 +433,13 @@ class AiWorker:
                          languages: tuple[str, ...]) -> float:
         assert self.stories is not None
         self._state["current_story_id"] = story["id"]
-        reports = pick_reports(story["members"])
-        asked = self.task(prefs, languages)  # the facts for "my country", asked as for a single report
+        asked = self.task(prefs, languages)  # the facts for "my country", asked as for a single report; also the layout
+        reports = pick_reports(story["members"], asked)
         facts = asked if asked.facts else None  # "my country" off: no such questions
         started = time.perf_counter()
         try:
             result = await client.chat_json(
-                model, story_prompt(languages, facts), render_reports(reports, story["source_count"]),
+                model, story_prompt(languages, facts, prefs.get("ai.prompts")), render_reports(reports, story["source_count"], asked),
                 story_schema(languages, facts), keep_alive="30m",
                 num_predict=400 + 3 * TOKENS_PER_LANGUAGE * len(languages),  # with the key points
             )

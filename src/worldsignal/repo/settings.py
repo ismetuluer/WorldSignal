@@ -10,6 +10,11 @@ from ..db import Database, utc_now_iso
 DEFAULTS: dict[str, Any] = {
     "ui.language": "tr",
     "ui.theme": "system",  # system | light | dark
+    "ui.shortcuts": {},  # action -> keys the user chose; {} = the defaults (frontend/src/lib/shortcuts.ts)
+    "ui.font": "",  # CSS font-family list; "" = the program's own
+    "ui.font_scale": 100,  # percent
+    "ui.text_color_light": "",  # "#rrggbb"; "" = the theme's own
+    "ui.text_color_dark": "",
     "feed.window_hours": 24,
     "feed.view": "stories",
     # Program updates from GitHub releases (updater.py).
@@ -53,6 +58,9 @@ DEFAULTS: dict[str, Any] = {
     # Measured in docs/GOMME_KARSILASTIRMA.md: titles alone separate distinct events better.
     "stories.embed_summary": False,
     "stories.threshold": 0.55,
+    "ai.inputs": {},  # the user's layout of a report in the request (ai/prompts.py); {} = the default
+    "ai.limits": {},  # the user's amounts sent (characters, reports per request); {} = the defaults
+    "ai.prompts": {},  # the user's own wording of the AI instructions, per task (ai/prompts.py); {} = the defaults
     "stories.cohesion": 0.55,  # docs/BIRLESTIRME_KARSILASTIRMA.md: stops chaining (0.5 let stories drift, 0.55 halves the giants)
     "stories.min_sources_for_ai": 2,
     "score.w_sources": 0.45,

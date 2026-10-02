@@ -3,6 +3,39 @@
 Sürüm numaraları [Anlamsal Sürümleme](https://semver.org/lang/tr/) izler. 1.0'a kadar her faz bir ara sürümdür.
 İngilizcesi (0.10.0'dan itibaren): [CHANGELOG.en.md](CHANGELOG.en.md).
 
+## [0.15.0] — 2026-10-02 — Yapay zekâya giden talimatlar arayüzden değiştirilebiliyor
+
+### Eklendi
+- **Ayarlar → Yapay zekâ talimatları.** Yerel (Ollama) ya da bulut yapay zekâya her istekle giden talimat metinleri artık
+  arayüzden değiştirilebilir: **Haber özeti** (başlık, özet, kategori; tek tek ve toplu), **Hikâye özeti** (hikâye başlığı,
+  özet, toplantı notu, önemli noktalar), **Tam metin çevirisi** ve **Arama sözcükleri**. Her biri için varsayılan metin
+  düzenleyicide görünür; üslubu, ayrıntı düzeyini ya da vurgulanacak konuları kendi yönergenize göre yazabilirsiniz.
+  "Varsayılana dön" düğmesi programın kendi metnini geri getirir.
+- **Yer tutucular:** `{input}` (gelen malzemenin tarifi), `{languages}` (çıktı dilleri), `{language}` (çevrilecek dil),
+  `{fields}` (cevap alanlarının teknik açıklaması). Çeviri ve arama metni dil yer tutucusunu içermek zorundadır, yoksa
+  kaydedilmez; `{fields}` ya da `{input}` yazılmazsa program eksiği kendisi ekler, çünkü model onsuz işi yapamaz.
+- **Sabit kalanlar:** cevabın JSON yapısı (her istekle bir şema gider), rakamların kaynakta bulunup bulunmadığı denetimi ve
+  uzunluk sınırları programdadır. Değişiklik yalnızca bundan sonra yapılacak işleri etkiler; yazılmış özetler değişmez.
+- Varsayılan metinler bu sürümden önce gönderilenlerle **birebir aynıdır** (bir testle sabitlendi).
+- **Modele gönderilen haberin düzeni ve miktarı da değiştirilebilir.** Haber özetinde her haberin istekteki kalıbı
+  (`{source}`, `{language}`, `{title}`, `{text}`), hikâye özetinde giriş satırı (`{count}`) ve her haberin kalıbı
+  (`{n}` ve öncekiler) yazılabilir. Ne kadarının gönderileceği sınırlarla ayarlanır: bir haberin metninden karakter sayısı
+  (200–60.000), toplu okumada haber başına karakter ve tek istekte kaç haber (2–25), hikâye için kaç haber ve her birinden
+  kaç karakter. Boş bırakılan alan varsayılanı kullanır. Daha çok metin daha iyi özet verebilir ama işi yavaşlatır, bulutta
+  ücreti artırır. Başlık kalıpta bulunmak zorundadır.
+- **Klavye kısayolları değiştirilebiliyor** (Ayarlar → Klavye kısayolları). Her işlem (aramaya git, sonraki / önceki haber,
+  haberi aç, toplantı listesine ekle) için en çok dört tuş atanır: **+** ile tuşa basarak eklenir, **×** ile kaldırılır
+  (son tuş kaldırılamaz), "Varsayılan" işlemi eski haline getirir. Tek harf, rakam, işaret ya da Enter, Boşluk, ok tuşları,
+  Home, End, PgUp, PgDn, F1–F12 verilebilir; bir tuş iki işlemde kullanılamaz (hangi işlemde olduğu söylenir). Esc (pencere
+  kapatma) ve Tab sabittir. Akıştaki ve geçmişteki ipucu satırı ile arama kutusundaki tuş etiketi seçilen tuşları gösterir.
+- **Yazı tipi, yazı boyutu ve yazı rengi ayarlanabiliyor** (Ayarlar → Görünüm). Yazı tipi listeden seçilir ya da
+  bilgisayarda yüklü herhangi bir yazı tipinin adı yazılır; boyut %80–%140 arasında arayüzün tamamını ölçekler; yazı rengi
+  açık ve koyu tema için ayrı seçilir (soluk gri yazılar seçilen renge göre türetilir). Her biri "temanınki"ne
+  döndürülebilir. Yazı tipi adında yalnızca harf, rakam, boşluk ve `, . - ' "` kabul edilir.
+- **Ayarlar iki sütunlu.** Uzun tek sayfa yerine solda altı kategori (Genel, Haber toplama, Yapay zekâ, Tam metin, Arşiv ve
+  yedek, Sistem), sağda seçili kategorinin ayarları. Üstteki **Ayar ara** kutusu tüm kategorilerde arar ve yalnızca
+  eşleşen ayarları gösterir. Son açılan kategori hatırlanır; dar pencerede liste üstte yatay şeride döner.
+
 ## [0.14.3] — 2026-10-02 — Eklenti pencere açmıyor; eski eklenti uyarısı; yeni simgeler
 
 ### Düzeltildi

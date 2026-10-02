@@ -18,6 +18,19 @@ const AppStateContext = createContext<AppState | null>(null);
 const POLL_IDLE_MS = 5000;
 const POLL_BUSY_MS = 1500;
 
+/** Puts the user's font, text size and text colour on the page (all sizes are in px, so the size scales the whole
+ * interface like the browser's zoom). The fainter greys are mixed from the chosen colour so they stay in tune with it. */
+export function applyLook(root: HTMLElement, look: { font: string; scale: number; color: string }) {
+  const set = (name: string, value: string) => (value ? root.style.setProperty(name, value) : root.style.removeProperty(name));
+  set("--font", look.font ? `${look.font}, sans-serif` : "");
+  set("--font-display", look.font ? `${look.font}, sans-serif` : "");
+  set("--text", look.color);
+  set("--text-2", look.color ? `color-mix(in srgb, ${look.color} 72%, var(--bg))` : "");
+  set("--text-3", look.color ? `color-mix(in srgb, ${look.color} 52%, var(--bg))` : "");
+  if (look.scale === 100) root.style.removeProperty("zoom");
+  else root.style.setProperty("zoom", String(look.scale / 100));
+}
+
 function useResolvedTheme(setting: Settings["ui.theme"]): "light" | "dark" {
   const query = "(prefers-color-scheme: dark)";
   const [systemDark, setSystemDark] = useState(() => window.matchMedia?.(query).matches ?? false);
@@ -54,6 +67,11 @@ export function AppStateProvider({
   useEffect(() => {
     document.documentElement.lang = settings["ui.language"];
   }, [settings]);
+  // The user's own look: font, size and text colour (per theme). Empty values fall back to the stylesheet's.
+  const font = settings["ui.font"];
+  const scale = settings["ui.font_scale"];
+  const color = settings[theme === "dark" ? "ui.text_color_dark" : "ui.text_color_light"];
+  useEffect(() => applyLook(document.documentElement, { font, scale, color }), [font, scale, color]);
 
   const poll = useCallback(async () => {
     window.clearTimeout(timer.current);

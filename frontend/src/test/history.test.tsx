@@ -48,7 +48,7 @@ const SETTINGS: Settings = {
 };
 const META: Meta = {
   regions: ["turkey", "europe"], home_region: "turkey", groups: ["turkey", "western"], kinds: ["exclusive", "opinion"], languages: ["en", "tr"], categories: ["politics"],
-  ui_languages: ["tr", "en"], home_country: "TR", system_country: "TR", ai_output_languages: ["tr", "en", "pt", "ar"], data_dir: "C:\\data", version: "0.6.0",
+  ui_languages: ["tr", "en"], home_country: "TR", system_country: "TR", ai_output_languages: ["tr", "en", "pt", "ar"], ai_prompt_defaults: { article: "Default article. {fields}", translate: "Into {language}." }, ai_input_defaults: { article: "Source: {source}\nHeadline: {title}" }, ai_limit_ranges: { batch_size: [10, 2, 25], article_chars: [6000, 200, 60000], batch_chars: [600, 100, 6000], story_reports: [8, 2, 30], story_report_chars: [700, 100, 6000] }, data_dir: "C:\\data", version: "0.6.0",
 };
 const AI: AiStatus = {
   running: true, state: "idle", busy_with: null, model: "gemma4-26b-a4b", url: "http://localhost:11434", current_article_id: null,

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type RefObject } from "react";
 import { Spinner, StateView } from "../components/controls";
 import { useI18n } from "../i18n";
 import { isTypingTarget } from "../lib/hooks";
+import { keyOf, useShortcuts, type ShortcutAction } from "../lib/shortcuts";
 import { useAppState } from "../state";
 
 /** Filters shared by the stories and articles views of the feed. */
@@ -58,7 +59,8 @@ export function FeedEmpty({
 }
 
 /**
- * J/K moves the selection through the list, Enter/O activates the selected card.
+ * The "next" / "previous" keys (J / K by default) move the selection through the list, the "open" keys (Enter / O)
+ * activate the selected card.
  * Items are found by their ``data-index`` attribute. Loads more when the selection nears the end.
  */
 export function useListKeys(
@@ -66,12 +68,13 @@ export function useListKeys(
   count: number,
   loadMore: () => void,
   activate: (el: HTMLElement, index: number) => void,
-  /** Extra single-letter shortcuts on the selected item (e.g. T = add to meeting). */
-  extra: Record<string, (index: number) => void> = {},
+  /** Extra actions on the selected item, by shortcut action (e.g. meeting = add to the meeting list). */
+  extra: Partial<Record<ShortcutAction, (index: number) => void>> = {},
 ): [number, (i: number) => void] {
   const extraRef = useRef(extra);
   extraRef.current = extra;
   const [selected, setSelected] = useState(-1);
+  const keys = useShortcuts();
   const activateRef = useRef(activate);
   activateRef.current = activate;
 
@@ -79,23 +82,27 @@ export function useListKeys(
     const onKey = (e: KeyboardEvent) => {
       if (e.ctrlKey || e.metaKey || e.altKey || document.querySelector(".backdrop")) return;
       if (isTypingTarget(e.target) || count === 0) return;
-      const key = e.key.toLowerCase();
-      if (key === "j" || key === "k") {
+      const key = keyOf(e);
+      if (key === null) return;
+      if (keys.next.includes(key) || keys.prev.includes(key)) {
         e.preventDefault();
-        setSelected((i) => (key === "j" ? Math.min(count - 1, i + 1) : Math.max(0, i - 1)));
-      } else if ((key === "enter" || key === "o") && selected >= 0) {
+        const forward = keys.next.includes(key);
+        setSelected((i) => (forward ? Math.min(count - 1, i + 1) : Math.max(0, i - 1)));
+      } else if (keys.open.includes(key) && selected >= 0) {
         const el = listRef.current?.querySelector<HTMLElement>(`[data-index="${selected}"]`);
         if (!el) return;
         e.preventDefault();
         activateRef.current(el, selected);
-      } else if (selected >= 0 && extraRef.current[key]) {
+      } else if (selected >= 0) {
+        const action = (Object.keys(extraRef.current) as ShortcutAction[]).find((a) => keys[a]?.includes(key));
+        if (!action) return;
         e.preventDefault();
-        extraRef.current[key]!(selected);
+        extraRef.current[action]?.(selected);
       }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [count, selected, listRef]);
+  }, [count, selected, listRef, keys]);
 
   useEffect(() => {
     if (selected < 0) return;

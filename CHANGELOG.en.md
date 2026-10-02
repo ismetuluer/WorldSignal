@@ -3,6 +3,42 @@
 English version of [CHANGELOG.md](CHANGELOG.md), from 0.10.0 on. Version numbers follow
 [Semantic Versioning](https://semver.org/).
 
+## [0.15.0] — 2026-10-02 — The instructions sent to the AI can be changed in the interface
+
+### Added
+- **Settings → AI instructions.** The instruction texts sent to the local (Ollama) or cloud AI with every request can now be
+  changed in the interface: **Report summary** (headline, summary, category; one by one and in batches), **Story summary**
+  (story headline, summary, meeting pitch, key points), **Full-text translation** and **Search words**. The default text of
+  each is shown in the editor; write the style, level of detail or topics to stress to suit your own guidelines. "Back to
+  default" restores the program's own text.
+- **Placeholders:** `{input}` (how the material arrives), `{languages}` (output languages), `{language}` (language to
+  translate into), `{fields}` (the technical description of the answer fields). The translation and search texts must
+  contain the language placeholder or they are not saved; if `{fields}` or `{input}` is left out the program adds it, because
+  the model cannot do the work without it.
+- **What stays fixed:** the answer's JSON structure (a schema goes with every request), the check that numbers exist in the
+  source, and the length limits live in the program. A change only affects work done from now on; summaries already written
+  stay as they are.
+- The default texts are **exactly the same** as those sent before this version (pinned by a test).
+- **The layout and the amount of what is sent can be changed too.** For the report summary the pattern of each report in the
+  request (`{source}`, `{language}`, `{title}`, `{text}`) can be written; for the story summary the introduction line
+  (`{count}`) and the pattern of each report (`{n}` and the above). How much is sent is set by limits: characters of a
+  report's text (200–60,000), characters per report in batch reading and reports per request (2–25), reports per story and
+  characters of each. An empty field uses the default. More text can give a better summary but makes the work slower and, in
+  the cloud, costs more. The headline must stay in the pattern.
+- **Keyboard shortcuts can be changed** (Settings → Keyboard shortcuts). Each action (go to search, next / previous report,
+  open, add to the meeting list) can have up to four keys: **+** adds one by pressing it, **×** removes it (the last key
+  cannot be removed), "Default" restores the action. A single letter, digit or sign, or Enter, Space, the arrows, Home, End,
+  PgUp, PgDn, F1–F12 can be given; a key cannot do two things (the action that owns it is named). Esc (closing windows) and
+  Tab are fixed. The hint line in the feed and history and the key label in the search box show the chosen keys.
+- **Font, text size and text colour can be set** (Settings → Appearance). Pick a font from the list or type the name of any font
+  installed on the computer; the size scales the whole interface between 80% and 140%; the text colour is chosen separately
+  for the light and the dark theme (the fainter greys are derived from the chosen colour). Each can be returned to the theme's
+  own. A font name accepts only letters, digits, spaces and `, . - ' "`.
+- **Settings in two columns.** Instead of one long page there are six categories on the left (General, News collection, AI,
+  Full text, Archive and backup, System) and the selected category's settings on the right. The **Search settings** box
+  at the top searches every category and shows only the matching settings. The last category is remembered; in a narrow
+  window the list becomes a horizontal strip.
+
 ## [0.14.3] — 2026-10-02 — The extension opens no windows; old-extension warning; new icons
 
 ### Fixed

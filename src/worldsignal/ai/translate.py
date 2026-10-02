@@ -7,10 +7,12 @@ summaries. Nothing is translated into the language the article is already in.
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from typing import Any
 
 from .enrich import fidelity_issues
 from .languages import name as lang_name
+from .prompts import render
 
 CHUNK_CHARS = 1800
 NUM_PREDICT = 2048
@@ -22,14 +24,8 @@ SCHEMA: dict[str, Any] = {
 }
 
 
-def system_prompt(target: str) -> str:
-    return f"""You are a professional news translator.
-Translate the given part of a news article into {lang_name(target)}.
-
-Strict rules:
-- Translate everything, sentence by sentence. Do not summarise, shorten, explain or add anything.
-- Keep names, numbers, dates, quotes and paragraph breaks exactly.
-- Return JSON: {{"translation": "..."}}"""
+def system_prompt(target: str, custom: Mapping[str, str] | None = None) -> str:
+    return render("translate", custom, language=lang_name(target))
 
 
 def chunks(text: str, size: int = CHUNK_CHARS) -> list[str]:

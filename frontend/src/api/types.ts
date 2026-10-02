@@ -50,6 +50,15 @@ export interface FeedFilters {
 export interface Settings {
   "ui.language": UiLanguage;
   "ui.theme": ThemeSetting;
+  /** A CSS font-family list ("Georgia, serif"); "" is the program's own. */
+  /** Keys per action ("search", "next", "prev", "open", "meeting"); an action that is not here has its default. */
+  "ui.shortcuts": Record<string, string[]>;
+  "ui.font": string;
+  /** Text size as a percentage of the normal size. */
+  "ui.font_scale": number;
+  /** "#rrggbb" per theme; "" is the theme's own colour. */
+  "ui.text_color_light": string;
+  "ui.text_color_dark": string;
   "feed.window_hours": number;
   "feed.view": "stories" | "articles";
   "feed.filters": FeedFilters;
@@ -79,6 +88,12 @@ export interface Settings {
   "ai.max_age_hours": number;
   "ai.yield_gpu": boolean;
   "ai.depth": AiDepth;
+  /** The user's own wording of the AI instructions, per task; a task that is not here uses the default. */
+  "ai.prompts": Record<string, string>;
+  /** How a report is laid out in the request, per kind (article, story_intro, story_report). */
+  "ai.inputs": Record<string, string>;
+  /** How much of a report is sent: characters, reports per request ... */
+  "ai.limits": Record<string, number>;
   "stories.embed_model": string;
   "stories.embed_summary": boolean;
   "stories.threshold": number;
@@ -574,6 +589,11 @@ export interface Meta {
   system_country: string;
   /** Language codes the AI can write in. */
   ai_output_languages: string[];
+  /** The program's own wording of every AI instruction (ai/prompts.py). */
+  ai_prompt_defaults: Record<string, string>;
+  ai_input_defaults: Record<string, string>;
+  /** Per limit: [default, lowest, highest]. */
+  ai_limit_ranges: Record<string, number[]>;
 }
 
 /** GET /api/home: the user's country as the rules see it. */

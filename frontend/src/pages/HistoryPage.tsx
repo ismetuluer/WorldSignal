@@ -8,6 +8,7 @@ import { StoryCard } from "../components/StoryCard";
 import { StoryDetail } from "../components/StoryDetail";
 import { describeError, useI18n } from "../i18n";
 import { SearchLanguagesNote } from "../components/SearchLanguages";
+import { keyLabel, keyOf, useShortcuts } from "../lib/shortcuts";
 import { isTypingTarget, localDay, useDebounced } from "../lib/hooks";
 import { useSearchTranslations } from "../lib/searchTranslations";
 import { useAppState } from "../state";
@@ -34,6 +35,7 @@ export function HistoryPage() {
   const [searchKind, setSearchKind] = useState<"stories" | "articles">("stories");
   const [view, setView] = useState<"stories" | "articles">("stories");
   const searchRef = useRef<HTMLInputElement>(null);
+  const shortcuts = useShortcuts();
 
   useEffect(() => {
     api.historyMonth(month).then(setCalendar, () => setCalendar({ month, today, days: [] }));
@@ -43,14 +45,15 @@ export function HistoryPage() {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.ctrlKey || e.metaKey || e.altKey || document.querySelector(".backdrop")) return;
-      if (e.key === "/" && !isTypingTarget(e.target)) {
+      const key = keyOf(e);
+      if (key !== null && shortcuts.search.includes(key) && !isTypingTarget(e.target)) {
         e.preventDefault();
         searchRef.current?.focus();
       }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, []);
+  }, [shortcuts]);
 
   const marks = useMemo(
     () =>
@@ -83,7 +86,7 @@ export function HistoryPage() {
           <p className="page-subtitle">{q ? t("history.searchAll", { q }) : longDay(i18n, day)}</p>
         </div>
         <div className="history-search">
-          <SearchField ref={searchRef} value={search} onChange={setSearch} placeholder={t("history.searchPlaceholder")} />
+          <SearchField ref={searchRef} value={search} onChange={setSearch} placeholder={t("history.searchPlaceholder")} shortcut={keyLabel(shortcuts.search[0] ?? "/")} />
         </div>
       </header>
 
@@ -207,7 +210,7 @@ function DayStories({ day, onShowArticles }: { day: string; onShowArticles: () =
     items.length,
     () => void loadMore(),
     (_, index) => setOpenId(items[index]?.id ?? null),
-    meeting.available ? { t: (index) => items[index] && void meeting.toggle(items[index].id) } : {},
+    meeting.available ? { meeting: (index) => items[index] && void meeting.toggle(items[index].id) } : {},
   );
 
   const hour = String(settings["history.morning_hour"]).padStart(2, "0");

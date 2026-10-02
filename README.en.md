@@ -174,6 +174,14 @@ button on the cards switches between them, and outputs can be made in any of the
 articles are filled in the background. Every language adds work: in Ollama four languages take about three times as
 long as one.
 
+### Changing the instructions
+
+Under **Settings → AI instructions** you can rewrite the instruction texts that go to the model (local or cloud) with
+every request to suit your own guidelines: the report summary, the story summary, the full-text translation and the
+search words. The default text of each is shown in the editor, and "Reset instruction to default" brings it back. The
+program fills in placeholders such as `{languages}` and `{fields}`. The answer's format, the check that numbers exist in
+the source and the length limits are fixed; a change only affects work done afterwards, summaries already written stay.
+
 ### Cloud AI
 
 If you have no graphics card, or yours is not strong enough, a cloud service can write the headlines and summaries.

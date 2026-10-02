@@ -8,6 +8,7 @@ import { MultiSelect } from "../components/MultiSelect";
 import { Banner, SearchField, Segmented } from "../components/controls";
 import { SearchLanguagesNote } from "../components/SearchLanguages";
 import { useI18n } from "../i18n";
+import { hintKeys, keyLabel, keyOf, useShortcuts } from "../lib/shortcuts";
 import { isTypingTarget, useDebounced } from "../lib/hooks";
 import { useSearchTranslations } from "../lib/searchTranslations";
 import { useAppState } from "../state";
@@ -42,6 +43,7 @@ export function FeedPage() {
   const homeOn = settings["home.enabled"];
   const [total, setTotal] = useState<number | null>(null);
   const searchRef = useRef<HTMLInputElement>(null);
+  const shortcuts = useShortcuts();
   const [bulletin, setBulletin] = useState(false);
 
   useEffect(() => {
@@ -61,14 +63,15 @@ export function FeedPage() {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.ctrlKey || e.metaKey || e.altKey || document.querySelector(".backdrop")) return;
-      if (e.key === "/" && !isTypingTarget(e.target)) {
+      const key = keyOf(e);
+      if (key !== null && shortcuts.search.includes(key) && !isTypingTarget(e.target)) {
         e.preventDefault();
         searchRef.current?.focus();
       }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, []);
+  }, [shortcuts]);
 
   const languages = useSearchTranslations(query);
   const feedQuery = useMemo<FeedQuery>(
@@ -132,7 +135,7 @@ export function FeedPage() {
               {t("bulletin.open")}
             </button>
           </div>
-          <span className="field-hint">{t("feed.shortcutHint")}</span>
+          <span className="field-hint">{t("feed.shortcutHint", hintKeys(shortcuts))}</span>
         </div>
       </header>
       {bulletin ? <BulletinDialog onClose={() => setBulletin(false)} /> : null}
@@ -153,7 +156,7 @@ export function FeedPage() {
             { value: "articles" as const, label: t("feed.view.articles") },
           ]}
         />
-        <SearchField ref={searchRef} value={search} onChange={setSearch} placeholder={t("feed.searchPlaceholder")} shortcut="/" />
+        <SearchField ref={searchRef} value={search} onChange={setSearch} placeholder={t("feed.searchPlaceholder")} shortcut={keyLabel(shortcuts.search[0] ?? "/")} />
         <Segmented
           label={t("feed.window")}
           value={hours}

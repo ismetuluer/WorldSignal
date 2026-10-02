@@ -12,19 +12,21 @@ which countries appear, whether Türkiye is mentioned (asked only when the user'
 the user's topics appear — and country.py decides with fixed, explainable rules. Story summaries (story.py) ask
 for the same facts with the same wording (:meth:`EnrichTask.fact_fields`).
 
-With ``ai.depth = "fast"`` single reports are read ``BATCH_SIZE`` at a time for their headline, category and facts
+With ``ai.depth = "fast"`` single reports are read ``batch_size`` (ai.limits) at a time for their headline, category and facts
 only (``with_summary=False``); the summary is written when the user asks for it.
 """
 
 from __future__ import annotations
 
 import re
+from collections.abc import Mapping
 from dataclasses import dataclass, field
 from typing import Any
 
 from ..country import TOPICS
 from .languages import DEFAULT_LANGUAGES
 from .languages import name as lang_name
+from .prompts import limit, render, render_input
 
 PROMPT_VERSION = 6  # 6: the user's languages and topics
 
@@ -46,10 +48,8 @@ CATEGORIES = (
 )
 
 
-MAX_SOURCE_CHARS = 6000
 MAX_COUNTRIES = 8
-BATCH_SIZE = 10
-BATCH_TEXT_CHARS = 600  # per report in a batch: headline and the start of its text are enough without a summary
+# How much of a report is sent, and how many are read at once, are the user's limits (prompts.LIMITS, ai.limits).
 
 # Built-in topics (country.TOPICS) as the prompt names them; the user's own topics are used as written.
 TOPIC_NAMES = {
@@ -75,6 +75,9 @@ class EnrichTask:
     ask_turkey: bool = True
     with_summary: bool = True  # False: headline, category and facts only ("fast", read in batches)
     facts: bool = True  # False ("my country" is off): the country and topic questions are not asked at all
+    instructions: Mapping[str, str] | None = None  # the user's own wording (ai/prompts.py); None: the defaults
+    inputs: Mapping[str, str] | None = None  # the user's layout of a report in the request (ai.inputs)
+    limits: Mapping[str, int] | None = None  # the user's amounts: characters per report, batch size ... (ai.limits)
 
     def fact_schema(self) -> dict[str, Any]:
         """The facts for "my country": the same for reports and stories."""
@@ -134,18 +137,7 @@ class EnrichTask:
                 fields.append(f"- title_{lang}: the same headline in natural {name}, in sentence case.")
         fields.append("- category: one of " + ", ".join(CATEGORIES) + ".")
         fields.extend(self.fact_fields())
-        return f"""You are a careful news desk editor.
-{intro}
-Produce output in {", ".join(names)} as JSON.
-
-Strict rules:
-- Use ONLY information present in the given text. Never add facts, numbers, names, dates, causes or context from your own knowledge.
-- If the text is short, the summary must be short. One sentence is fine. Do not pad.
-- Keep numbers, names and places exactly as in the source. Write foreign names in their usual spelling in each output language.
-- Neutral news language. No opinion, no clickbait, no exclamation marks.
-
-Fields:
-""" + "\n".join(fields)
+        return render("article", self.instructions, input=intro, languages=", ".join(names), fields="\n".join(fields))
 
 
 @dataclass
@@ -155,12 +147,16 @@ class EnrichInput:
     title: str
     text: str
 
-    def render(self) -> str:
+    def render(self, task: EnrichTask | None = None, chars: int | None = None) -> str:
+        """The report as the model receives it: the user's layout (or the default) with the text cut to the limit."""
+        task = task or EnrichTask()
+        cap = limit(task.limits, "article_chars") if chars is None else chars
         text = self.text.strip()
-        if len(text) > MAX_SOURCE_CHARS:
-            text = text[:MAX_SOURCE_CHARS] + " …"
+        if len(text) > cap:
+            text = text[:cap] + " …"
         body = text if text and text != self.title.strip() else "(no text besides the headline)"
-        return f"Source: {self.source_name}\nLanguage: {self.language}\nHeadline: {self.title.strip()}\nText: {body}"
+        return render_input("article", task.inputs, source=self.source_name, language=self.language,
+                            title=self.title.strip(), text=body)
 
     @property
     def source_text(self) -> str:
@@ -227,11 +223,13 @@ def batch_prompt(task: EnrichTask) -> str:
         "number, in \"items\".")
 
 
-def render_batch(inputs: list[EnrichInput]) -> str:
+def render_batch(inputs: list[EnrichInput], task: EnrichTask | None = None) -> str:
+    task = task or EnrichTask()
+    cap = limit(task.limits, "batch_chars")
     parts = []
     for n, inp in enumerate(inputs, 1):
-        short = EnrichInput(inp.source_name, inp.language, inp.title, inp.text.strip()[:BATCH_TEXT_CHARS])
-        parts.append(f"[{n}]\n{short.render()}")
+        short = EnrichInput(inp.source_name, inp.language, inp.title, inp.text.strip()[:cap])
+        parts.append(f"[{n}]\n{short.render(task, chars=cap)}")
     return "\n\n".join(parts)
 
 
