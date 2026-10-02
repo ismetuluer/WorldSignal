@@ -20,6 +20,7 @@ import uvicorn
 
 from . import __version__
 from .api.app import create_app
+from .api.extension import EXTENSION_PORTS
 from .backup import apply_pending_restore
 from .bootstrap import build_context
 from .logging_setup import setup_logging
@@ -76,10 +77,26 @@ def show_error_box(message: str) -> None:
         print(message, file=sys.stderr)
 
 
+def server_ports(cli_port: int, reader: str) -> list[int]:
+    """Ports to try, in order: the one given on the command line, else (extension mode) the fixed ones, else any."""
+    if cli_port:
+        return [cli_port]
+    return [*EXTENSION_PORTS, 0] if reader == "extension" else [0]
+
+
 class ServerThread:
-    def __init__(self, app, port: int) -> None:
+    def __init__(self, app, ports: list[int]) -> None:
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.sock.bind(("127.0.0.1", port))
+        for i, port in enumerate(ports):
+            try:
+                self.sock.bind(("127.0.0.1", port))
+                break
+            except OSError:
+                if i == len(ports) - 1:
+                    self.sock.close()
+                    raise
+                self.sock.close()
+                self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.port = self.sock.getsockname()[1]
         config = uvicorn.Config(app, log_config=None, access_log=False, lifespan="on")
         self.server = uvicorn.Server(config)
@@ -133,7 +150,9 @@ def main(argv: list[str] | None = None) -> int:
         token = args.token or secrets.token_urlsafe(32)
         ctx = build_context(paths, token, ui_dist_dir(), run_collector=not args.no_collector)
         app = create_app(ctx)
-        server = ServerThread(app, args.port)
+        reader = ctx.settings.get_preferences().get("fulltext.reader", "automation")
+        server = ServerThread(app, server_ports(args.port, reader))
+        ctx.port = server.port  # known once the socket is bound; the extension endpoints need it from the first request
         server.start()
         lock.publish(server.port, token)
         url = f"http://127.0.0.1:{server.port}/?t={token}"

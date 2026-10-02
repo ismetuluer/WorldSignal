@@ -14,7 +14,7 @@
  */
 import type { MeetingItem, Story } from "../api/types";
 import type { I18n, MessageKey } from "../i18n";
-import { meetingText, storySummaryText, storyTitle, storyWhy, type AiLang } from "./aiText";
+import { meetingText, storyPoints, storySummaryText, storyTitle, storyWhy, type AiLang } from "./aiText";
 import { textDirection } from "./hooks";
 import { openableUrl } from "./links";
 
@@ -29,12 +29,16 @@ export interface Entry {
   title: string;
   summary: string | null;
   why: string | null;
+  /** Key names, figures and statements (stories summarised since 0.13.4). */
+  points: string[];
   category: string | null;
   sources: { name: string; url: string | null }[];
   sourceCount: number;
 }
 
 const MAX_LINKS = 8;
+/** The meeting list names only the closest few sources (the snapshot puts them first). */
+const MEETING_LINKS = 3;
 const FONT = "'Segoe UI', Calibri, Arial, sans-serif";
 const MUTED = "#6e6e73";
 
@@ -61,6 +65,7 @@ export function entryFromStory(s: Story, lang: AiLang = "tr"): Entry {
     title,
     summary: aiSummary,
     why: storyWhy(s, lang),
+    points: storyPoints(s, lang),
     category: s.category,
     sources: names.map((name) => ({ name, url: firstUrl.get(name) ?? null })),
     sourceCount: s.source_count,
@@ -73,6 +78,7 @@ export function entryFromMeetingItem(item: MeetingItem, lang: AiLang = "tr"): En
     title: text.title,
     summary: text.summary,
     why: text.why,
+    points: text.points,
     category: item.category,
     sources: item.sources,
     sourceCount: item.sources.length,
@@ -93,9 +99,9 @@ function header(title: string, subtitle: string): { html: string; text: string }
   };
 }
 
-function sourcesLine(i18n: I18n, e: Entry): { html: string; text: string } {
+function sourcesLine(i18n: I18n, e: Entry, max = MAX_LINKS): { html: string; text: string } {
   if (e.sources.length === 0) return { html: "", text: "" };
-  const shown = e.sources.slice(0, MAX_LINKS);
+  const shown = e.sources.slice(0, max);
   const more = e.sources.length - shown.length;
   const label = i18n.t("output.sources");
   const html = shown
@@ -117,9 +123,13 @@ function para(text: string, style = ""): string {
   return `<p style="font-family:${FONT};font-size:11pt;margin:3pt 0 0;${style}">${escapeHtml(text).replace(/\n/g, "<br>")}</p>`;
 }
 
-function entryBlock(i18n: I18n, e: Entry, opts: { number?: number; reason?: string | null; note?: string | null; summary?: boolean }) {
+function entryBlock(
+  i18n: I18n,
+  e: Entry,
+  opts: { number?: number; reason?: string | null; note?: string | null; summary?: boolean; points?: boolean; links?: number },
+) {
   const prefix = opts.number !== undefined ? `${opts.number}. ` : "";
-  const src = sourcesLine(i18n, e);
+  const src = sourcesLine(i18n, e, opts.links);
   let html = `<div style="margin:0 0 12pt;page-break-inside:avoid">`;
   html += `<p style="font-family:${FONT};font-size:12pt;font-weight:700;margin:0">${escapeHtml(prefix + e.title)}</p>`;
   let text = `*${prefix}${e.title}*`;
@@ -131,6 +141,11 @@ function entryBlock(i18n: I18n, e: Entry, opts: { number?: number; reason?: stri
     const summary = e.summary ?? i18n.t("output.noSummary");
     html += para(summary, e.summary ? "" : `color:${MUTED};font-style:italic`);
     text += `\n${summary}`;
+  }
+  if (opts.points && e.points.length) {
+    html += `<ul style="font-family:${FONT};font-size:11pt;margin:4pt 0 0;padding-left:16pt">` +
+      e.points.map((p) => `<li style="margin:1pt 0">${escapeHtml(p)}</li>`).join("") + "</ul>";
+    text += e.points.map((p) => `\n• ${p}`).join("");
   }
   if (opts.note) {
     html += `<p style="font-family:${FONT};font-size:11pt;margin:5pt 0 0;padding:4pt 8pt;border-left:3px solid #0071e3;background:#f2f7fd">` +
@@ -150,13 +165,15 @@ function wrap(title: string, parts: { html: string; text: string }[]): OutputDoc
   };
 }
 
-/** 1. Meeting proposals: numbered, Turkish headline + one-sentence reason (the user's, else the AI's). */
+/** 1. Meeting proposals: numbered headline, what happened (the summary), the key names, figures and statements as
+ * bullets, the user's own note, and the closest few sources. Why the AI found it worth the meeting is left out: it
+ * says nothing the presenter can use. */
 export function meetingOutput(i18n: I18n, day: string, items: MeetingItem[], lang: AiLang = "tr"): OutputDoc {
   const title = i18n.t("output.title.meeting");
   const parts = [header(title, longDate(i18n, day))];
   items.forEach((item, i) => {
     const e = entryFromMeetingItem(item, lang);
-    parts.push(entryBlock(i18n, e, { number: i + 1, reason: item.comment || e.why }));
+    parts.push(entryBlock(i18n, e, { number: i + 1, summary: !!e.summary, points: true, note: item.comment || null, links: MEETING_LINKS }));
   });
   return wrap(title, parts);
 }
@@ -199,7 +216,7 @@ export function notesOutput(i18n: I18n, day: string, notes: { title: string; bod
   const title = i18n.t("output.title.notes");
   const parts = [header(title, longDate(i18n, day))];
   for (const n of notes) {
-    const e: Entry = n.entry ?? { title: n.title, summary: null, why: null, category: null, sources: [], sourceCount: 0 };
+    const e: Entry = n.entry ?? { title: n.title, summary: null, why: null, points: [], category: null, sources: [], sourceCount: 0 };
     parts.push(entryBlock(i18n, { ...e, title: e.title || n.title }, { summary: !!n.entry, note: n.body }));
   }
   return wrap(title, parts);

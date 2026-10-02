@@ -34,6 +34,7 @@ from .cloud import make_client as make_cloud_client
 from ..db import utc_now_iso
 from ..repo.ai import AiRepository, Job
 from ..repo.fulltext import FullTextRepository
+from ..repo.notebook import local_today
 from . import query, translate
 from ..repo.settings import SettingsRepository
 from ..repo.stories import StoryFacts, StoryRepository, story_text
@@ -243,7 +244,8 @@ class AiWorker:
             settled = await asyncio.to_thread(self.stories.embedding_backlog, story_since) <= STORY_BACKLOG_LIMIT
             story_job = await asyncio.to_thread(
                 partial(self.stories.next_story_job, story_since, min_sources,
-                        automatic=settled and not resting, languages=languages, need_facts=facts_wanted)
+                        automatic=settled and not resting, languages=languages, need_facts=facts_wanted,
+                        meeting_day=local_today())
             )
         translation = await asyncio.to_thread(self.fulltext.next_translation) if self.fulltext is not None else None
         if job is None and story_job is None and translation is None:
@@ -437,7 +439,7 @@ class AiWorker:
             result = await client.chat_json(
                 model, story_prompt(languages, facts), render_reports(reports, story["source_count"]),
                 story_schema(languages, facts), keep_alive="30m",
-                num_predict=400 + 2 * TOKENS_PER_LANGUAGE * len(languages),
+                num_predict=400 + 3 * TOKENS_PER_LANGUAGE * len(languages),  # with the key points
             )
             written = validate_story(result.data, reports, story["source_count"], languages, facts)
         except OllamaError as exc:

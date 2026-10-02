@@ -33,6 +33,7 @@ REQUIRED = {
     "program (WorldSignal.exe)": f"{TOP}/WorldSignal.exe",
     "sürüm bilgisi": f"{TOP}/version.txt",
     "indirilen zip'te açılış ayarı (WorldSignal.exe.config)": f"{TOP}/WorldSignal.exe.config",
+    "tarayıcı eklentisi (extension/manifest.json)": f"{TOP}/extension/manifest.json",
     "arayüz dosyaları": f"{TOP}/_internal/worldsignal/ui/index.html",
     "kaynak kataloğu": f"{TOP}/_internal/worldsignal/catalog/sources.json",
     "ülke verisi": f"{TOP}/_internal/worldsignal/catalog/countries.json",

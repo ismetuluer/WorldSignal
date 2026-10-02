@@ -37,9 +37,10 @@ from ..collector.rss import FetchError, download, fetch_feed, make_client
 from ..collector.sitemap import discover
 from ..collector.service import Collector
 from ..db import Database, utc_now_iso
-from ..paths import DataPaths
+from ..paths import DataPaths, extension_dir
 from ..repo.ai import AiRepository
 from ..repo.articles import ArticleFilter, ArticleRepository
+from ..fulltext.bridge import ExtensionBridge
 from ..fulltext.fetch import browser_for, find_browsers, open_login_window, profile_in_use
 from ..fulltext.worker import FullTextWorker
 from ..repo.fulltext import FullTextRepository
@@ -58,12 +59,12 @@ from ..textnorm import MAX_ALTERNATIVES
 from ..updater import UpdateError, Updater
 from ..apikeys import SecretStore
 from ..ai.cloud import OPENAI_URL, make_client as make_cloud_client
-from ..clip import MAX_CLIP_CHARS, ClipError, ClipService
 from ..flags import KINDS
 from ..country import MAX_TOPIC, MAX_TOPICS, MIN_TOPIC, TOPICS, HomeState, countries as country_data
 from ..country import profile as country_profile
 from ..ai.languages import MAX_LANGUAGES, OUTPUT_LANGUAGES, effective as ai_languages
 from ..home_sync import HomeSync
+from .extension import extension_routers
 from .. import mailer
 
 log = logging.getLogger(__name__)
@@ -102,8 +103,9 @@ class AppContext:
     updater: Updater | None = None
     home: HomeState | None = None
     home_sync: HomeSync | None = None
-    clips: ClipService | None = None
-    keys: SecretStore | None = None  # API keys of cloud AI services
+    keys: SecretStore | None = None  # API keys of cloud AI services, and the extension's pairing key
+    bridge: ExtensionBridge | None = None  # the browser extension's side of the full-text queue
+    port: int = 0  # the port the server listens on (set once it is bound); the extension looks for it
     extra: dict[str, Any] = field(default_factory=dict)
 
 
@@ -178,6 +180,8 @@ class SettingsPatch(BaseModel):
     fulltext_browser_path: str | None = Field(None, alias="fulltext.browser_path", max_length=400)
     fulltext_profile: Literal["own", "main"] | None = Field(None, alias="fulltext.profile")
     fulltext_visible: bool | None = Field(None, alias="fulltext.visible")
+    fulltext_reader: Literal["automation", "extension"] | None = Field(None, alias="fulltext.reader")
+    fulltext_launch_browser: bool | None = Field(None, alias="fulltext.launch_browser")
     fulltext_per_site_hour: int | None = Field(None, alias="fulltext.per_site_hour", ge=1, le=20)
     fulltext_browser_gap_min: int | None = Field(None, alias="fulltext.browser_gap_min", ge=5, le=240)
     fulltext_browser_per_day: int | None = Field(None, alias="fulltext.browser_per_day", ge=1, le=100)
@@ -215,10 +219,6 @@ class RestoreRequest(BaseModel):
 
 class MergeRequest(BaseModel):
     into: int
-
-
-class ClipBody(BaseModel):
-    clip: str = Field(max_length=MAX_CLIP_CHARS)  # what the bookmark copied (clip.py)
 
 
 class LoginRequest(BaseModel):
@@ -320,6 +320,8 @@ def create_app(ctx: AppContext) -> FastAPI:
     @contextlib.asynccontextmanager
     async def lifespan(_: FastAPI) -> AsyncIterator[None]:
         tasks = []
+        if ctx.bridge is not None:
+            ctx.bridge.on_translation_queued = ctx.ai_worker.wake
         if ctx.run_collector:
             # New reports go into stories (and the AI queue) right away instead of at the next poll.
             ctx.collector.on_new_articles[:] = [ctx.story_worker.wake, ctx.ai_worker.wake]
@@ -330,6 +332,8 @@ def create_app(ctx: AppContext) -> FastAPI:
             tasks.append(asyncio.create_task(ctx.fulltext_worker.run_forever(), name="fulltext-worker"))
             tasks.append(asyncio.create_task(ctx.maintenance.run_forever(), name="maintenance"))
             tasks.append(asyncio.create_task(ctx.notifier.run_forever(), name="notifier"))
+            if ctx.bridge is not None:
+                tasks.append(asyncio.create_task(ctx.bridge.watch_forever(), name="extension-watch"))
             if ctx.updater is not None:
                 tasks.append(asyncio.create_task(ctx.updater.run_forever(), name="updater"))
             if ctx.home_sync is not None:
@@ -369,6 +373,9 @@ def create_app(ctx: AppContext) -> FastAPI:
             "maintenance": ctx.maintenance.status(),
             "notify": ctx.notifier.status(),
             "articles": ctx.articles.counts(since),
+            "extension": None if ctx.bridge is None else {
+                **ctx.bridge.status(), "active": ctx.settings.get_preferences()["fulltext.reader"] == "extension",
+            },
         }
 
     @api.get("/meta")
@@ -721,21 +728,6 @@ def create_app(ctx: AppContext) -> FastAPI:
         ctx.fulltext_worker.wake()
         return {"status": status}
 
-    @api.post("/clips")
-    def add_clip(body: ClipBody) -> dict[str, Any]:
-        """A page the user sent from their own browser becomes a report with its full text (clip.py)."""
-        if ctx.clips is None:
-            raise api_error(503, "unavailable")
-        try:
-            added = ctx.clips.add(body.clip)
-        except ClipError as exc:
-            log.info("Sent page not accepted: %s", exc)
-            raise api_error(422, f"clip_{exc.code}") from None
-        ctx.ai.request(added["article_id"], ai_languages(ctx.settings.get_preferences()))
-        ctx.ai_worker.wake()
-        ctx.story_worker.wake()
-        return added
-
     @api.post("/articles/{article_id}/fulltext/translate")
     def translate_fulltext(article_id: int) -> dict[str, str]:
         try:
@@ -778,10 +770,24 @@ def create_app(ctx: AppContext) -> FastAPI:
             if not source.get("homepage"):
                 raise api_error(409, "no_homepage")
             url = str(source["homepage"])
+        if prefs.get("fulltext.reader") == "extension":
+            # The extension reads in the user's own browser profile, so that is where the sign-in has to happen.
+            # The program is handed to the browser as it is: a stored homepage is not re-validated at use, so only
+            # a web page (or the blank page) may reach the command line (not a file:, a script or a browser switch).
+            if url != "about:blank" and not url.lower().startswith(("http://", "https://")):
+                raise api_error(409, "bad_url")
+            subprocess.Popen([str(browser.executable), url])  # noqa: S603 - the browser found on this PC, the site's page
+            return {"status": "opened"}
         # The hidden full-text browser uses the same profile: it must not receive the page.
         ctx.fulltext_worker.make_room_for_login()
         open_login_window(browser, ctx.paths.browser_profile, url)
         return {"status": "opened"}
+
+    def end_site_rest(source_id: int) -> None:
+        """The user wants the site tried again: its pause ends, and so does the extension's rest after trouble."""
+        ctx.fulltext.resume_source(source_id)
+        if ctx.bridge is not None:
+            ctx.bridge.clear_cooldown(source_id)
 
     @api.post("/fulltext/sites/{source_id}/test")
     def test_site(source_id: int) -> dict[str, Any]:
@@ -789,14 +795,14 @@ def create_app(ctx: AppContext) -> FastAPI:
         article_id = ctx.fulltext.latest_article(source_id)
         if article_id is None:
             raise api_error(409, "no_articles")
-        ctx.fulltext.resume_source(source_id)
+        end_site_rest(source_id)
         status = ctx.fulltext.request(article_id)
         ctx.fulltext_worker.wake()
         return {"article_id": article_id, "status": status}
 
     @api.post("/fulltext/sources/{source_id}/resume")
     def resume_fulltext_source(source_id: int) -> dict[str, str]:
-        ctx.fulltext.resume_source(source_id)
+        end_site_rest(source_id)
         ctx.fulltext_worker.wake()
         return {"status": "resumed"}
 
@@ -1090,6 +1096,18 @@ def create_app(ctx: AppContext) -> FastAPI:
         subprocess.Popen(["explorer", str(ctx.paths.root)])  # noqa: S603,S607 - fixed program, our own path
         return {"ok": True}
 
+    @api.post("/app/open-extension-dir")
+    def open_extension_dir() -> dict[str, bool]:
+        if os.name != "nt":
+            raise api_error(501, "unsupported")
+        folder = extension_dir()
+        if folder is None:
+            raise api_error(404, "no_extension_dir")
+        subprocess.Popen(["explorer", str(folder)])  # noqa: S603,S607 - fixed program, our own folder
+        return {"ok": True}
+
+    for router in extension_routers(ctx, require_token):
+        app.include_router(router)
     app.include_router(public)
     app.include_router(api)
 

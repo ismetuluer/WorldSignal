@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { MeetingItem } from "../api/types";
 import { Spinner, StateView } from "../components/controls";
 import { Icon } from "../components/Icon";
@@ -9,6 +9,7 @@ import { describeError, useI18n } from "../i18n";
 import { useAutosave } from "../lib/autosave";
 import { meetingText } from "../lib/aiText";
 import { meetingOutput } from "../lib/outputs";
+import { useAppState } from "../state";
 
 /** Today's meeting list: order by drag (or the arrow buttons), a short reason per proposal, output. */
 export function MeetingPage() {
@@ -21,6 +22,13 @@ export function MeetingPage() {
   const [output, setOutput] = useState(false);
   const items = meeting.items;
   const ids = items.map((i) => i.id);
+
+  // The AI writes the key points of the listed stories first: show them as soon as one is done.
+  const aiDone = useAppState().status?.ai.last_done_at;
+  const waiting = items.some((item) => meetingText(item, i18n.lang).pointsPending);
+  useEffect(() => {
+    if (waiting && aiDone) void meeting.reload();
+  }, [aiDone]);
 
   const move = (id: number, to: number) => {
     const from = ids.indexOf(id);
@@ -151,8 +159,14 @@ function MeetingRow({ item, onOpen }: { item: MeetingItem; onOpen: (storyId: num
         <p className="meeting-title">{text.title}</p>
       )}
       {text.summary ? <p className="article-summary">{text.summary}</p> : null}
+      {text.points.length ? (
+        <ul className="meeting-points" aria-label={t("meeting.points")}>
+          {text.points.map((p) => <li key={p}>{p}</li>)}
+        </ul>
+      ) : text.pointsPending ? (
+        <p className="field-hint">{t("meeting.pointsPending")}</p>
+      ) : null}
       <CommentField key={item.id} item={item} save={(c) => meeting.setComment(item.id, c)} />
-      {text.why ? <p className="field-hint">{t("meeting.aiWhy", { why: text.why })}</p> : null}
     </div>
   );
 }

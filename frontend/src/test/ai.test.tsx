@@ -74,7 +74,7 @@ const STATUS: Status = {
   ai: AI,
   stories: STORY_WORKER, fulltext: FULLTEXT_WORKER, maintenance: MAINTENANCE, notify: NOTIFY,
   collector: { running: true, busy: false, offline: false, last_cycle_at: "2026-09-27T08:00:00Z", last_cycle_new: 0, last_cycle_feeds: 5, last_cycle_errors: 0 },
-  articles: { total: 1, recent: 1 },
+  articles: { total: 1, recent: 1 }, extension: null,
 };
 
 function article(id: number, title: string, extra: Partial<Article> = {}): Article {

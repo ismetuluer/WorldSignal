@@ -1,0 +1,15 @@
+{
+  "name": { "message": "World Signal reader" },
+  "description": { "message": "Reads subscription-site reports for World Signal in your own browser, at a person's pace." },
+  "codeLabel": { "message": "Pairing code (World Signal → Settings → Full text → Extension)" },
+  "save": { "message": "Save" },
+  "pause": { "message": "Pause" },
+  "pausedState": { "message": "Paused: the extension is not reading." },
+  "noProgram": { "message": "World Signal not found. Is the program open, with the reader set to \"Extension\" in Settings?" },
+  "notPaired": { "message": "No pairing code entered." },
+  "wrongCode": { "message": "The pairing code is not valid; enter the code from Settings again." },
+  "notFoundOrWrongCode": { "message": "World Signal not found, or the pairing code is wrong. Is the program open? Copy the code again from Settings → Full text → Extension." },
+  "connected": { "message": "Connected. Read today: $1" },
+  "reading": { "message": "Reading: $1" },
+  "lastError": { "message": "Last error: $1" }
+}

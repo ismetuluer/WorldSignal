@@ -37,13 +37,27 @@ function story(id: number, extra: Partial<Story> = {}): Story {
 
 describe("output templates", () => {
   it("meeting list: numbered, the user's reason wins over the AI's, links kept", () => {
-    const doc = meetingOutput(tr, DAY, [item(1, { comment: "Açılışta" }), item(2)]);
+    const points = "Başbakan Burnham\n%20 kesinti\nMacron: \"Kapı açık\"";
+    const many = ["Reuters", "BBC", "AP", "AFP"].map((name) => ({ name, url: `https://${name.toLowerCase()}.example/1` }));
+    const doc = meetingOutput(tr, DAY, [
+      item(1, { comment: "Açılışta", texts: { tr: { title: "Başlık 1", summary: "Özet 1.", why: "YZ gerekçe 1", points } }, sources: many }),
+      item(2),
+    ]);
     expect(doc.title).toBe("Toplantı öneri listesi");
-    expect(doc.text).toContain("*1. Başlık 1*\nAçılışta");
-    expect(doc.text).toContain("*2. Başlık 2*\nYZ gerekçe 2");
+    // What happened, then the key points as bullets, then the user's own note.
+    expect(doc.text).toContain("*1. Başlık 1*\nÖzet 1.\n• Başbakan Burnham\n• %20 kesinti\n• Macron: \"Kapı açık\"\nNotum: Açılışta");
+    expect(doc.html).toContain("<li style=\"margin:1pt 0\">%20 kesinti</li>");
+    expect(doc.text).toContain("*2. Başlık 2*\nÖzet 2.");
+    expect(doc.text).not.toContain("YZ gerekçe"); // "why it is in the meeting" says nothing the presenter can use
     expect(doc.text).toContain("27 Eylül 2026 Pazar");
-    expect(doc.html).toContain('<a href="https://r.example/1"');
-    expect(doc.html).not.toContain("Özet 1."); // the meeting template is short: headline + reason
+    expect(doc.html).toContain('<a href="https://reuters.example/1"');
+    expect(doc.html).toContain(">AP</a> +1"); // only the closest three sources
+    expect(doc.html).not.toContain("afp.example");
+  });
+
+  it("leaves out a summary that is not written yet", () => {
+    const doc = meetingOutput(tr, DAY, [item(1, { texts: {} })]);
+    expect(doc.text).not.toContain("Özet henüz hazır değil");
   });
 
   it("escapes markup and drops non-http links", () => {
@@ -177,9 +191,9 @@ describe("autosave", () => {
 describe("English outputs", () => {
   const en = createI18n("en");
   it("uses the English AI texts and English labels", () => {
-    const doc = meetingOutput(en, DAY, [item(1, { texts: { tr: { title: "Başlık 1", summary: "Özet 1.", why: "YZ gerekçe 1" }, en: { title: "Proposal one", summary: "", why: "AI reason one" } } })], "en");
+    const doc = meetingOutput(en, DAY, [item(1, { comment: "Lead", texts: { tr: { title: "Başlık 1", summary: "Özet 1.", why: "YZ gerekçe 1" }, en: { title: "Proposal one", summary: "What happened.", why: "AI reason one", points: "Two ministers" } } })], "en");
     expect(doc.title).toBe("Meeting proposals");
-    expect(doc.text).toContain("*1. Proposal one*\nAI reason one");
+    expect(doc.text).toContain("*1. Proposal one*\nWhat happened.\n• Two ministers\nMy note: Lead");
     expect(doc.text).toContain("Sunday, 27 September 2026");
     expect(doc.text).toContain("Sources:");
   });

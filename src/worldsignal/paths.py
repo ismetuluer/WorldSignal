@@ -47,6 +47,18 @@ def ui_dist_dir() -> Path:
     return Path(__file__).resolve().parents[2] / "frontend" / "dist"
 
 
+def extension_dir() -> Path | None:
+    """The browser extension's folder (the one the user loads in the browser), or None when it is missing.
+
+    Next to the program in a PyInstaller build; the repository's ``extension/`` in development.
+    """
+    if getattr(sys, "frozen", False):
+        folder = Path(sys.executable).parent / "extension"
+    else:
+        folder = Path(__file__).resolve().parents[2] / "extension"
+    return folder if folder.is_dir() else None
+
+
 @dataclass(frozen=True)
 class DataPaths:
     root: Path

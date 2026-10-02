@@ -47,7 +47,7 @@ const AI: AiStatus = {
 const STATUS: Status = {
   version: "0.7.0", ai: AI, stories: STORY_WORKER, fulltext: FULLTEXT_WORKER, maintenance: MAINTENANCE, notify: NOTIFY,
   collector: { running: true, busy: false, offline: false, last_cycle_at: null, last_cycle_new: 0, last_cycle_feeds: 0, last_cycle_errors: 0 },
-  articles: { total: 0, recent: 0 },
+  articles: { total: 0, recent: 0 }, extension: null,
 };
 const LIST: BackupList = {
   backups: [

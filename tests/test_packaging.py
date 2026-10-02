@@ -1,6 +1,7 @@
 """The release zip (tools/release.py) and the public export (tools/publish.py), on real folders."""
 
 import hashlib
+import json
 import subprocess
 import sys
 import zipfile
@@ -19,6 +20,7 @@ GOOD = {
     f"{TOP}/WorldSignal.exe": "exe",
     f"{TOP}/version.txt": "0.8.0",
     f"{TOP}/WorldSignal.exe.config": "<configuration/>",
+    f"{TOP}/extension/manifest.json": "{}",
     f"{TOP}/_internal/worldsignal/ui/index.html": "<html>",
     f"{TOP}/_internal/worldsignal/catalog/sources.json": "{}",
     f"{TOP}/_internal/worldsignal/catalog/countries.json": "{}",
@@ -45,6 +47,7 @@ def test_a_complete_package_passes(tmp_path):
     {"drop": f"{TOP}/_internal/patchright/driver/node.exe"},
     {"drop": f"{TOP}/version.txt"},
     {"drop": f"{TOP}/WorldSignal.exe.config"},
+    {"drop": f"{TOP}/extension/manifest.json"},
     {"add": ("stray.txt", "outside the top folder")},
     {"add": (f"{TOP}/worldsignal.db", "a database")},
     {"add": (f"{TOP}/logs/worldsignal.log", "a log")},
@@ -85,6 +88,14 @@ def test_the_real_changelog_has_this_versions_notes():
     from worldsignal import __version__
 
     assert release.release_notes(__version__).strip()
+
+
+def test_extension_version_follows_the_program():
+    sys.path.insert(0, str(ROOT / "src"))
+    from worldsignal import __version__
+
+    manifest = json.loads((ROOT / "extension" / "manifest.json").read_text(encoding="utf-8"))
+    assert manifest["version"] == __version__
 
 
 # -- public export -------------------------------------------------------------------------------------------

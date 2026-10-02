@@ -1,6 +1,7 @@
 """Publish the newest release on GitHub (run by scripts\\publish.bat).
 
     .venv\\Scripts\\python tools\\publish.py [--dry-run]
+    .venv\\Scripts\\python tools\\publish.py --docs "message" [--dry-run]
 
 1. Checks the release zip in release\\<version>\\ (tools\\release.py) and that the version is not on GitHub yet.
 2. Exports the source code to the public repository's working copy: only files tracked by git, minus
@@ -10,6 +11,9 @@
    release and never this computer's history.
 3. Commits, tags v<version>, pushes, and creates the GitHub release with the zip, its .sha256 and the
    release notes. Every World Signal checks for it (worldsignal/updater.py).
+
+--docs: only the README files and docs\\ (screenshots, plans) go to the public repository, as one ordinary
+commit without a version, tag or release; the source code and the release stay as they are. The same scan runs.
 
 publish.private.json (in the project folder, ignored by git):
     {"repo": "owner/WorldSignal", "public_dir": "C:\\\\...\\\\WorldSignal-public",
@@ -96,12 +100,54 @@ def export(files: list[str], target: Path, root: Path = ROOT) -> None:
         shutil.copy2(root / f, dst)
 
 
+def is_doc(path: str) -> bool:
+    return bool(re.fullmatch(r"README(\.[a-z]{2})?\.md", path)) or path.startswith("docs/")
+
+
+def publish_docs(config: dict, message: str, dry_run: bool) -> None:
+    """README files and docs/ only: scanned, copied over the public working copy, one commit, pushed."""
+    repo, target = config["repo"], Path(config["public_dir"])
+    say("[1/3] Belgeler kişisel veri için taranıyor...")
+    files = [f for f in public_files() if is_doc(f)]
+    hits = scan(files, config["forbidden"])
+    if hits:
+        for h in hits[:30]:
+            say(f"  BULUNDU  {h}")
+        fail(f"{len(hits)} satırda kişisel/şirket verisi var; bunlar temizlenmeden yayın yapılmaz.")
+    say(f"  Temiz: {len(files)} dosya (görseller metin taşımadığı için elle gözden geçirilir).")
+    say(f"[2/3] Herkese açık kopya hazırlanıyor: {target}")
+    if not (target / ".git").is_dir():
+        run(["gh", "repo", "clone", repo, str(target)])
+    run(["git", "pull", "--ff-only"], cwd=target, check=False)
+    for f in files:
+        dst = target / f
+        dst.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(ROOT / f, dst)
+    run(["git", "add", "-A"], cwd=target)
+    changes = run(["git", "status", "--short"], cwd=target).stdout.splitlines()
+    if dry_run or not changes:
+        say(f"  {len(changes)} dosya değişecek; hiçbir şey kaydedilmedi ve gönderilmedi." if changes else "  Değişiklik yok.")
+        return
+    name, email = re.fullmatch(r"(.+?)\s*<(.+)>", config["author"]).groups()  # type: ignore[union-attr]
+    ident = ["-c", f"user.name={name}", "-c", f"user.email={email}"]
+    run(["git", *ident, "commit", "-m", message], cwd=target)
+    say("[3/3] GitHub'a gönderiliyor...")
+    push = run(["git", "push", "origin", "HEAD:main"], cwd=target, check=False)
+    if push.returncode != 0:
+        fail(f"gönderilemedi:\n{push.stderr}")
+    say(f"\n  YAYINLANDI: {len(changes)} dosya, https://github.com/{repo}")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--dry-run", action="store_true", help="check and export, but do not push or release")
+    parser.add_argument("--docs", metavar="MESSAGE", help="publish only README files and docs/ as one commit")
     args = parser.parse_args()
     config = load_config()
     repo, target = config["repo"], Path(config["public_dir"])
+    if args.docs:
+        publish_docs(config, args.docs, args.dry_run)
+        return
     sys.path.insert(0, str(ROOT / "src"))
     from worldsignal import __version__ as version
 

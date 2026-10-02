@@ -72,6 +72,14 @@ export function storyConflict(s: Story, lang: AiLang): string | null {
   return (s.ai_status === "done" && pick(s.ai_texts, lang)?.text.conflict) || null;
 }
 
+function pointList(points: string | undefined): string[] {
+  return (points ?? "").split("\n").map((p) => p.trim()).filter(Boolean);
+}
+
+export function storyPoints(s: Story, lang: AiLang): string[] {
+  return s.ai_status === "done" ? pointList(pick(s.ai_texts, lang)?.text.points) : [];
+}
+
 /** The AI languages a story can be shown in (its own texts, else its representative report's). */
 export function storyLanguages(s: Story, order: string[] = []): string[] {
   const own = s.ai_status === "done" ? languagesOf(s.ai_texts, order) : [];
@@ -84,5 +92,8 @@ export function meetingText(item: MeetingItem, lang: AiLang) {
     title: p?.text.title || item.title,
     summary: p?.text.summary || null,
     why: p?.text.why || null,
+    points: pointList(p?.text.points),
+    /** The story is still there but its summary has no key points yet (the AI writes them first). */
+    pointsPending: item.story_id !== null && p?.text.points === undefined,
   };
 }

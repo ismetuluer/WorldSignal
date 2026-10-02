@@ -7,7 +7,7 @@ stories picked automatically. Within a tier newer articles come first.
 from __future__ import annotations
 
 import json
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Collection, Sequence
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from typing import Any
@@ -32,9 +32,17 @@ FINAL_ERRORS = {"bot_check", "paywall", "not_article", "aggregator_link", "http_
                 "http_429"}
 
 
-def _priority(reason: str, sort_at: str) -> float:
+# Extension mode reads every paid report it has time for; exclusives first, the rest after important stories.
+EXCLUSIVE_BOOST = 0.5
+PAID_BOOST = -0.5
+# The full-text mode actually used for a source ('off' sources are read only on the user's request).
+EFFECTIVE_MODE = ("(CASE WHEN s.fulltext_mode = 'off' THEN (CASE WHEN s.paywalled THEN 'browser' ELSE 'http' END) "
+                  "ELSE s.fulltext_mode END)")
+
+
+def _priority(reason: str, sort_at: str, boost: float = 0.0) -> float:
     epoch = datetime.strptime(sort_at, "%Y-%m-%dT%H:%M:%SZ").timestamp()
-    return TIERS[reason] * 1e10 + epoch
+    return (TIERS[reason] + boost) * 1e10 + epoch
 
 
 @dataclass
@@ -70,8 +78,9 @@ class FullTextRepository:
         self.db = db
 
     # -- queue ------------------------------------------------------------------------------------
-    def enqueue(self, article_ids: list[int], reason: str) -> int:
-        """Queue articles (a higher reason upgrades an existing pending row). Returns rows added/upgraded."""
+    def enqueue(self, article_ids: list[int], reason: str, boost: float = 0.0) -> int:
+        """Queue articles (a higher reason upgrades an existing pending row). Returns rows added/upgraded.
+        ``boost`` moves the article within its tier (``EXCLUSIVE_BOOST`` / ``PAID_BOOST``)."""
         if not article_ids:
             return 0
         now = utc_now_iso()
@@ -81,7 +90,7 @@ class FullTextRepository:
                 row = c.execute("SELECT sort_at FROM articles WHERE id = ?", (aid,)).fetchone()
                 if row is None:
                     continue
-                prio = _priority(reason, row["sort_at"])
+                prio = _priority(reason, row["sort_at"], boost)
                 cur = c.execute(
                     """INSERT INTO article_fulltext (article_id, status, reason, priority, queued_at)
                        VALUES (?, 'pending', ?, ?, ?)
@@ -91,6 +100,25 @@ class FullTextRepository:
                 )
                 changed += cur.rowcount
         return changed
+
+    def drop_stale_auto(self, before_iso: str, keep: Collection[int] = ()) -> int:
+        """Forget automatically queued articles (reason ``auto``) still waiting although their report is older than
+        ``before_iso``: in extension mode more paid reports are queued than a person's pace can read, and they would
+        pile up. The user's own requests and notebook articles are never dropped, nor a row tried since
+        ``before_iso`` (its attempts still count) or an article in ``keep`` (the one the extension is reading).
+        Returns the rows removed."""
+        kept = {f"k{i}": aid for i, aid in enumerate(keep)}
+        keep_sql = f" AND article_id NOT IN ({', '.join(':' + k for k in kept)})" if kept else ""
+        with self.db.transaction() as c:
+            # Correlated over the (small) pending set rather than over every old article.
+            cur = c.execute(
+                """DELETE FROM article_fulltext WHERE status = 'pending' AND reason = 'auto'
+                     AND (attempted_at IS NULL OR attempted_at < :before)
+                     AND EXISTS (SELECT 1 FROM articles a WHERE a.id = article_fulltext.article_id
+                                 AND a.sort_at < :before)""" + keep_sql,
+                {"before": before_iso, **kept},
+            )
+        return cur.rowcount
 
     def request(self, article_id: int) -> str:
         """The user asked for this article's full text (also retries a failed or blocked one)."""
@@ -111,17 +139,19 @@ class FullTextRepository:
         return "pending"
 
     def next_job(self, now: datetime, per_site_hour: int, browser: BrowserPace | None = None,
-                 user_only: bool = False) -> FullTextJob | None:
+                 user_only: bool = False, modes: tuple[str, ...] = ("http", "browser"),
+                 exclude_sources: Collection[int] = ()) -> FullTextJob | None:
         """Highest-priority pending article whose site is not paused, not over its hourly limit and
         whose full-text mode allows fetching (the user's own requests ignore 'off'). Sites read in the
-        browser also follow ``browser`` (a person's pace)."""
+        browser also follow ``browser`` (a person's pace). ``modes`` limits the jobs to those full-text modes
+        (extension mode leaves "browser" to the user's own browser). ``exclude_sources`` are source ids to skip
+        (the extension bridge rests a site after trouble without stalling the others)."""
         now_iso = utc_now_iso(now)
         hour_ago = utc_now_iso(now - timedelta(hours=1))
         pace_sql, pace_params = "", {}
         if browser is not None:
             pace_sql = """
-                 AND (CASE WHEN s.fulltext_mode = 'off' THEN (CASE WHEN s.paywalled THEN 'browser' ELSE 'http' END)
-                           ELSE s.fulltext_mode END != 'browser'
+                 AND (""" + EFFECTIVE_MODE + """ != 'browser'
                       OR (NOT EXISTS (SELECT 1 FROM article_fulltext f3 JOIN articles a3 ON a3.id = f3.article_id
                                       WHERE a3.source_id = s.id
                                         AND f3.attempted_at >= (CASE WHEN f.reason = 'user' THEN :user_gap ELSE :gap END))
@@ -132,6 +162,11 @@ class FullTextRepository:
             pace_params = {"gap": utc_now_iso(now - browser.gap), "user_gap": utc_now_iso(now - browser.user_gap),
                            "resting": int(browser.resting), "day_start": utc_now_iso(browser.day_start),
                            "per_day": browser.per_day}
+        mode_names = {f"mode{i}": m for i, m in enumerate(modes)}
+        mode_sql = f" AND {EFFECTIVE_MODE} IN ({', '.join(':' + k for k in mode_names)})"
+        excluded = {f"ex{i}": sid for i, sid in enumerate(exclude_sources)}
+        if excluded:
+            mode_sql += f" AND s.id NOT IN ({', '.join(':' + k for k in excluded)})"
         row = self.db.conn.execute(
             """SELECT f.article_id, a.url, s.id AS source_id, s.name AS source_name, s.paywalled, f.reason, f.attempts,
                       a.summary, s.fulltext_mode
@@ -143,9 +178,10 @@ class FullTextRepository:
                  AND (f.reason = 'user' OR :user_only = 0)
                  AND (s.fulltext_paused_until IS NULL OR s.fulltext_paused_until <= :now)
                  AND (SELECT COUNT(*) FROM article_fulltext f2 JOIN articles a2 ON a2.id = f2.article_id
-                      WHERE a2.source_id = s.id AND f2.attempted_at >= :hour_ago) < :per_hour""" + pace_sql + """
+                      WHERE a2.source_id = s.id AND f2.attempted_at >= :hour_ago) < :per_hour""" + pace_sql + mode_sql + """
                ORDER BY f.priority DESC LIMIT 1""",
-            {"now": now_iso, "hour_ago": hour_ago, "per_hour": per_site_hour, "user_only": int(user_only), **pace_params},
+            {"now": now_iso, "hour_ago": hour_ago, "per_hour": per_site_hour, "user_only": int(user_only), **pace_params, **mode_names,
+             **excluded},
         ).fetchone()
         if row is None:
             return None
@@ -155,9 +191,17 @@ class FullTextRepository:
         return FullTextJob(row["article_id"], row["url"], row["source_id"], row["source_name"], mode, row["reason"],
                            row["attempts"], row["summary"] or "")
 
-    def mark_attempt(self, article_id: int, now: datetime) -> None:
+    def mark_attempt(self, article_id: int, now: datetime) -> str | None:
+        """Note the attempt (the per-site pace counts it); returns the previous time, for ``release_attempt``."""
         with self.db.transaction() as c:
+            row = c.execute("SELECT attempted_at FROM article_fulltext WHERE article_id = ?", (article_id,)).fetchone()
             c.execute("UPDATE article_fulltext SET attempted_at = ? WHERE article_id = ?", (utc_now_iso(now), article_id))
+        return row[0] if row else None
+
+    def release_attempt(self, article_id: int, previous: str | None) -> None:
+        """The attempt never reached the site (the browser did not start): forget it."""
+        with self.db.transaction() as c:
+            c.execute("UPDATE article_fulltext SET attempted_at = ? WHERE article_id = ?", (previous, article_id))
 
     # -- results ----------------------------------------------------------------------------------
     def store_text(self, article_id: int, text: str, method: str, now: datetime) -> None:
@@ -169,28 +213,16 @@ class FullTextRepository:
                 (method, text, len(text), utc_now_iso(now), article_id),
             )
 
-    def store_clip(self, article_id: int, text: str, now: datetime) -> None:
-        """A page the user sent from their own browser: its text is the article's full text."""
-        now_iso = utc_now_iso(now)
-        with self.db.transaction() as c:
-            c.execute(
-                """INSERT INTO article_fulltext (article_id, status, reason, priority, method, text, chars, queued_at,
-                       fetched_at, attempts)
-                   VALUES (?, 'done', 'user', ?, 'clip', ?, ?, ?, ?, 1)
-                   ON CONFLICT(article_id) DO UPDATE SET status = 'done', reason = 'user', method = 'clip', text = ?,
-                       chars = ?, error_code = NULL, fetched_at = ?, translate_status = NULL, translations = '{}'""",
-                (article_id, _priority("user", now_iso), text, len(text), now_iso, now_iso, text, len(text), now_iso),
-            )
-
-    def store_failure(self, job: FullTextJob, code: str, now: datetime) -> str:
-        """Record a failed attempt; pause the site where that is wise. Returns the new status."""
+    def store_failure(self, job: FullTextJob, code: str, now: datetime, method: str | None = None) -> str:
+        """Record a failed attempt; pause the site where that is wise. Returns the new status. ``method``: who read
+        the page (default the job's mode; the browser extension passes ``extension``, as ``store_text`` gets it)."""
         attempts = job.attempts + 1
         final = code in FINAL_ERRORS or attempts >= MAX_ATTEMPTS
         status = ("blocked" if code == "bot_check" else "failed") if final else "pending"
         with self.db.transaction() as c:
             c.execute(
                 "UPDATE article_fulltext SET status = ?, error_code = ?, attempts = ?, method = ? WHERE article_id = ?",
-                (status, code, attempts, job.mode, job.article_id),
+                (status, code, attempts, method or job.mode, job.article_id),
             )
             pause = PAUSE_AFTER.get(code)
             if pause is not None and code in REFUSALS:
@@ -349,10 +381,12 @@ class FullTextRepository:
             c.execute("UPDATE article_fulltext SET translate_status = 'failed' WHERE article_id = ?", (article_id,))
 
     # -- which articles to fetch automatically ----------------------------------------------------
-    def auto_candidates(self, since_iso: str, min_score: float, per_story: int, today: str) -> dict[str, list[int]]:
+    def auto_candidates(self, since_iso: str, min_score: float, per_story: int, today: str,
+                        paid: bool = False) -> dict[str, list[int]]:
         """Articles worth a full text: members of important stories (``auto``) and of stories the
         user put in the notebook or today's meeting list (``notebook``). Browser sources first
-        (that is where the RSS text is shortest), then the newest."""
+        (that is where the RSS text is shortest), then the newest. With ``paid`` (extension mode) every recent
+        report of a browser source is offered too: ``exclusive`` ones first, then the other ``paid`` ones."""
         notebook = [r[0] for r in self.db.conn.execute(
             """SELECT story_id FROM meeting_items WHERE day = ? AND story_id IS NOT NULL
                UNION SELECT story_id FROM story_notes WHERE story_id IS NOT NULL AND updated_at >= ?""",
@@ -373,13 +407,31 @@ class FullTextRepository:
                 ).fetchone()[0]
                 if have >= limit:
                     continue
+                # Automatic picks are recent reports only (as ``drop_stale_auto`` keeps them), or an older member of a
+                # long story would be dropped and queued again at every step.
                 rows = self.db.conn.execute(
                     """SELECT a.id FROM story_articles sa
                        JOIN articles a ON a.id = sa.article_id JOIN sources s ON s.id = a.source_id
                        WHERE sa.story_id = ? AND s.enabled = 1 AND s.fulltext_mode != 'off'
+                         AND (? = 'notebook' OR a.sort_at >= ?)
                          AND NOT EXISTS (SELECT 1 FROM article_fulltext f WHERE f.article_id = a.id)
                        ORDER BY s.fulltext_mode = 'browser' DESC, a.sort_at DESC LIMIT ?""",
-                    (sid, limit - have),
+                    (sid, reason, since_iso, limit - have),
                 ).fetchall()
                 out[reason] += [r[0] for r in rows]
+        out["exclusive"], out["paid"] = [], []
+        if paid:
+            from ..flags import is_exclusive  # flags imports nothing from repo
+
+            rows = self.db.conn.execute(
+                """SELECT a.id, a.title FROM articles a JOIN sources s ON s.id = a.source_id
+                   WHERE s.enabled = 1 AND s.fulltext_mode = 'browser' AND a.sort_at >= ?
+                     AND NOT EXISTS (SELECT 1 FROM article_fulltext f WHERE f.article_id = a.id)
+                   ORDER BY a.sort_at DESC LIMIT 300""",
+                (since_iso,),
+            ).fetchall()
+            taken = set(out["notebook"]) | set(out["auto"])
+            for r in rows:
+                if r["id"] not in taken:
+                    out["exclusive" if is_exclusive(r["title"]) else "paid"].append(r["id"])
         return out

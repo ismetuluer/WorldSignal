@@ -30,6 +30,8 @@ export interface AiText {
   why?: string;
   /** Where outlets contradict each other on a fact (empty or missing: they agree). */
   conflict?: string;
+  /** Stories: the key names, figures and statements, one per line ("" none; missing: written before 0.13.4). */
+  points?: string;
 }
 
 /** AI texts by language code ("tr", "pt", …): the languages of the setting ai.languages. */
@@ -95,6 +97,10 @@ export interface Settings {
   "fulltext.browser_path": string;
   "fulltext.profile": "own" | "main";
   "fulltext.visible": boolean;
+  /** Who reads the subscription sites: World Signal's own browser, or the extension in the user's browser. */
+  "fulltext.reader": "automation" | "extension";
+  /** Extension reader: start the user's browser without a window when it is closed. */
+  "fulltext.launch_browser": boolean;
   "fulltext.per_site_hour": number;
   "fulltext.browser_gap_min": number;
   "fulltext.browser_per_day": number;
@@ -518,16 +524,28 @@ export interface Status {
   maintenance: MaintenanceStatus;
   notify: NotifyStatus;
   articles: { total: number; recent: number };
+  /** The browser extension's reader; null when this program has no extension bridge. */
+  extension: (ExtensionStatus & { active: boolean }) | null;
 }
 
-/** A page sent from the user's own browser (clip.py). */
-export interface ClipResult {
-  article_id: number;
-  source: string;
-  title: string;
-  chars: number;
-  /** False: the page was already there and its text was updated. */
-  created: boolean;
+export interface ExtensionStatus {
+  /** Heard from within the wait the program handed it. */
+  connected: boolean;
+  /** The extension reads but has been silent long enough to tell the user (the sidebar warning). */
+  warn: boolean;
+  last_seen: string | null;
+  read_today: number;
+  reading: string | null;
+  last_source: string | null;
+  last_error: string | null;
+}
+
+/** GET /api/extension: the pairing code the extension needs, where to find the program, and the connection. */
+export interface ExtensionInfo {
+  code: string;
+  port: number;
+  fixed_port: boolean;
+  status: ExtensionStatus;
 }
 
 export type FeedKind = "exclusive" | "opinion";

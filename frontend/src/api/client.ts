@@ -4,7 +4,7 @@ import type {
   BackupInfo,
   BackupList,
   BrowserList,
-  ClipResult,
+  ExtensionInfo,
   FullText,
   FullTextSite,
   HistoryDay,
@@ -178,7 +178,6 @@ export const api = {
 
   fulltext: (articleId: number) => request<{ fulltext: FullText | null }>("GET", `/articles/${articleId}/fulltext`),
   requestFulltext: (articleId: number) => request<{ status: string }>("POST", `/articles/${articleId}/fulltext`),
-  addClip: (clip: string) => request<ClipResult>("POST", "/clips", { clip }),
   translateFulltext: (articleId: number) =>
     request<{ status: string }>("POST", `/articles/${articleId}/fulltext/translate`),
   browsers: () => request<BrowserList>("GET", "/fulltext/browsers"),
@@ -206,4 +205,7 @@ export const api = {
 
   runCollector: () => request<{ scheduled: number }>("POST", "/collector/run"),
   openDataDir: () => request<{ ok: boolean }>("POST", "/app/open-data-dir"),
+  openExtensionDir: () => request<{ ok: boolean }>("POST", "/app/open-extension-dir"),
+  extension: () => request<ExtensionInfo>("GET", "/extension"),
+  renewExtensionCode: () => request<{ code: string }>("POST", "/extension/code"),
 };

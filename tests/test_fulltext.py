@@ -417,6 +417,62 @@ def test_login_closes_the_hidden_browser_and_keeps_it_closed(world, tmp_path):
     run(scenario())
 
 
+def test_a_browser_that_does_not_start_costs_the_article_nothing(world, tmp_path):
+    """Brave crashing while it starts (seen during its updates) is not the site's refusal: the article keeps its
+    attempts, the site is not paused or slowed, and the next try waits longer each time until one works."""
+    repo, ids = world["repo"], world["ids"]
+    world["sources"].update_source(source_of(world, "a1"), {"fulltext_mode": "browser"})
+    repo.request(ids["a1"])
+    starts = {"fail": 3}
+
+    class CrashingSession(FakeSession):
+        async def fetch(self, url):
+            if starts["fail"]:
+                starts["fail"] -= 1
+                raise FetchFailed("browser_failed", "TargetClosedError('Browser has been closed')", local=True)
+            return await super().fetch(url)
+
+    worker = make_ft_worker(world, tmp_path)
+    worker.session_factory = CrashingSession
+    assert [run(worker.step()) for _ in range(3)] == [60, 120, 240]  # 1, 2, 4 minutes
+    ft = repo.get(ids["a1"])
+    assert ft["status"] == "pending" and ft["attempts"] == 0 and ft["attempted_at"] is None
+    assert worker.status()["last_error"] == "browser_failed" and worker.status()["paused_sources"] == []
+    run(worker.step())  # the browser starts this time
+    assert repo.get(ids["a1"])["status"] == "done" and worker._browser_failures == 0
+    assert len(CrashingSession.instances) == 4  # a failed session is never reused
+
+
+def test_browser_retries_stop_growing_at_half_an_hour(world, tmp_path):
+    world["sources"].update_source(source_of(world, "a1"), {"fulltext_mode": "browser"})
+    world["repo"].request(world["ids"]["a1"])
+
+    class DeadSession(FakeSession):
+        async def fetch(self, url):
+            raise FetchFailed("browser_failed", "crash", local=True)
+
+    worker = make_ft_worker(world, tmp_path)
+    worker.session_factory = DeadSession
+    delays = [run(worker.step()) for _ in range(8)]
+    assert delays[-1] == 30 * 60 and max(delays) == 30 * 60
+
+
+def test_a_page_that_breaks_the_browser_still_counts(world, tmp_path):
+    """Only a browser that never started is free; a failure while a page loads is an attempt as before."""
+    repo, ids = world["repo"], world["ids"]
+    world["sources"].update_source(source_of(world, "a1"), {"fulltext_mode": "browser"})
+    repo.request(ids["a1"])
+
+    class BrokenPage(FakeSession):
+        async def fetch(self, url):
+            raise FetchFailed("browser_failed", "page crashed")
+
+    worker = make_ft_worker(world, tmp_path)
+    worker.session_factory = BrokenPage
+    assert run(worker.step()) == 60
+    assert repo.get(ids["a1"])["attempts"] == 1 and not FetchFailed("x").local
+
+
 def test_worker_without_a_browser_says_so(world, tmp_path):
     world["sources"].update_source(source_of(world, "a1"), {"fulltext_mode": "browser"})
     world["repo"].request(world["ids"]["a1"])

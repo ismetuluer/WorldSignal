@@ -3,6 +3,90 @@
 Sürüm numaraları [Anlamsal Sürümleme](https://semver.org/lang/tr/) izler. 1.0'a kadar her faz bir ara sürümdür.
 İngilizcesi (0.10.0'dan itibaren): [CHANGELOG.en.md](CHANGELOG.en.md).
 
+## [0.14.0] — 2026-10-01 — Tarayıcı eklentisi: abonelik siteleri kendi tarayıcınızda okunur
+
+### Eklendi
+- **Eklentinin okuduğu haberler tam metinden özetlenir ve sıranın başına geçer.** Yapay zekâ kuyruğu doluyken bile,
+  eklentinin sizin tarayıcınızda okuduğu bir haber (özel haberler, abonelik siteleri) tam metniyle yeniden
+  özetlenir; özeti daha önce yazılmışsa o kalır, yenisi hazır olunca değişir. Tam özet yazılır (yalnızca başlık
+  değil). Yapay zekâ üç denemede başaramazsa bırakılır, eski özet kalır. Diğer yöntemlerle gelen tam metinler
+  eskisi gibi sıra boşaldığında işlenir. Hikâye özeti hâlâ haberlerin özetlerinden yazılır (tam metinden değil).
+- **World Signal tarayıcı eklentisi** (program klasöründeki `extension` klasörü; Chrome ve Brave için).
+  Abonelik sitelerinin haberlerini, özellikle yalnızca orada çıkan özel haberleri, programın kendi otomasyon
+  tarayıcısı yerine **sizin tarayıcınız** açar: gerçek profiliniz, gerçek oturumunuz; amaç, otomasyon izi bırakmamaktır. Hangi haberin
+  ne zaman okunacağına program karar verir (aynı kuyruk, aynı insan temposu); eklenti yalnızca sayfayı küçültülmüş ayrı
+  bir pencerede açar, 3–8 saniye bakıp insan gibi aşağı kaydırır, sayfanın HTML'ini programa verir ve pencereyi kapatır.
+  Metni çıkarma, engel algılama ve bekletme programdadır. Her sayfa için ayrı pencere açılır ve sayfa bitince kapanır.
+- **Bir kerelik kurulum, üç adım** (Ayarlar → Tam metin → Eklenti): (1) tarayıcının eklentiler sayfasında Geliştirici
+  modunu açıp **Paketlenmemiş öğe yükle** ile eklenti klasörünü seçin (**Eklenti klasörünü aç** düğmesi klasörü
+  gösterir), (2) eklentinin simgesine tıklayıp Ayarlar'daki **eşleşme kodunu** yapıştırın, (3) abonelik sitelerine o
+  tarayıcıda giriş yapmış olun. Sonrası kendiliğinden: tarayıcı açıkken (kapalıysa program onu pencere açmadan
+  başlatabilir, ayarla kapatılır) eklenti haberleri okur. Eklenti, programın ona söylediği bekleme süresini aşıp 10
+  dakikadan uzun sessiz kalırsa kenar çubuğunda tek satırlık uyarı çıkar (program yeni açıldığında ya da siteye uzun
+  bir mola verildiğinde boşuna uyarmaz); Ayarlar bağlı / bağlı değil durumunu gösterir.
+- **Okuyucu seçimi** (`fulltext.reader`): *Eklenti (önerilen)* ya da *Programın kendi tarayıcısı* (eskisi gibi). Eklenti
+  modunda "tarayıcı ile" kaynakların işlerini yalnızca eklenti alır; "doğrudan indir" kaynakları eskisi gibi program
+  okur. Eklenti bağlı değilken otomasyon tarayıcısına dönülmez, iş sırada bekler.
+- **Eklenti modunda ücretli kaynakların yeni haberleri sıraya girer**; yayıncının "Özel" dediği haberler önde, sonra
+  öbürleri; sizin istedikleriniz ve not defterindekiler yine en önde. Site başına günlük sınır ve diğer tempo ayarları
+  geçerlidir. Kendiliğinden sıraya girip 24 saat içinde okunamayan haberler sıradan çıkar (sizin istedikleriniz ve not
+  defterindekiler kalır), böylece sıra şişmez.
+- **Eklentinin açtığı sayfa bir deneme sayılır:** sayfa zamanında açılmaz, açılamaz, okunamaz ya da alınamayacak kadar
+  büyükse (8 MB üstü) deneme sayılır, site bir süre dinlenir; üç denemeden sonra haber bırakılır. Yalnızca okuma
+  penceresini sizin kapatmanız deneme sayılmaz. Sayfanın HTTP durumu (401/403/429 gibi) da programa iletilir; site,
+  programın kendi tarayıcısında olduğu gibi bekletilir. Google News yönlendirmeleri ve web adresi olmayan bağlantılar
+  eklentiye hiç verilmez. Tam metin kapatılır ya da okuyucu değiştirilirse eklentinin elindeki iş bırakılır.
+- **Güvenlik:** eklenti programla yalnızca bu bilgisayarın içinde, sabit bir port aralığında (47821–47830) ve rastgele
+  üretilen, yalnızca bu bilgisayarda (Windows kullanıcı şifrelemesiyle) saklanan bir eşleşme kodu ile konuşur. Başka bir
+  bilgisayar, bir web sayfası ya da DNS yeniden bağlama ile gelen istek kodla bile kabul edilmez. Kod **Yeni kod** ile
+  yenilenebilir (eski eklenti bağlantısı kopar). Eklenti kodu göndermeden önce, sorduğu portta aynı kodu taşıyan World
+  Signal'in dinlediğini doğrular (her seferinde rastgele bir soru; yanıt kodla imzalanır ve programın dinlediği portu
+  içerir): bu portlardan birini başka bir program tutsa da, soruyu asıl programa aktarsa bile kodu öğrenemez.
+  (Kullanıcının belleğini ya da dosyalarını okuyabilen bir program bu korumanın dışındadır.) Eklenti programın verdiği adresler dışında hiçbir siteyi açmaz,
+  yalnızca `http`/`https` adreslerini açar.
+
+### Değişmeyen sınırlar ve riskler
+- **Robot doğrulaması (CAPTCHA) ve benzeri korumalar asla çözülmez.** Böyle bir sayfa gelirse haber "engellendi" olur,
+  site giderek uzayan aralıklarla bekletilir. Eklenti sayfada yalnızca kaydırır; tıklamaz, yazmaz, form göndermez.
+- **Sitelerin kullanım şartları abonelere de otomatik okumayı yasaklayabilir.** Bunun riski (hesabın uyarılması ya da
+  kapatılması dahil) sizindir; tempo sınırları Ayarlar → Tam metin'den görülür ve değiştirilir.
+- Tarayıcı kapalıyken ya da eklenti duraklatılmışken hiçbir sayfa okunmaz; iş sırada bekler.
+- Eklenti tarayıcı mağazalarında yayımlanmaz; program güncellenince eklenti klasörü de güncellenir, tarayıcıda eklentiler
+  sayfasında bir kez **Yenile**'ye basmak gerekir.
+
+### Kaldırıldı
+- **Sayfa ekle**'nin (yer imi + yapıştırma) arka uç kodu (`clip.py`, `/api/clips`): eklenti yeni haber eklemiyor,
+  var olan haberleri tamamlıyor. Daha önce eklenen haberler ve "Elle eklenenler" kaynağı yerinde duruyor.
+
+### Denendi
+- Gerçek bir tarayıcıda (Chromium, eklenti yüklü, deneme örneğiyle) eklenti eşleşti, iki Guardian haberini küçültülmüş
+  pencerede okudu; çıkan metin düz indirmeyle aynı uzunluktaydı (3554 ve 4205 karakter), ikinci sayfa ilkinden yaklaşık
+  3 dakika sonra açıldı, okuma penceresi sonra kapandı. **Abonelik siteleri, Brave ve pencere açmadan başlatma henüz
+  denenmedi.**
+
+## [0.13.4] — 2026-10-01 — Toplantı notunda önemli noktalar; tarayıcı çökmesi haberleri yakmıyor
+
+### Değişti
+- **Toplantı öneri listesi** (ekran ve çıktı): her öneride başlık, ne olduğunu anlatan kısa özet ve altında maddeler
+  halinde **önemli noktalar** (isimler, rakamlar, kim ne dedi). "Birçok kaynakta geçtiği için…" türünden "neden
+  toplantıda" cümleleri çıktıdan çıktı (hikâye kartlarında duruyor). Sizin notunuz "Notum:" olarak yazılır; kaynaklardan
+  yalnızca hikâyeye en yakın üçü, bağlantılarıyla. Önemli noktaları yapay zekâ hikâye özetiyle birlikte, yalnızca
+  haberlerdeki bilgilerle yazar; rakamlar özetteki gibi denetlenir. Toplantı listesine eklenen hikâyeler sıraya önce
+  girer (daha önce özetlenmiş olsalar da, çalışma saatleri dışında da); ekran noktalar gelince kendiliğinden yenilenir.
+  Özetler biraz uzadığı için hikâye başına yapay zekâ süresi bir miktar artar.
+- Toplantı listesindeki not kutusunun adı "Kısa gerekçe" yerine "Kısa not".
+
+### Kaldırıldı
+- **Sayfa ekle** (yer imi + yapıştırma). Elle tek tek eklemek otonom çalışmaya uymuyordu; yerine kendi tarayıcınızda
+  çalışacak bir World Signal eklentisi tasarlanıyor. Daha önce bu yolla eklenen haberler yerinde duruyor.
+
+### Düzeltildi
+- **Tarayıcı açılırken çöküyordu, haberler boşuna "alınamadı" oluyordu.** Tam metin için açılan Brave, özellikle
+  kendini güncellerken açılışta çöküyordu (profilde 75 çökme raporu; her biri kayıttaki bir "tarayıcı başlatılamadı"ya
+  denk geliyor). Her çökme sıradaki haberin deneme hakkından düşüyordu; site hiç sorulmadan haberler "alınamadı"
+  oluyordu ve program dakikada bir yeniden deniyordu. Artık açılmayan tarayıcı habere ve sitenin temposuna dokunmuyor,
+  yeniden deneme 1, 2, 4… en çok 30 dakika arayla yapılıyor ve hatanın ayrıntısı kayda yazılıyor.
+
 ## [0.13.3] — 2026-09-29 — Sayfa ekle, ilk veren ve kaynaklar arası çelişki
 
 ### Eklendi

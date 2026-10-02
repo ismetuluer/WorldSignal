@@ -264,7 +264,7 @@ class StoryRepository:
     # -- story AI queue -----------------------------------------------------------------------------
     def next_story_job(
         self, since_iso: str, min_sources: int, max_attempts: int = 3, *, automatic: bool = True,
-        languages: Sequence[str] = ("tr", "en"), need_facts: bool = False,
+        languages: Sequence[str] = ("tr", "en"), need_facts: bool = False, meeting_day: str | None = None,
     ) -> dict[str, Any] | None:
         """The highest-scoring story that needs a (new) summary.
 
@@ -272,14 +272,24 @@ class StoryRepository:
         has no summary yet, has grown by half (and at least two articles) since it was written, or its
         summary lacks one of ``languages`` (the user added a language), or — ``need_facts``: its reports are not
         read one by one ("stories" / "fast") — it was written before summaries extracted the facts for "my country".
-        Stories the user asked for (ai_status = 'pending') come first, whatever their size.
-        ``automatic=False``: only those.
+        Stories the user asked for (ai_status = 'pending') come first, whatever their size; then the stories on
+        the meeting list of ``meeting_day`` that have no summary or one written before it had key points (the
+        user chose them, so they count as asked for too). ``automatic=False``: only those.
         """
-        if not automatic:
+        row = self.db.conn.execute(
+            "SELECT id FROM stories WHERE ai_status = 'pending' AND ai_attempts < ? ORDER BY score DESC LIMIT 1",
+            (max_attempts,),
+        ).fetchone()
+        if row is None and meeting_day is not None:
             row = self.db.conn.execute(
-                "SELECT id FROM stories WHERE ai_status = 'pending' AND ai_attempts < ? ORDER BY score DESC LIMIT 1",
-                (max_attempts,),
+                """SELECT s.id FROM meeting_items m JOIN stories s ON s.id = m.story_id
+                   WHERE m.day = ? AND s.ai_attempts < ?
+                     AND (s.ai_status IS NULL OR (s.ai_status = 'done' AND NOT EXISTS (
+                          SELECT 1 FROM json_each(s.ai_texts) j WHERE json_type(j.value, '$.points') = 'text')))
+                   ORDER BY m.position LIMIT 1""",
+                (meeting_day, max_attempts),
             ).fetchone()
+        if not automatic or row is not None:
             return self.get(row["id"], member_limit=12) if row else None
         row = self.db.conn.execute(
             """SELECT id FROM stories

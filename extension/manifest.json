@@ -1,0 +1,12 @@
+{
+  "manifest_version": 3,
+  "name": "__MSG_name__",
+  "description": "__MSG_description__",
+  "version": "0.14.0",
+  "default_locale": "tr",
+  "minimum_chrome_version": "116",
+  "background": { "service_worker": "background.js", "type": "module" },
+  "action": { "default_popup": "popup.html", "default_title": "World Signal" },
+  "permissions": ["alarms", "tabs", "scripting", "storage"],
+  "host_permissions": ["http://127.0.0.1/*", "<all_urls>"]
+}

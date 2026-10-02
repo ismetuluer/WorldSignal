@@ -109,7 +109,12 @@ class AiRepository:
         """The next queued article. When the queue is empty and ``upgrade_since`` is given, a finished
         article from that window is redone when it lacks one of ``languages`` (the user added a language)
         or its full text arrived after it was written; the old text stays visible meanwhile.
-        The model reads the full text when there is one, else the feed summary."""
+        The model reads the full text when there is one, else the feed summary. A report the user's own browser
+        read (the extension: exclusives, paid sites) is written again before everything else in the queue."""
+        if upgrade_since is not None:
+            fresh = self._read_by_extension(upgrade_since, languages)
+            if fresh is not None:
+                return fresh
         jobs = self.next_jobs(1)
         if jobs:
             return jobs[0]
@@ -129,6 +134,38 @@ class AiRepository:
             (MAX_ATTEMPTS + 1, upgrade_since, *languages),
         ).fetchone()
         return Job(**dict(row), upgrade=True) if row else None
+
+    def _read_by_extension(self, since: str, languages: Sequence[str]) -> Job | None:
+        """A report whose full text the extension stored after its summary was written (or that has no summary
+        yet), newest first: the full text is worth more than the feed's two lines, and there are few of them
+        (the extension's own daily limit). An attempt that already failed MAX_ATTEMPTS times is not repeated."""
+        row = self.db.conn.execute(
+            """SELECT a.id AS article_id, COALESCE(x.attempts, 0) AS attempts, a.title, ft.text AS summary,
+                      COALESCE(a.language, s.language) AS language, s.name AS source_name,
+                      COALESCE(x.status = 'done', 0) AS finished, x.article_id IS NULL AS unqueued
+               FROM article_fulltext ft
+               JOIN articles a ON a.id = ft.article_id
+               JOIN sources s ON s.id = a.source_id
+               LEFT JOIN article_ai x ON x.article_id = a.id
+               WHERE ft.status = 'done' AND ft.method = 'extension' AND ft.text IS NOT NULL
+                 AND a.sort_at >= ? AND s.enabled = 1
+                 AND COALESCE(x.attempts, 0) < ?
+                 AND (x.article_id IS NULL OR x.status = 'pending'
+                      OR (x.status = 'done' AND ft.fetched_at > x.completed_at))
+               ORDER BY a.sort_at DESC LIMIT 1""",
+            (since, MAX_ATTEMPTS),
+        ).fetchone()
+        if row is None:
+            return None
+        fields = {k: v for k, v in dict(row).items() if k not in ("finished", "unqueued")}
+        # Not finished yet: written in full like a requested article (not in a headline-only batch).
+        job = Job(**fields, upgrade=bool(row["finished"]), requested=not row["finished"])
+        if row["unqueued"]:  # no row yet: the job needs one for its result to be stored
+            with self.db.transaction() as c:
+                c.execute(
+                    """INSERT OR IGNORE INTO article_ai (article_id, status, priority, queued_at)
+                       VALUES (?, 'pending', ?, ?)""", (job.article_id, USER_REQUEST_BOOST / 2, utc_now_iso()))
+        return job
 
     def next_jobs(self, limit: int, *, automatic_only: bool = False, requested_only: bool = False) -> list[Job]:
         """Queued articles, most urgent first (the user's requests before everything)."""

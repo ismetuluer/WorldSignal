@@ -20,13 +20,12 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import urlsplit
 
-from ..ai.languages import effective as ai_languages
 from ..db import utc_now_iso
-from ..repo.fulltext import BrowserPace, FullTextJob, FullTextRepository
+from ..repo.fulltext import EXCLUSIVE_BOOST, PAID_BOOST, BrowserPace, FullTextJob, FullTextRepository
 from ..repo.notebook import local_today
 from ..repo.settings import SettingsRepository
-from .extract import extract
 from .fetch import BrowserInfo, BrowserSession, FetchFailed, Page, browser_for, fetch_http, profile_in_use
+from .outcome import record_page
 
 log = logging.getLogger(__name__)
 
@@ -35,6 +34,9 @@ AGGREGATOR_HOSTS = {"news.google.com"}
 
 IDLE_SECONDS = 30
 PAUSED_SECONDS = 60
+# The browser itself failing to start (it can crash while it is being updated) is retried after 1, 2, 4 ... minutes,
+# at most ``BROWSER_RETRY_MAX``; it costs the article no attempt.
+BROWSER_RETRY_MAX = 30 * 60
 BROWSER_IDLE_CLOSE = timedelta(minutes=5)
 LOGIN_HOLD = timedelta(seconds=30)  # after "open site to sign in": do not reopen the hidden browser meanwhile
 PACE = {"browser": (60.0, 180.0), "http": (6.0, 15.0)}
@@ -42,6 +44,18 @@ PACE = {"browser": (60.0, 180.0), "http": (6.0, 15.0)}
 USER_GAP = timedelta(minutes=3)
 NIGHT_HOURS = range(0, 7)  # local time
 AUTO_WINDOW = timedelta(hours=24)
+
+
+def browser_pace(prefs: dict[str, Any], now: datetime, local_zone: tzinfo | None = None) -> BrowserPace:
+    """A person's pace for the subscription sites (shared by this worker and the extension bridge)."""
+    local = now.astimezone(local_zone)
+    return BrowserPace(
+        gap=timedelta(minutes=int(prefs.get("fulltext.browser_gap_min", 20))),
+        user_gap=USER_GAP,
+        per_day=int(prefs.get("fulltext.browser_per_day", 15)),
+        day_start=local.replace(hour=0, minute=0, second=0, microsecond=0),
+        resting=bool(prefs.get("fulltext.browser_night_rest", True)) and local.hour in NIGHT_HOURS,
+    )
 
 
 class FullTextWorker:
@@ -60,8 +74,10 @@ class FullTextWorker:
         today: Callable[[], str] = local_today,
         local_zone: tzinfo | None = None,
         resting: Callable[[], bool] = lambda: False,
+        leased: Callable[[], int | None] = lambda: None,
     ) -> None:
         self.resting = resting  # outside the working hours only the user's own requests are read (worktime.py)
+        self.leased = leased  # the article the browser extension is reading (ExtensionBridge.leased_article)
         self.on_translation_queued: Callable[[], None] = lambda: None  # wakes the AI worker (set by the API)
         self.local_zone = local_zone  # None: this computer's time zone
         self.repo = repo
@@ -78,6 +94,7 @@ class FullTextWorker:
         self._login_until: datetime | None = None
         self._session_key: tuple[Any, ...] | None = None
         self._last_browser_use: datetime | None = None
+        self._browser_failures = 0  # browser starts that failed in a row
         self._wake: asyncio.Event | None = None
         self._loop: asyncio.AbstractEventLoop | None = None
         self._state: dict[str, Any] = {
@@ -151,18 +168,29 @@ class FullTextWorker:
             await self.close_browser()
             return PAUSED_SECONDS
 
+        reader = prefs.get("fulltext.reader", "automation")
+        if reader == "extension":
+            await self.close_browser()  # the user's own browser reads the paid sites now (fulltext/bridge.py)
+        since = utc_now_iso(now - AUTO_WINDOW)
+        # Automatic picks that were not read within the window are no longer worth reading (whoever reads them); the
+        # article the extension is reading right now stays.
+        leased = self.leased()
+        await asyncio.to_thread(self.repo.drop_stale_auto, since, () if leased is None else (leased,))
         resting = await asyncio.to_thread(self.resting)
         if not resting:
-            since = utc_now_iso(now - AUTO_WINDOW)
             picks = await asyncio.to_thread(
                 self.repo.auto_candidates, since, float(prefs.get("fulltext.auto_min_score", 60)),
-                int(prefs.get("fulltext.auto_per_story", 2)), self.today(),
+                int(prefs.get("fulltext.auto_per_story", 2)), self.today(), reader == "extension",
             )
             for reason in ("notebook", "auto"):
                 await asyncio.to_thread(self.repo.enqueue, picks[reason], reason)
+            await asyncio.to_thread(self.repo.enqueue, picks["exclusive"], "auto", EXCLUSIVE_BOOST)
+            await asyncio.to_thread(self.repo.enqueue, picks["paid"], "auto", PAID_BOOST)
 
+        # In extension mode the user's browser reads the "browser" sources (fulltext/bridge.py); never this one.
+        modes = ("http",) if reader == "extension" else ("http", "browser")
         job = await asyncio.to_thread(self.repo.next_job, now, int(prefs.get("fulltext.per_site_hour", 4)),
-                                      self.browser_pace(prefs, now), resting)
+                                      self.browser_pace(prefs, now), resting, modes=modes)
         if job is None:
             if self._session is not None and self._last_browser_use and now - self._last_browser_use > BROWSER_IDLE_CLOSE:
                 await self.close_browser()
@@ -184,40 +212,46 @@ class FullTextWorker:
                 return PAUSED_SECONDS
 
         self._state.update(state="fetching", current_article_id=job.article_id)
-        await asyncio.to_thread(self.repo.mark_attempt, job.article_id, now)
+        previous = await asyncio.to_thread(self.repo.mark_attempt, job.article_id, now)
         try:
             page = await self._fetch(job, prefs, browser)
-            result = extract(page.html, page.final_url, page.status)
-            code = result.error_code
         except FetchFailed as exc:
-            code, result = exc.code, None
-        if result is not None and result.ok:
-            await asyncio.to_thread(self.repo.store_text, job.article_id, result.text, job.mode, self.clock())
-            if prefs.get("fulltext.translate") and prefs.get("ai.enabled", True):
-                # Summary and full text in the user's languages (Settings -> Full text).
-                await asyncio.to_thread(self.repo.request_translation, job.article_id, ai_languages(prefs))
-                self.on_translation_queued()
+            if exc.local:
+                return await self._local_failure(job, exc, previous)
+            if exc.code == "browser_failed":
+                log.warning("Browser failed on %s: %s", job.url, exc.detail)
+            if job.mode == "browser":
+                self._browser_failures = 0  # the browser did start: only this page failed
+            status = await asyncio.to_thread(self.repo.store_failure, job, exc.code, self.clock())
+            self._state.update(state="ok", last_error=exc.code, current_article_id=None)
+            log.warning("Full text of article %s (%s) failed: %s -> %s", job.article_id, job.source_name, exc.code, status)
+            return PAUSED_SECONDS if exc.code in ("profile_in_use", "browser_failed") else random.uniform(*PACE[job.mode])
+        if job.mode == "browser":
+            self._browser_failures = 0
+        outcome = await asyncio.to_thread(record_page, self.repo, job, page, prefs, self.clock(),
+                                          self.on_translation_queued)
+        if outcome.ok:
             self._state.update(state="ok", last_error=None, last_done_at=utc_now_iso(self.clock()), current_article_id=None)
-            log.info("Full text of article %s (%s, %s): %d chars", job.article_id, job.source_name, job.mode, len(result.text or ""))
+            log.info("Full text of article %s (%s, %s)", job.article_id, job.source_name, job.mode)
         else:
-            assert code is not None
-            status = await asyncio.to_thread(self.repo.store_failure, job, code, self.clock())
-            self._state.update(state="ok", last_error=code, current_article_id=None)
-            log.warning("Full text of article %s (%s) failed: %s -> %s", job.article_id, job.source_name, code, status)
-            if code in ("profile_in_use", "browser_failed"):
-                return PAUSED_SECONDS
+            self._state.update(state="ok", last_error=outcome.code, current_article_id=None)
+            log.warning("Full text of article %s (%s) failed: %s -> %s", job.article_id, job.source_name,
+                        outcome.code, outcome.status)
         low, high = PACE[job.mode]
         return random.uniform(low, high)
+    async def _local_failure(self, job: FullTextJob, exc: FetchFailed, previous: str | None) -> float:
+        """The browser could not be used: the article stays in the queue as it was and the next try waits longer."""
+        await asyncio.to_thread(self.repo.release_attempt, job.article_id, previous)
+        self._session = self._session_key = None  # a session that did not start is not reused
+        self._browser_failures += 1
+        delay = min(PAUSED_SECONDS * 2 ** (self._browser_failures - 1), BROWSER_RETRY_MAX)
+        self._state.update(state="ok", last_error=exc.code, current_article_id=None)
+        log.warning("Browser could not be started (%s, %d in a row, next try in %d s): %s",
+                    exc.code, self._browser_failures, delay, exc.detail)
+        return delay
 
     def browser_pace(self, prefs: dict[str, Any], now: datetime) -> BrowserPace:
-        local = now.astimezone(self.local_zone)
-        return BrowserPace(
-            gap=timedelta(minutes=int(prefs.get("fulltext.browser_gap_min", 20))),
-            user_gap=USER_GAP,
-            per_day=int(prefs.get("fulltext.browser_per_day", 15)),
-            day_start=local.replace(hour=0, minute=0, second=0, microsecond=0),
-            resting=bool(prefs.get("fulltext.browser_night_rest", True)) and local.hour in NIGHT_HOURS,
-        )
+        return browser_pace(prefs, now, self.local_zone)
 
     async def _fetch(self, job: FullTextJob, prefs: dict[str, Any], browser: BrowserInfo | None) -> Page:
         if urlsplit(job.url).hostname in AGGREGATOR_HOSTS:

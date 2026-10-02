@@ -45,6 +45,8 @@ def _texts(story: dict[str, Any]) -> dict[str, dict[str, str]]:
         out[lang] = {"title": t.get("title", ""), "summary": t.get("summary", ""), "why": ""}
     for lang, t in own.items():
         out[lang] = {"title": t.get("title", ""), "summary": t.get("summary", ""), "why": t.get("why", "")}
+        if "points" in t:  # summaries written before 0.13.4 have none (absent: still to be written)
+            out[lang]["points"] = t["points"]
     return out
 
 
@@ -63,9 +65,14 @@ def story_headline(story: dict[str, Any], lang: str | None = None) -> str:
 
 def story_snapshot(story: dict[str, Any]) -> dict[str, Any]:
     """What the notebook keeps of a story, in every AI language. Only AI text is kept as summary
-    (copyright: outputs never carry the publishers' own text), plus one link per source."""
+    (copyright: outputs never carry the publishers' own text), plus one link per source: the representative report's
+    source first, then the reports closest to the story (outputs show only the first few)."""
+    rep_id = (story.get("representative") or {}).get("id")
+    members = sorted(story.get("members") or [], key=lambda m: m["sort_at"])
+    members.sort(key=lambda m: (rep_id is None or m.get("id") != rep_id,
+                                -(m.get("similarity") if m.get("similarity") is not None else 1.0)))
     sources: dict[str, str] = {}
-    for m in sorted(story.get("members") or [], key=lambda m: m["sort_at"]):
+    for m in members:
         sources.setdefault(m["source_name"], m["url"])
     return {
         "title": story_headline(story),

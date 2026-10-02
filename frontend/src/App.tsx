@@ -161,7 +161,7 @@ function ConnectionLost({ code }: { code: string }) {
   );
 }
 
-function CollectorFooter() {
+export function CollectorFooter() {
   const i18n = useI18n();
   const { t } = i18n;
   const toast = useToast();
@@ -205,6 +205,12 @@ function CollectorFooter() {
     <div className="sidebar-footer">
       <div className="collector-line" aria-live="polite">{line}</div>
       {status?.ai ? <AiLine /> : null}
+      {status?.extension?.active && status.extension.warn ? (
+        <button type="button" className="collector-line link-btn" title={t("extension.notConnected")} onClick={() => navigate("settings")}>
+          <Icon name="alert" size={14} />
+          <span className="collector-text">{t("extension.sidebarWarning")}</span>
+        </button>
+      ) : null}
       {c && !c.busy && c.last_cycle_errors > 0 ? (
         <span className="collector-text">{i18n.plural("status.cycleErrors", c.last_cycle_errors)}</span>
       ) : null}

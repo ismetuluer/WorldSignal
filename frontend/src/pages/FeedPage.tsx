@@ -3,7 +3,6 @@ import { api } from "../api/client";
 import type { FeedFilters, Source } from "../api/types";
 import { AiBanner, StoryBanner } from "../components/AiBanner";
 import { BulletinDialog } from "../components/BulletinDialog";
-import { ClipDialog } from "../components/ClipDialog";
 import { Icon } from "../components/Icon";
 import { MultiSelect } from "../components/MultiSelect";
 import { Banner, SearchField, Segmented } from "../components/controls";
@@ -44,7 +43,6 @@ export function FeedPage() {
   const [total, setTotal] = useState<number | null>(null);
   const searchRef = useRef<HTMLInputElement>(null);
   const [bulletin, setBulletin] = useState(false);
-  const [clipping, setClipping] = useState(false);
 
   useEffect(() => {
     api.sources().then(setSources, () => undefined);
@@ -129,10 +127,6 @@ export function FeedPage() {
         </div>
         <div className="header-actions header-actions-stack">
           <div className="header-buttons">
-            <button className="btn" onClick={() => setClipping(true)} title={t("clip.hint")}>
-              <Icon name="plus" size={16} />
-              {t("clip.open")}
-            </button>
             <button className="btn" onClick={() => setBulletin(true)}>
               <Icon name="print" size={16} />
               {t("bulletin.open")}
@@ -142,7 +136,6 @@ export function FeedPage() {
         </div>
       </header>
       {bulletin ? <BulletinDialog onClose={() => setBulletin(false)} /> : null}
-      {clipping ? <ClipDialog onClose={() => setClipping(false)} /> : null}
 
       {collector?.offline ? (
         <Banner icon="offline" title={t("status.offline.title")} body={t("status.offline.body")} />

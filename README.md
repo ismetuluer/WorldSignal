@@ -29,12 +29,9 @@ Aşağıdakiler programın gerçek ekranlarıdır (herkese açık haber akışla
 
 <p align="center"><img src="docs/screenshots/meeting-tr.png" alt="Toplantı listesi" width="760"></p>
 
-**Toplantı listesi.** Hikâyeler tek tıkla eklenir, sürükleyerek sıralanır, her öneriye kısa bir not yazılır.
-
-<p align="center"><img src="docs/screenshots/addpage-tr.png" alt="Sayfa ekle penceresi" width="560"></p>
-
-**Sayfa ekle.** Programları içeri almayan siteler (The Economist, WSJ…) için: haberi kendi tarayıcınızda okuyun, yer
-imine tıklayın, buraya yapıştırın. Haber tam metniyle eklenir.
+**Toplantı listesi.** Hikâyeler tek tıkla eklenir, sürükleyerek sıralanır, her öneriye kısa bir not yazılır. Her
+önerinin altında yapay zekânın haberlerden çıkardığı önemli noktalar (isimler, rakamlar, açıklamalar) maddeler halinde
+durur; çıktıda da öyle.
 
 <p align="center"><img src="docs/screenshots/stats-tr.png" alt="İstatistik: konu trendi" width="860"></p>
 
@@ -59,6 +56,7 @@ imine tıklayın, buraya yapıştırın. Haber tam metniyle eklenir.
 - [Yapay zekâ (isteğe bağlı)](#yapay-zekâ-isteğe-bağlı)
   - [Özet dilleri](#özet-dilleri) · [Bulut yapay zekâ](#bulut-yapay-zekâ)
 - [Kullanım](#kullanım)
+- [Abonelik siteleri: tarayıcı eklentisi](#abonelik-siteleri-tarayıcı-eklentisi)
 - [Telif ve abonelikler](#telif-ve-abonelikler)
 - [Gizlilik ve güvenlik](#gizlilik-ve-güvenlik)
 - [Sorun giderme](#sorun-giderme)
@@ -78,7 +76,7 @@ imine tıklayın, buraya yapıştırın. Haber tam metniyle eklenir.
 | **Çıktılar** | Toplantı listesi, haber detayı, sabah bülteni ve notlar: biçimli kopyala (Word/Outlook), düz metin (WhatsApp), yazdır/PDF, **e-postayla gönder**. |
 | **Geçmiş** | Takvimden bir gün seçip o sabahki sıralamayı görme, tüm günlerde arama, bir hikâyenin gün gün gelişimi. |
 | **İstatistik** | Bir konunun saat saat / gün gün izi ve gündemdeki payı, kategori ve bölgelere göre dağılım, yükselen hikâyeler, kaynak ve ülke sayıları. |
-| **Tam metin** | Açık siteler ve **sizin aboneliğiniz olan** siteler için makalenin tamamını program içinde okuma ve çevirme. |
+| **Tam metin** | Açık siteler ve **sizin aboneliğiniz olan** siteler için makalenin tamamını program içinde okuma ve çevirme; abonelik siteleri isterseniz kendi tarayıcınızdaki bir [eklentiyle](#abonelik-siteleri-tarayıcı-eklentisi) okunur. |
 | **Arka planda** | Pencere kapansa da sistem tepsisinde taramaya devam eder; önemli bir hikâye hızla yayılırsa Windows bildirimi. |
 
 ## Kurulum
@@ -219,8 +217,6 @@ bir sayı varsa "Dikkat" uyarısı gösterilir.
   kapatın: ülke bağlantısı önem skoruna katılmaz, filtresi ve etiketleri görünmez; yapay zekâ da ülke ve konu
   sorularını hiç sormaz (daha hızlı çalışır). **Ülke etiketleri** ayrıca kapatılabilir: ülkeyi değiştirince eski haberler
   yeniden derecelendirilmez.
-- **Sayfa ekle** — bot korumalı siteler (The Economist, WSJ…) için: haberi kendi tarayıcınızda okuyun, yer imine
-  tıklayın, Akış → **Sayfa ekle** penceresine yapıştırın. Haber tam metniyle eklenir; siteye program hiç istek göndermez.
 - **Tam metin** — habere (başlığa) tıklayınca program içinde açılır; metin henüz yoksa istenir, beklerken özet görünür.
   Siteye gitmek için **Kaynağa git**. Kartlardaki **Tam metni getir** düğmesi de metni sıraya alır; gelince okunur (yalnızca sizin okumanız içindir; çıktılara konmaz). Ayarlar → Tam metin → **Tam metni de çevir** açılırsa gelen
   her tam metin özet dillerinize de çevrilir; varsayılan yalnızca özettir.
@@ -266,6 +262,44 @@ bir sayı varsa "Dikkat" uyarısı gösterilir.
 
 **Klavye kısayolları:** `J` / `K` sonraki / önceki, `Enter` ya da `O` aç, `T` toplantıya ekle, `/` arama.
 
+## Abonelik siteleri: tarayıcı eklentisi
+
+Abonelik sitelerinin haberlerini (özellikle yalnızca orada çıkan **özel haberleri**) World Signal, isterseniz **kendi
+tarayıcınızdaki küçük bir eklenti** aracılığıyla okur: sayfaları programın ayrı bir otomasyon tarayıcısı değil, sizin
+Brave ya da Chrome'unuz, sizin profiliniz ve oturumunuzla açar. Hangi haberin ne zaman okunacağına program karar verir;
+eklenti yalnızca sayfayı küçültülmüş ayrı bir pencerede açar, birkaç saniye bakıp insan gibi aşağı kaydırır, sayfayı
+programa verir ve pencereyi kapatır. Öne bir pencere gelmez (küçültülmüş pencerede okur).
+
+**Bir kerelik kurulum, üç adım** (Ayarlar → Tam metin → **Eklenti** bölümü aynı adımları gösterir):
+
+1. Tarayıcınızda eklentiler sayfasını açın (Brave'de `brave://extensions`, Chrome'da `chrome://extensions`),
+   **Geliştirici modu**nu açın, **Paketlenmemiş öğe yükle**'yi seçip program klasöründeki `extension` klasörünü gösterin
+   (Ayarlar'daki **Eklenti klasörünü aç** düğmesi klasörü açar).
+2. Eklentinin simgesine tıklayın ve Ayarlar'daki **eşleşme kodunu** (**Kodu kopyala**) yapıştırın.
+3. Abonelik sitelerinize o tarayıcıda giriş yapmış olun.
+
+Sonra Ayarlar → Tam metin'de okuyucu **Eklenti** olsun; gerisi kendiliğinden yürür (Ayarlar bir kez programı yeniden
+başlatmanızı söylerse söylediğini yapın). Bilmeniz gerekenler:
+
+- **Henüz sınırlı denendi:** eklenti, abonelik sitelerinde ve Brave'de henüz kullanıcı denemesinden geçmedi; ilk
+  kullanımda sonucu gözlemleyin.
+- **Tarayıcı açık olmalıdır.** Kapalıysa program onu pencere açmadan başlatabilir (Ayarlar'dan kapatılır); eklenti
+  duraklatılmışsa ya da tarayıcı açılamıyorsa hiçbir sayfa okunmaz, işler sırada bekler ve kenar çubuğunda tek satırlık
+  bir uyarı çıkar.
+- **Robot doğrulaması (CAPTCHA) ve benzeri korumalar asla çözülmez.** Böyle bir sayfa çıkarsa haber "engellendi" olur ve
+  site giderek uzayan aralıklarla bekletilir. Eklenti sayfada yalnızca kaydırır; tıklamaz, yazmaz, form göndermez.
+- **Sitelerin kullanım şartları, abonelere bile otomatik okumayı yasaklayabilir.** Bu riski (hesabınızın uyarılması ya da
+  kapatılması dahil) siz üstlenirsiniz. Tempo sınırları (site başına aralık, günlük sınır, gece dinlenmesi) Ayarlar →
+  Tam metin'dedir; varsayılanlar düşüktür.
+- Eklenti yalnızca programın verdiği adresleri açar ve programla yalnızca bu bilgisayarın içinde, rastgele üretilen
+  eşleşme koduyla konuşur; kodu göndermeden önce sorduğu portta aynı kodu taşıyan programın dinlediğini doğrular (o
+  portu tutup soruyu asıl programa aktaran başka bir program bu doğrulamayı geçemez). Kod **Yeni kod**
+  ile yenilenir (eski eklenti bağlantısı kopar).
+- Eklenti tarayıcı mağazalarında yayımlanmaz; program güncellenince eklenti klasörü de güncellenir, tarayıcınızın
+  eklentiler sayfasında bir kez **Yenile**'ye basın.
+- Programın eski yolu da durur: okuyucu olarak **Programın tarayıcısı** seçilirse sayfalar eskisi gibi programa ait
+  ayrı bir tarayıcı profiliyle açılır.
+
 ## Telif ve abonelikler
 
 World Signal kimsenin içeriğini yeniden yayımlamaz; yalnızca **sizin** ekranınızda gösterir.
@@ -276,9 +310,10 @@ World Signal kimsenin içeriğini yeniden yayımlamaz; yalnızca **sizin** ekran
 - RSS'i olmayan bazı siteler, arama motorları için yayımladıkları **haber site haritasından** okunur; bu yalnızca
   sitenin robots.txt dosyası otomatik okuyuculara izin veriyorsa yapılır.
 - **Ücretli siteler:** Bir makalenin tamamını ancak **sizin** o sitede aboneliğiniz varsa okuyabilirsiniz. Bunun için
-  **Kaynaklar → Abonelik siteleri**'nden siteyi açıp kendi hesabınızla bir kez giriş yaparsınız; oturum
-  yalnızca bu bilgisayarda, World Signal'e ait ayrı bir tarayıcı profilinde saklanır. Aboneliğiniz yoksa o sitenin
-  yalnızca başlığını, kısa özetini ve bağlantısını görürsünüz.
+  **Kaynaklar → Abonelik siteleri**'nden siteyi açıp kendi hesabınızla bir kez giriş yaparsınız. Okuyucu **Eklenti**
+  ise ([tarayıcı eklentisi](#abonelik-siteleri-tarayıcı-eklentisi)) oturum kendi tarayıcınızda durur; **Programın
+  tarayıcısı** ise yalnızca bu bilgisayarda, World Signal'e ait ayrı bir tarayıcı profilinde saklanır. Aboneliğiniz yoksa
+  o sitenin yalnızca başlığını, kısa özetini ve bağlantısını görürsünüz.
 - Program abonelik duvarlarını aşmaz, robot doğrulamalarını (CAPTCHA) çözmez, arşiv/paywall atlatma sitelerini
   kullanmaz. Sayfaları insan temposunda açar: aynı anda tek sayfa, site başına saatte birkaç sayfa. Abonelik
   sitelerinde (tarayıcıyla okunanlar) daha da yavaş: aynı siteden iki sayfa arasında en az 20 dakika (sizin
@@ -302,6 +337,8 @@ Program yalnızca şu adreslerle konuşur:
   Claude): özetlenecek haber metinleri (tam metinler dahil) ve çevrilecek arama kelimeleriniz;
 - GitHub, yalnızca yeni sürüm bilgisi ve indirme için (kapatılabilir).
 
+Tarayıcı eklentisi (kullanırsanız) programla yalnızca bu bilgisayarın içinde (`127.0.0.1`) konuşur.
+
 Kullanım verisi, istatistik ya da kişisel bilgi toplanmaz ve gönderilmez. Programın arayüzü yalnızca bu bilgisayardan
 (`127.0.0.1`) ve her açılışta değişen gizli bir anahtarla erişilebilen yerel bir sunucudur. Veritabanı, notlar,
 tarayıcı profili ve oturum çerezleri yalnızca `%LOCALAPPDATA%\WorldSignal` altında durur. Bulut hizmeti API anahtarları
@@ -319,7 +356,8 @@ aynı klasörde, Windows'un kullanıcı hesabınıza bağlı şifrelemesiyle (`s
 | "API anahtarı kabul edilmedi" / "istek sınırı doldu" | Anahtar geçersiz ya da süresi dolmuş: Ayarlar → Yapay zekâ'dan yenisini girin. İstek sınırında program bekleyip devam eder; sık oluyorsa **Dakikada en çok istek** değerini düşürün. |
 | Özetler çok yavaş, ekran kartı ısınıyor | Daha küçük bir model seçin (bkz. [tablo](#yapay-zekâ-isteğe-bağlı)). |
 | Bir kaynak kırmızı görünüyor | Kaynaklar ekranında nedeni yazar (site kapalı, adres değişmiş, otomatik okuyuculara kapalı…). |
-| Tam metin "abonelik duvarı" diyor | O siteye Kaynaklar → Abonelik siteleri'nden giriş yapın; aboneliğiniz yoksa tam metin alınamaz. |
+| Tam metin "abonelik duvarı" diyor | O siteye giriş yapın (eklenti kullanıyorsanız kendi tarayıcınızda, değilse Kaynaklar → Abonelik siteleri'nden); aboneliğiniz yoksa tam metin alınamaz. |
+| "Eklenti bağlı değil" | Tarayıcı kapalı, eklenti yüklenmemiş ya da duraklatılmış olabilir; eklentinin simgesi durumu söyler. Eşleşme kodunu Ayarlar → Tam metin → Eklenti'den yeniden yapıştırın. Program yeniden başladıysa ve Ayarlar söylüyorsa programı bir kez yeniden başlatın. |
 | "Güncelleme yapılamadı" | Program klasöründe bir dosya açıktı; bir sonraki denemede yeniden yapılır. Olmazsa yeni zip'i indirip ayıklayın. |
 | Bir şey ters gitti | Ayarlar → **Yedekler**'den önceki bir günün yedeğini geri yükleyin; program yeniden başlar. |
 

@@ -74,7 +74,7 @@ const STATUS: Status = {
   stories: STORY_WORKER,
   fulltext: FULLTEXT_WORKER, maintenance: MAINTENANCE, notify: NOTIFY,
   collector: { running: true, busy: false, offline: false, last_cycle_at: "2026-09-27T08:00:00Z", last_cycle_new: 0, last_cycle_feeds: 5, last_cycle_errors: 0 },
-  articles: { total: 3, recent: 3 },
+  articles: { total: 3, recent: 3 }, extension: null,
 };
 const BROWSERS = {
   browsers: [
@@ -442,5 +442,9 @@ describe("fulltextErrorKey", () => {
     expect(fulltextErrorKey("paywall")).toBe("fulltext.error.paywall");
     expect(fulltextErrorKey("http_403")).toBe("fulltext.error.http");
     expect(fulltextErrorKey("weird")).toBe("fulltext.error.other");
+    // The extension's reader stores these on the article.
+    expect(fulltextErrorKey("too_large")).toBe("fulltext.error.too_large");
+    expect(fulltextErrorKey("load_failed")).toBe("fulltext.error.load_failed");
+    expect(fulltextErrorKey("script_failed")).toBe("fulltext.error.script_failed");
   });
 });

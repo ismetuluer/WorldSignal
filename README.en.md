@@ -27,12 +27,9 @@ is high ("43 sources", "3 sources in 3 h", "Türkiye link"); "First to report" n
 
 <p align="center"><img src="docs/screenshots/meeting-en.png" alt="Meeting list" width="760"></p>
 
-**Meeting list.** Add stories in one click, drag to reorder, write a short note on each suggestion.
-
-<p align="center"><img src="docs/screenshots/addpage-en.png" alt="Add a page window" width="560"></p>
-
-**Add a page.** For sites that do not let programs in (The Economist, WSJ…): read the report in your own browser,
-click the bookmark and paste it here. The report is added with its full text.
+**Meeting list.** Add stories in one click, drag to reorder, write a short note on each suggestion. Under each
+proposal the key points the AI took from the reports (names, figures, statements) are listed as bullets, in the output
+too.
 
 <p align="center"><img src="docs/screenshots/stats-en.png" alt="Statistics: topic trend" width="860"></p>
 
@@ -57,6 +54,7 @@ click the bookmark and paste it here. The report is added with its full text.
 - [Artificial intelligence (optional)](#artificial-intelligence-optional)
   - [Summary languages](#summary-languages) · [Cloud AI](#cloud-ai)
 - [Using it](#using-it)
+- [Subscription sites: the browser extension](#subscription-sites-the-browser-extension)
 - [Copyright and subscriptions](#copyright-and-subscriptions)
 - [Privacy and security](#privacy-and-security)
 - [Troubleshooting](#troubleshooting)
@@ -76,7 +74,7 @@ click the bookmark and paste it here. The report is added with its full text.
 | **Outputs** | Meeting list, story detail, morning briefing and notes. Copy formatted (Word/Outlook), copy plain text (WhatsApp), print/PDF or **send by e-mail**. |
 | **History** | Pick a day in the calendar to see that morning's ranking, search all days, and follow a story day by day. |
 | **Statistics** | A topic hour by hour or day by day and its share of the news, the spread over categories and regions, rising stories, and counts per source and country. |
-| **Full text** | Read and translate whole articles inside the app, from open sites and from sites **you subscribe to**. |
+| **Full text** | Read and translate whole articles inside the app, from open sites and from sites **you subscribe to**; subscription sites can be read by [an extension](#subscription-sites-the-browser-extension) in your own browser. |
 | **In the background** | The app keeps scanning from the system tray after the window closes. If an important story spreads fast, it sends a Windows notification. |
 
 ## Installation
@@ -221,8 +219,6 @@ checked against the source. If a number does not appear in the source, a "Check"
   **Use my country**: the link then does not count in the score, its filter and labels are hidden, and the AI no
   longer asks the country and topic questions (it works faster). **Country labels** can be switched off on their own:
   changing the country then does not rate older reports again.
-- **Add a page.** For protected sites (The Economist, WSJ…): read the report in your own browser, click the bookmark, and
-  paste it in Feed → **Add a page**. The report is added with its full text; the program sends no request to the site.
 - **Full text.** Clicking a report (its headline) opens it inside the program; a text not there yet is asked for, with
   the summary shown meanwhile. **Go to source** opens the site. The **Fetch full text** button on a card also queues it,
   and **Read full text** opens it
@@ -273,6 +269,46 @@ checked against the source. If a number does not appear in the source, a "Check"
 
 **Keyboard shortcuts:** `J` / `K` next / previous, `Enter` or `O` open, `T` add to meeting, `/` search.
 
+## Subscription sites: the browser extension
+
+Reports from subscription sites (especially **exclusives** that appear only there) can be read by World Signal through
+**a small extension in your own browser**: the pages are opened not by a separate automation browser of the program but
+by your own Brave or Chrome, with your profile and your session. The program decides which report is read when; the
+extension only opens the page in a separate minimized window, looks at it for a few seconds, scrolls down like a
+reader, hands the page to the program and closes the window. No window comes to the front (it reads in a minimized window).
+
+**One-time setup, three steps** (Settings → Full text → **Extension** shows the same steps):
+
+1. Open your browser's extensions page (`brave://extensions` in Brave, `chrome://extensions` in Chrome), turn on
+   **Developer mode**, choose **Load unpacked** and pick the `extension` folder inside the program folder (the **Open
+   the extension folder** button in Settings opens it).
+2. Click the extension's icon and paste the **pairing code** from Settings (**Copy code**).
+3. Be signed in to your subscription sites in that browser.
+
+Then set the reader to **Extension** under Settings → Full text; the rest runs by itself (if Settings asks you to
+restart the program once, do so). What you need to know:
+
+- **Little tried so far:** it has not yet been tried by users on subscription sites or in Brave; watch the result
+  the first time you use it.
+- **The browser must be open.** If it is closed the program can start it without a window (switch this off in
+  Settings); while the extension is paused or the browser cannot start, no page is read, the jobs wait in the queue and
+  the sidebar shows a one-line warning.
+- **Robot checks (CAPTCHAs) and similar protections are never solved.** If such a page appears, the report is marked
+  "blocked" and the site is rested for longer and longer intervals. On a page the extension only scrolls; it does not
+  click, type or submit forms.
+- **Sites' terms of use may forbid automated reading even for subscribers.** You take that risk (including a warning to
+  or the closing of your account). The pace limits (interval per site, daily limit, night rest) are under Settings →
+  Full text; the defaults are low.
+- The extension opens only addresses the program gives it, and talks to the program only inside this computer, with a
+  randomly generated pairing code; before sending the code it first verifies that the program holding the same code
+  listens on the very port it asked (another program holding that port and relaying the question to the real program
+  cannot pass this check).
+  **New code** replaces the code (the old extension connection stops working).
+- The extension is not published in a browser store; when the program is updated the extension folder is updated too,
+  and you press **Reload** once on the browser's extensions page.
+- The earlier way remains: if the reader is set to **The program's browser**, pages are opened as before with a
+  separate browser profile that belongs to the program.
+
 ## Copyright and subscriptions
 
 World Signal republishes nobody's content; it shows it only on **your** screen.
@@ -283,9 +319,10 @@ World Signal republishes nobody's content; it shows it only on **your** screen.
 - Some sites without RSS are read from the **news sitemap** they publish for search engines. This is done only if the
   site's robots.txt allows automated readers.
 - **Paid sites:** you can read a whole article only if **you** subscribe to that site. Open the site from
-  **Sources → Subscription sites** and sign in once with your own account. The session is kept only on this
-  computer, in a separate browser profile that belongs to World Signal. Without a subscription you see only the
-  headline, the short summary and the link.
+  **Sources → Subscription sites** and sign in once with your own account. With the reader set to **Extension** (see
+  [the browser extension](#subscription-sites-the-browser-extension)) the session stays in your own browser; with
+  **The program's browser** it is kept only on this computer, in a separate browser profile that belongs to World
+  Signal. Without a subscription you see only the headline, the short summary and the link.
 - The app does not get around paywalls, does not solve robot checks (CAPTCHAs), and does not use archive or
   paywall-bypass sites. It opens pages at a human pace: one page at a time, a few pages per site per hour.
   Subscription sites (read in the browser) go slower still: at least 20 minutes between two pages of one site
@@ -309,6 +346,8 @@ The app talks only to:
   which receives the article texts to summarise (full texts included) and the search words to translate;
 - GitHub, only for new-version information and downloads (can be turned off).
 
+The browser extension (if you use it) talks to the app only inside this computer (`127.0.0.1`).
+
 No usage data, statistics or personal information is collected or sent. The app's interface is a local server that is
 reachable only from this computer (`127.0.0.1`) and only with a secret key that changes at every start. The database,
 notes, browser profile and session cookies stay only under `%LOCALAPPDATA%\WorldSignal`. Cloud API keys are kept in
@@ -327,7 +366,8 @@ into backups.
 | "The API key was not accepted" / "rate limit reached" | If the key is invalid or expired, enter a new one under Settings → Artificial intelligence. At a rate limit the app waits and continues. If it happens often, lower **Requests per minute (max.)**. |
 | Summaries are very slow and the graphics card gets hot | Choose a smaller model (see the [table](#setting-up-ollama)). |
 | A source is shown in red | The Sources page gives the reason: site down, address changed, closed to automated readers… |
-| Full text says "paywall" | Sign in to that site under Sources → Subscription sites. Without a subscription, no full text can be fetched. |
+| Full text says "paywall" | Sign in to that site (in your own browser if you use the extension, otherwise under Sources → Subscription sites). Without a subscription, no full text can be fetched. |
+| "Extension not connected" | The browser may be closed, the extension not loaded or paused; the extension's icon shows its state. Paste the pairing code again from Settings → Full text → Extension. If the app was restarted and Settings says so, restart the app once. |
 | "The update failed" | A file in the program folder was in use, and the next attempt will try again. If it keeps failing, download the new zip and extract it. |
 | Something went wrong | Under Settings → **Backups**, restore the backup of an earlier day; the app restarts. |
 

@@ -54,7 +54,8 @@ def dated(name: str) -> bytes:
     """Fixture feed with its dates moved to yesterday, so the test does not depend on the day it runs."""
     day = datetime.now(UTC) - timedelta(days=1)
     text = fixture_bytes(name).decode("utf-8")
-    text = text.replace(FIXTURE_DAY.strftime("%a, %d %b %Y"), day.strftime("%a, %d %b %Y"))
+    # The weekday is left out: the fixtures call 27 September a Saturday (it is a Sunday) and feedparser ignores it.
+    text = re.sub(r"\w{3}, " + FIXTURE_DAY.strftime("%d %b %Y"), day.strftime("%a, %d %b %Y"), text)
     return text.replace(FIXTURE_DAY.strftime("%Y-%m-%dT"), day.strftime("%Y-%m-%dT")).encode("utf-8")
 
 
@@ -173,7 +174,7 @@ def test_full_user_journey(page, server):
     expect(card.get_by_role("button", name="Toplantıda")).to_be_visible()
     page.get_by_role("button", name="Toplantı", exact=True).click()
     expect(page.get_by_role("heading", name="Toplantı listesi")).to_be_visible()
-    reason = page.get_by_role("textbox", name="Kısa gerekçe")
+    reason = page.get_by_role("textbox", name="Kısa not")
     reason.fill("Irak seçimi açılışta")
     with page.expect_response(lambda r: "/api/meeting/" in r.url and r.request.method == "PATCH"):
         reason.press("Enter")

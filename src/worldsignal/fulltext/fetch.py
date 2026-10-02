@@ -44,9 +44,14 @@ USER_AGENT = f"Mozilla/5.0 (compatible; WorldSignal/{__version__}; article reade
 
 
 class FetchFailed(Exception):
-    def __init__(self, code: str, detail: str = "") -> None:
+    """``local``: the failure happened on this computer before any page was asked for (the browser did not start),
+    so the article and its site are not to blame."""
+
+    def __init__(self, code: str, detail: str = "", *, local: bool = False) -> None:
         super().__init__(f"{code}: {detail}" if detail else code)
         self.code = code
+        self.detail = detail
+        self.local = local
 
 
 @dataclass
@@ -170,7 +175,7 @@ class BrowserSession:
         from patchright.async_api import async_playwright  # heavy import, only when needed
 
         if profile_in_use(self.user_data_dir):
-            raise FetchFailed("profile_in_use", str(self.user_data_dir))
+            raise FetchFailed("profile_in_use", str(self.user_data_dir), local=True)
         self.user_data_dir.mkdir(parents=True, exist_ok=True)
         args = ["--no-first-run", "--no-default-browser-check"]
         if not self.visible:
@@ -184,7 +189,7 @@ class BrowserSession:
         except Exception as exc:
             await self._pw.stop()
             self._pw = None
-            raise FetchFailed("browser_failed", repr(exc)) from exc
+            raise FetchFailed("browser_failed", repr(exc)[:300], local=True) from exc
         self._page = self._ctx.pages[0] if self._ctx.pages else await self._ctx.new_page()
 
     async def fetch(self, url: str) -> Page:

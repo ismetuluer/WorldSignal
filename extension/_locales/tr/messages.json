@@ -1,0 +1,15 @@
+{
+  "name": { "message": "World Signal okuyucu" },
+  "description": { "message": "Abonelik sitelerindeki haberleri World Signal için sizin tarayıcınızda, insan temposunda okur." },
+  "codeLabel": { "message": "Eşleşme kodu (World Signal → Ayarlar → Tam metin → Eklenti)" },
+  "save": { "message": "Kaydet" },
+  "pause": { "message": "Duraklat" },
+  "pausedState": { "message": "Duraklatıldı: eklenti haber okumuyor." },
+  "noProgram": { "message": "World Signal bulunamadı. Program açık mı, Ayarlar'da okuyucu \"Eklenti\" mi?" },
+  "notPaired": { "message": "Eşleşme kodu girilmedi." },
+  "wrongCode": { "message": "Eşleşme kodu geçersiz; Ayarlar'daki kodu yeniden girin." },
+  "notFoundOrWrongCode": { "message": "World Signal bulunamadı ya da eşleşme kodu yanlış. Program açık mı? Kodu Ayarlar → Tam metin → Eklenti'den yeniden kopyalayın." },
+  "connected": { "message": "Bağlı. Bugün okunan: $1" },
+  "reading": { "message": "Okunuyor: $1" },
+  "lastError": { "message": "Son hata: $1" }
+}

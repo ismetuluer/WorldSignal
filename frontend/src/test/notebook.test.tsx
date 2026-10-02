@@ -57,7 +57,7 @@ const AI: AiStatus = {
   last_done_at: null, avg_seconds: 1, pending: 0, done: 1, failed: 0, done_24h: 1,
 };
 const STATUS: Status = {
-  version: "0.4.0", ai: AI, stories: STORY_WORKER, fulltext: FULLTEXT_WORKER, maintenance: MAINTENANCE, notify: NOTIFY, articles: { total: 1, recent: 1 },
+  version: "0.4.0", ai: AI, stories: STORY_WORKER, fulltext: FULLTEXT_WORKER, maintenance: MAINTENANCE, notify: NOTIFY, articles: { total: 1, recent: 1 }, extension: null,
   collector: { running: true, busy: false, offline: false, last_cycle_at: "2026-09-27T08:00:00Z", last_cycle_new: 0, last_cycle_feeds: 1, last_cycle_errors: 0 },
 };
 
@@ -141,13 +141,44 @@ describe("Meeting list", () => {
     expect(screen.getAllByRole("listitem").map((li) => li.querySelector(".meeting-title")?.textContent)).toEqual(["Öneri 1", "Öneri 2", "Öneri 3"]);
   });
 
-  it("saves a short reason and removes a proposal", async () => {
+  it("shows the key points, or says they are still to be written", async () => {
+    mocked.meeting.mockResolvedValue({ day: TODAY, today: TODAY, items: [
+      item(1, { texts: { tr: { title: "Öneri 1", summary: "Özet 1", why: "Gerekçe 1", points: "Bakan Fidan\n3 milyar dolar" } } }),
+      item(2), // summarised before key points existed
+      item(3, { story_id: null }), // the story is gone: nothing will come
+    ] });
+    wrap(<MeetingPage />);
+    const points = await screen.findByRole("list", { name: "Önemli noktalar" });
+    expect(within(points).getAllByRole("listitem").map((li) => li.textContent)).toEqual(["Bakan Fidan", "3 milyar dolar"]);
+    expect(screen.getAllByText(/Önemli noktalar \(isimler, rakamlar, açıklamalar\) yapay zekâda sırada/)).toHaveLength(1);
+    expect(screen.queryByText(/Gerekçe/)).not.toBeInTheDocument();
+  });
+
+  it("shows the key points as soon as the AI has written them", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    try {
+      mocked.status.mockResolvedValueOnce({ ...STATUS, ai: { ...STATUS.ai, last_done_at: "2026-09-27T08:00:00Z" } });
+      mocked.status.mockResolvedValue({ ...STATUS, ai: { ...STATUS.ai, last_done_at: "2026-09-27T08:01:00Z" } });
+      mocked.meeting.mockResolvedValue({ day: TODAY, today: TODAY, items: [item(1)] });
+      wrap(<MeetingPage />);
+      expect(await screen.findByText(/yapay zekâda sırada/)).toBeInTheDocument();
+      mocked.meeting.mockResolvedValue({ day: TODAY, today: TODAY, items: [
+        item(1, { texts: { tr: { title: "Öneri 1", summary: "Özet 1", why: "", points: "Bakan Fidan" } } }),
+      ] });
+      await vi.advanceTimersByTimeAsync(20_000); // the next status poll: the AI finished something
+      expect(await screen.findByText("Bakan Fidan")).toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("saves a short note and removes a proposal", async () => {
     mocked.updateMeetingItem.mockImplementation(async (id, comment) => ({ ...item(id), comment }));
     mocked.removeMeetingItem.mockResolvedValue(undefined);
     wrap(<MeetingPage />);
     await screen.findByText("Öneri 1");
     const first = screen.getByText("Öneri 1").closest("li")!;
-    await userEvent.type(within(first).getByRole("textbox", { name: "Kısa gerekçe" }), "İlk sırada{Enter}");
+    await userEvent.type(within(first).getByRole("textbox", { name: "Kısa not" }), "İlk sırada{Enter}");
     await waitFor(() => expect(mocked.updateMeetingItem).toHaveBeenLastCalledWith(1, "İlk sırada"));
     await userEvent.click(within(first).getByRole("button", { name: "Listeden çıkar" }));
     expect(mocked.removeMeetingItem).toHaveBeenCalledWith(1);

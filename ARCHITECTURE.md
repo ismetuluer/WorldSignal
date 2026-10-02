@@ -53,13 +53,15 @@ src/worldsignal/
   single_instance.py   İkinci kopya açılırsa ilkini öne getirir
   textnorm.py          Türkçe duyarlı arama normalleştirmesi
   api/app.py           HTTP uç noktaları
+  api/extension.py     Eklentinin uç noktaları (/api/ext/*) ve arayüzün eşleşme kodu uç noktaları (/api/extension)
   collector/rss.py     Tek bir akışı indirme + çözümleme
   collector/service.py Arka planda sürekli toplama döngüsü
   ai/                  ollama.py (istemci), cloud.py (Gemini / OpenAI uyumlu / Anthropic istemcileri),
                        languages.py (özet dilleri), enrich.py + story.py (istemler), translate.py (tam metin
                        çevirisi), worker.py (YZ kuyruğu)
   apikeys.py           Bulut API anahtarları (DPAPI ile şifreli, veritabanı dışında)
-  fulltext/            extract.py (sayfadan metin), fetch.py (indirme, tarayıcı oturumu), worker.py (tam metin kuyruğu)
+  fulltext/            extract.py (sayfadan metin), fetch.py (indirme, tarayıcı oturumu), worker.py (tam metin kuyruğu),
+                       outcome.py (bir sayfanın sonucunu yazma), bridge.py (eklentinin kuyruğu), launcher.py
   stories/             embedding.py (ne gömülür), score.py (önem skoru), worker.py (birleştirme)
   repo/                sources.py, articles.py, ai.py, stories.py, notebook.py, fulltext.py, history.py, settings.py
                        (depo katmanı)
@@ -77,6 +79,7 @@ frontend/src/
   pages/               Akış, Kaynaklar, Ayarlar ve diyaloglar
   components/          Ortak bileşenler (düğme, anahtar, diyalog, bildirim…)
   styles/app.css       Tasarım sistemi (açık/koyu tema değişkenleri)
+extension/               Tarayıcı eklentisi (MV3, düz JS; derleme yok): manifest.json, background.js, lib.js, popup.*, _locales
 tools/verify_catalog.py  Tüm RSS adreslerini gerçekten test edip kataloğu üretir
 tools/benchmark_*.py     Sohbet ve gömme modeli karşılaştırmaları (gerçek haberlerle)
 tests/                   Arka uç + uçtan uca testler
@@ -124,15 +127,13 @@ tests/                   Arka uç + uçtan uca testler
   (`HOME_REGION = "turkey"`) olmayan her haber; kaynağın bölgesine bakar, haberin konusuna değil. `meta.home_region`
   yalnızca ülkesi TR olanlarda dolu, arayüz seçeneği ona göre gösterir. "Küresel" bölgesi (dört ajans) filtreden çıktı,
   kaynak bölgesi olarak durur; ajanslar Kaynak grubu → Ajanslar ile süzülür.
-- **Sayfa ekle** (0.13.3, `clip.py`, `POST /api/clips`): program içeri alınmayan siteler için kullanıcının kendi
-  tarayıcısı köprü olur. Yer imi (arayüz `bookmarkletCode`) açık sayfanın adresini, başlığını (`og:title`), dilini ve
-  HTML'ini panoya JSON olarak yazar; kullanıcı yapıştırır, sunucu `parse_clip` ile doğrular (`ws: 1`, http/https, ≤ 8 MB) ve
-  mevcut `fulltext.extract` ile haber metnini çıkarır (paywall/bot sayfası/haber değil ise nedeniyle reddeder).
-  Kaynak, sayfanın alan adına göre kataloğun kaynağıdır (alt alan adı dahil, benzeyen adlar değil), yoksa "Elle
-  eklenenler" (`slug = manual`, akışsız). Haber `dedupe_key = canonical_url` ile eklenir (RSS'ten gelmişse güncellenir),
-  tam metin `method = 'clip'` ile `article_fulltext`'e yazılır, YZ özeti sıraya alınır. Pano + yapıştırma seçildi:
-  yer imi sitenin sayfasında çalıştığı için CORS/CSP ve sabit port/uzun ömürlü anahtar sorunu yok; sunucuya yeni bir
-  dış yüzey açılmadı (uç nokta oturum anahtarlı).
+- **Toplantı notunda önemli noktalar** (0.13.4, `ai/story.py` `points_<dil>`, `STORY_PROMPT_VERSION = 5`): hikâye
+  özeti 0–5 kısa nokta da yazar (isim, rakam, kim ne dedi); `clean_points` madde işaretlerini ve tekrarları atar, metinde
+  satır başına bir nokta olarak `ai_texts[dil].points` (göç yok; anahtarı olmayan özet 0.13.4'ten önce yazılmıştır).
+  `next_story_job(meeting_day=…)`: elle istenenlerden sonra bugünkü toplantı listesindeki özetsiz ya da noktasız
+  hikâyeler (dinlenirken de). `story_snapshot` kaynakları temsilci haber, sonra benzerlik sırasıyla dizer; toplantı
+  çıktısı ilk üçünü yazar, "neden toplantıda" (`why`) cümlesini yazmaz.
+- **Sayfa ekle** (0.13.3–0.13.4): 0.14.0'da kaldırıldı; yerine tarayıcı eklentisi geldi (`/api/ext/*`).
 - **İlk veren / çelişki** (0.13.3): `stories.get` `first` alanı = en erken `sort_at`'li üye (≥2 kaynak varsa); çelişki
   ayrı sütun değil, hikâye özetinin dil metnindeki `conflict` anahtarı (`ai/story.py`: `conflict_<dil>` şema alanı,
   yalnızca kaynaklar bir olguda birbirini yalanlıyorsa dolu) — göç gerekmedi, eski özetlerde anahtar yoktur.
@@ -345,7 +346,8 @@ articles ─► StoryWorker: gömme (Ollama /api/embed, işlemcide) ─► artic
   kalan tarayıcı kapatılır.
 - **Kuyruk** (`article_fulltext`): öncelik kullanıcı isteği > not defteri/toplantı > otomatik (skoru ≥ 60 olan
   hikâyelerin en fazla 2 haberi). Hata kodları: `bot_check`, `paywall`, `http_N`, `not_article`, `timeout`, `network`,
-  `profile_in_use`, `browser_failed`. `bot_check` ve `403/429` siteyi bekletir (`fulltext_paused_until`); Ayarlar'dan
+  `profile_in_use`, `browser_failed`. Tarayıcı açılamazsa (`FetchFailed(local=True)`: profil kullanımda, açılışta
+  çökme) haber deneme hakkı kaybetmez, `attempted_at` geri alınır, yeniden deneme 1, 2, 4 … 30 dk arayla (0.13.4). `bot_check` ve `403/429` siteyi bekletir (`fulltext_paused_until`); Ayarlar'dan
   "Devam ettir" denebilir.
 - **Çıkarma** (`fulltext/extract.py`): trafilatura; 400 karakterden kısa metin "vitrin" sayılır. Sayfa schema.org
   `wordCount` bildiriyorsa ve çıkarılan metin bunun yarısından azsa sonuç `paywall` olur (yalnızca ücretsiz kısmı
@@ -354,6 +356,77 @@ articles ─► StoryWorker: gömme (Ollama /api/embed, işlemcide) ─► artic
   `ft.text` varsa o, yoksa RSS özeti). Tam metnin özet dillerine çevirisi yalnızca istek üzerine yapılır
   (`ai/translate.py`: paragraf sınırında ~1800 karakterlik parçalar), YZ kuyruğunda en önce çalışır; haberin kendi
   diline çeviri yapılmaz.
+
+### Tarayıcı eklentisi (0.14.0)
+Karar (2026-10-01): abonelik sitelerini programın otomasyon tarayıcısı yerine kullanıcının **kendi tarayıcısı** okur (Chrome
+ve Brave; paketlenmemiş öğe olarak yüklenir, mağazada yayımlanmaz). Tasarım: `docs/superpowers/specs/2026-10-01-tarayici-eklentisi-design.md`.
+Eklenti "ince istemci"dir: ne zaman neyin okunacağına program karar verir (aynı kuyruk, aynı `BrowserPace`); eklenti
+sayfayı açıp HTML'ini geri verir. Metin çıkarma, engel algılama ve bekletme sunucuda kalır.
+- **Ayarlar:** `fulltext.reader` (`automation` | `extension`; kaynak yöntemleri `off/http/browser` değişmedi, göç yok),
+  `fulltext.launch_browser` (varsayılan açık). Eklenti modunda tam metin işçisi (`worker.py`) yalnızca `http` işlerini alır,
+  otomasyon tarayıcısını kapatır; `browser` işlerini eklenti alır. Eklenti bağlı değilken otomasyon tarayıcısına dönülmez.
+- **Kuyruğa girenler** (`FullTextRepository.auto_candidates(..., paid=True)`): eklenti modunda "tarayıcı ile" kaynakların son
+  haberlerinin tümü sıraya girer; başlığı "özel" sayılanlar (`flags.is_exclusive`) `EXCLUSIVE_BOOST` ile önde, öbürleri
+  `PAID_BOOST` ile. Öncelik: kullanıcı > not defteri > özel > otomatik. Site başına günlük sınır `fulltext.browser_per_day`.
+  Okuyucudan bağımsız olarak işçinin her adımı önce `drop_stale_auto` ile haberi `AUTO_WINDOW`'dan (24 sa) eski, hâlâ
+  bekleyen `auto` satırlarını siler (`user` / `notebook`, son 24 saatte denenmiş satır ve eklentinin o an okuduğu haber —
+  `ExtensionBridge.leased_article` — kalır); otomatik hikâye üyesi seçimi de aynı pencereyle sınırlı
+  (yoksa eski üye her adımda silinip yeniden eklenirdi).
+- **Köprü** (`fulltext/bridge.py`, `ExtensionBridge`): bir anda tek iş. `next()` mevcut `next_job(..., BrowserPace)` ile işi
+  seçer, deneme zamanını işler ve işi **5 dakikalık kira** ile verir (`Lease`). Google News (`worker.AGGREGATOR_HOSTS`) ya
+  da `http(s)` olmayan bağlantı eklentiye hiç verilmez: `store_failure` (`aggregator_link` / `not_article`, ikisi de son) ve
+  sıradaki iş. Kira verildiğinde sayfa istenmiş sayılır: kira dolarsa (`timeout`), eklenti `load_failed | timeout |
+  script_failed` bildirirse ya da sayfa sunucuca reddedilirse (`reject(lease, "too_large")`: HTML 8 MB üstü, `422`) deneme
+  **sayılır** (`store_failure`; `MAX_ATTEMPTS` = 3 sonra `failed`), `attempted_at` kalır (site temposu bu ziyareti sayar).
+  Yalnızca `tab_closed` (kullanıcı pencereyi kapattı) işi hakkı yanmadan geri verir (`release_attempt`). Her hatada site
+  ayrıca **1, 2, 4 … en çok 30 dk** dinlendirilir (yalnızca bellekte; `exclude_sources` ile diğer siteler beklemez); sitenin
+  gerçek bir yanıtı sayacı sıfırlar, "Dene" / "Sürdür" (`clear_cooldown`) dinlenmeyi bitirir. Tam metin kapanır ya da okuyucu
+  değişirse açık kira unutulur (geç sonuç `409`). Geçersiz kira `409 unknown_lease`. `result()` HTML'i ve eklentinin
+  bildirdiği HTTP durumunu (`status`, 100–599 dışı yok sayılır) `fulltext/outcome.py` `record_page`'e verir: tam metin
+  işçisinin kullandığı **aynı** yol (`extract` → `store_text` / `store_failure`, çeviri isteği, bot_check/paywall/401–403–429'da
+  site bekletmesi); yöntem kaydı `extension`.
+- **Bağlantı durumu:** köprü her yanıtta verdiği beklemeyi (okurken kira süresi) ve kendi başlama zamanını tutar.
+  `connected` = eklenti bu bekleme + 60 sn içinde sordu; `warn` (kenar çubuğu uyarısı) = okuyucu eklenti, bağlı değil ve
+  program açılalı (ya da okuyucu eklentiye geçeli; geçiş bir sonraki durum sorgusunda ya da eklenti isteğinde görülür)
+  10 dk'dan uzun süre geçti ve eklenti hiç görülmedi ya da sessizlik > max(10 dk, bekleme + 60 sn). Ayarlar
+  `connected`'ı gösterir. Eklentinin okuduğu sayfaların başarısızlıkları da `method = extension` ile kaydedilir.
+- **Uç noktalar** (`api/extension.py`): `GET /api/ext/hello?nonce=…` (anahtarsız tanışma), `POST /api/ext/next`, `POST /api/ext/result`,
+  `GET /api/ext/status` (başlıkta `X-WorldSignal-Extension`: eşleşme kodu). Arayüz için oturum anahtarlı `GET /api/extension`
+  (kod + port + durum) ve `POST /api/extension/code` (yenile). HTML en çok 8 MB, adres 2000 karakter.
+- **Güvenlik:** `Host` yalnızca `127.0.0.1` / `localhost` (DNS yeniden bağlamaya karşı), `Origin` `http(s)://` ise ret (bir
+  web sayfası, kodu bilse bile, çağıramaz); kod `hmac.compare_digest` ile karşılaştırılır (bayt olarak: bozuk başlık
+  çökertmez). Kod: 32 baytlık rastgele, `apikeys.SecretStore`'da (DPAPI, `secrets.json`), günlüklere yazılmaz, `/api/settings`'te
+  dönmez; yalnızca oturum anahtarlı `GET /api/extension` yanıtında görünür. Kira da günlüğe yazılmaz. **Programın kimliği:**
+  `hello`, eklentinin her yoklamada ürettiği rastgele `nonce`'a (16–64 URL-güvenli karakter, değilse `422`)
+  `proof = base64url(HMAC-SHA256(kod, "worldsignal-hello:" + port + ":" + nonce))` ile yanıt verir; `port` programın
+  gerçekten dinlediği port (`ctx.port`; bilinmiyorsa `Host` başlığındaki port), kod ya da port yoksa `null`. Eklenti
+  kanıtı **yokladığı portla** WebCrypto üzerinden doğrular (sabit zamanlı karşılaştırma) ve kodu yalnızca kanıtlayan porta
+  gönderir; her turda yeniden doğrular (önce son bulunan port), yanıt vermeyen port 5 sn sonra bırakılır. Böylece
+  portlardan birini önce tutan başka bir yerel program kodu öğrenemez; soruyu asıl programa aktarsa bile aldığı yanıt asıl
+  programın portunu taşır ve kabul edilmez. Kapsam dışı: kullanıcının belleğini ya da dosyalarını okuyabilen yerel bir
+  program (kod DPAPI ile kullanıcıya bağlı saklanır, bundan korumaz).
+  Eklentinin yetkisi: `alarms`, `tabs`, `scripting`, `storage`; `host_permissions` `127.0.0.1` ve `<all_urls>` (abonelik
+  sitelerinde sayfa okuyabilmek için); yalnızca programın verdiği `http(s)` adreslerini açar (başkası `load_failed`).
+- **Sabit port:** eklenti modunda program önce `47821`'i dener, doluysa `…47830`, hepsi doluysa rastgele port
+  (`__main__.py`); eklenti bu 10 portu `hello` ile yoklar. Rastgele porta düşüldüyse (`fixed_port: false`) arayüz "programı
+  yeniden başlatın" der.
+- **Tarayıcıyı başlatma** (`fulltext/launcher.py`, `ExtensionBridge.launch_if_needed`, her dakika denetlenir): eklenti modu açık,
+  eklentiden 10 dk'dır ses yok, kullanıcının tarayıcısı çalışmıyorsa (`tasklist`, 10 sn zaman aşımı) tarayıcı **otomasyon
+  bayrağı olmadan, kullanıcının kendi profiliyle**, yalnızca `--no-startup-window` ile başlatılır; en çok yarım saatte bir.
+  Açık tarayıcıya dokunulmaz. Eklenti uyanınca kendi küçültülmüş penceresini açar.
+- **Eklenti** (`extension/`): `background.js` hizmet işçisi, `chrome.alarms` ile programın söylediği süre sonra (`wait_seconds`,
+  en erken 30 sn) turu yineler; tek seferlik alarm yalnızca tur sonunda kurulduğundan dakikada bir **bekçi alarmı** döngüyü
+  gerekirse yeniden başlatır; okurken 20 sn'de bir eklenti API çağrısı işçiyi uyanık tutar. `lib.js` (sahte `chrome` ile
+  sınanabilir; vitest): `findProgram` (kanıt doğrulamasıyla), `isWebUrl`, `call`, `readingPlan` (3–8 sn bakış, 4–9 adım, 2,5–7 sn aralık), `readPage` (her sayfa
+  için **ayrı, küçültülmüş pencere**; sayfa bitince kapanır; işçi okurken durdurulursa pencere kimliği `storage.session`'da
+  durur, sonraki tur kapatır; HTML ile birlikte sayfanın HTTP durumunu navigasyon kaydının `responseStatus`'undan verir),
+  `tick`. Eklenti sayfada yalnızca kaydırır ve HTML'i okur; tıklamaz, yazmaz, robot
+  doğrulamasına dokunmaz (gelen sayfa olduğu gibi sunucuya gider, sunucu `bot_check` der).
+- **Kaldırıldı:** `clip.py`, `POST /api/clips`, `store_clip` (0.13.3'teki yer imi ile ekleme). Eski kayıtlar ve "Elle
+  eklenenler" kaynağı veritabanında durur.
+- **Ölçüm (2026-10-01):** Playwright'ın kendi Chromium'u, eklenti yüklü, deneme örneğiyle: eşleşme, iki Guardian haberi küçültülmüş
+  pencerede okundu, çıkarılan metin düz indirmeyle aynı (3554 / 4205 karakter), ikinci sayfa ilkinden ~3 dk sonra, pencere
+  sonra kapandı. **Denenmedi:** Brave'in kendisi, `--no-startup-window` ile eklentinin uyanması, abonelik siteleri.
 
 ## Geçmiş ve saklama (Faz 6)
 
@@ -415,6 +488,8 @@ yoktur: tür, dosyanın içeriğinden anlaşılır. `POST /api/feeds/test` bir w
   kullanıcı hesabına bağlı) ile şifreli; atomik yazılır. Veritabanında değildir, bu yüzden yedeklere girmez. API yalnızca
   yazılabilir: `GET /api/ai/keys` hangi hizmette anahtar olduğunu söyler, anahtarın kendisini asla döndürmez; anahtar
   günlüklere yazılmaz. Anahtar yalnızca ilgili hizmetin kendi adresine, başlıkta gönderilir.
+- **Eklenti uç noktaları** (`/api/ext/*`): oturum anahtarı yerine eşleşme kodu, Host/Origin denetimi, 8 MB sınırı; ayrıntı
+  "İngilizce ve tam metin → Tarayıcı eklentisi" bölümünde.
 
 ## Çok dillilik (arayüz)
 
@@ -467,7 +542,9 @@ Mimari buna hazır tutuldu:
 - `tools/build.py`: arayüzü derler, PyInstaller "onedir" (`packaging/worldsignal.spec`) çalıştırır, `version.txt`
   (güncelleyici okur) ve `build.txt` (sürüm + derleme zamanı, günlüğe yazılır) yazar. Sonuç `dist\WorldSignal`
   (~2.760 dosya, 221 MB; bunun ~100 MB'ı patchright'ın tarayıcı sürücüsü). Pakete giren veriler: arayüz, katalog,
-  göçler, simge, trafilatura/justext/courlan/htmldate dil verileri, patchright sürücüsü. Konsol penceresi yok; simge
+  göçler, simge, trafilatura/justext/courlan/htmldate dil verileri, patchright sürücüsü; `extension\` klasörü exe'nin
+  yanına olduğu gibi kopyalanır (`paths.extension_dir()`; kullanıcı onu tarayıcıya yükler) ve `tools/release.py`
+  `extension/manifest.json` olmayan paketi reddeder (`manifest.json` sürümü program sürümüyle aynı olmalı, testle denetlenir). Konsol penceresi yok; simge
   `assets/worldsignal.ico` (`tools/make_icon.py` ile üretilir, ek kütüphane yok).
 - **Dağıtım (0.8.0)**: GitHub Releases. Her kullanıcı zip'i kendi bilgisayarında yazılabilir bir klasöre ayıklar ve tek
   exe'yi çalıştırır (0.7.2'deki ağ klasörü başlatıcısı ve ağdan kendini taşıma kaldırıldı).

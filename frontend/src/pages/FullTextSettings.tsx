@@ -5,6 +5,7 @@ import { useToast } from "../components/Toasts";
 import { Segmented, Spinner, Switch } from "../components/controls";
 import { describeError, useI18n } from "../i18n";
 import { fulltextErrorKey } from "../lib/fulltext";
+import { ExtensionSettings } from "./ExtensionSettings";
 import { navigate } from "../router";
 import { useAppState } from "../state";
 
@@ -52,11 +53,16 @@ export function FullTextSettings() {
   const ft = status?.fulltext;
   const enabled = settings["fulltext.enabled"];
   const profile = settings["fulltext.profile"];
+  // The program's own browser profile and window matter only when it does the reading; which browser is used
+  // (sign-in pages, launching it for the extension) matters in both modes.
+  const ownBrowser = settings["fulltext.reader"] !== "extension";
 
   return (
     <section className="settings-group">
       <h2 className="section-title">{t("settings.fulltext")}</h2>
       <div className="settings-card">
+        <ExtensionSettings />
+
         <div className="settings-row">
           <div className="settings-row-text">
             <div className="settings-row-title">{t("settings.fulltext.enabled")}</div>
@@ -84,7 +90,9 @@ export function FullTextSettings() {
         <div className="settings-row">
           <div className="settings-row-text">
             <div className="settings-row-title">{t("settings.fulltext.browser")}</div>
-            <div className="settings-row-hint">{t("settings.fulltext.browserHint")}</div>
+            <div className="settings-row-hint">
+              {ownBrowser ? t("settings.fulltext.browserHint") : t("extension.browserHint")}
+            </div>
           </div>
           {browsers === null ? (
             <Spinner />
@@ -112,27 +120,29 @@ export function FullTextSettings() {
           )}
         </div>
 
-        <div className="settings-row">
-          <div className="settings-row-text">
-            <div className="settings-row-title">{t("settings.fulltext.profile")}</div>
-            <div className="settings-row-hint">
-              {profile === "own" ? t("settings.fulltext.profile.ownHint") : t("settings.fulltext.profile.mainHint")}
+        {ownBrowser ? (
+          <div className="settings-row">
+            <div className="settings-row-text">
+              <div className="settings-row-title">{t("settings.fulltext.profile")}</div>
+              <div className="settings-row-hint">
+                {profile === "own" ? t("settings.fulltext.profile.ownHint") : t("settings.fulltext.profile.mainHint")}
+              </div>
+              {profile === "own" && browsers ? <div className="path">{browsers.own_profile}</div> : null}
+              {profile === "main" && browsers?.main_profile_in_use ? (
+                <div className="settings-row-hint warn" role="status">{t("settings.fulltext.mainInUse")}</div>
+              ) : null}
             </div>
-            {profile === "own" && browsers ? <div className="path">{browsers.own_profile}</div> : null}
-            {profile === "main" && browsers?.main_profile_in_use ? (
-              <div className="settings-row-hint warn" role="status">{t("settings.fulltext.mainInUse")}</div>
-            ) : null}
+            <Segmented<"own" | "main">
+              label={t("settings.fulltext.profile")}
+              value={profile}
+              onChange={(v) => void change({ "fulltext.profile": v })}
+              options={[
+                { value: "own", label: t("settings.fulltext.profile.own") },
+                { value: "main", label: t("settings.fulltext.profile.main") },
+              ]}
+            />
           </div>
-          <Segmented<"own" | "main">
-            label={t("settings.fulltext.profile")}
-            value={profile}
-            onChange={(v) => void change({ "fulltext.profile": v })}
-            options={[
-              { value: "own", label: t("settings.fulltext.profile.own") },
-              { value: "main", label: t("settings.fulltext.profile.main") },
-            ]}
-          />
-        </div>
+        ) : null}
 
         <div className="settings-row">
           <div className="settings-row-text">
@@ -232,17 +242,19 @@ export function FullTextSettings() {
           </div>
         </div>
 
-        <div className="settings-row">
-          <div className="settings-row-text">
-            <div className="settings-row-title">{t("settings.fulltext.visible")}</div>
-            <div className="settings-row-hint">{t("settings.fulltext.visibleHint")}</div>
+        {ownBrowser ? (
+          <div className="settings-row">
+            <div className="settings-row-text">
+              <div className="settings-row-title">{t("settings.fulltext.visible")}</div>
+              <div className="settings-row-hint">{t("settings.fulltext.visibleHint")}</div>
+            </div>
+            <Switch
+              checked={settings["fulltext.visible"]}
+              label={t("settings.fulltext.visible")}
+              onChange={(v) => void change({ "fulltext.visible": v })}
+            />
           </div>
-          <Switch
-            checked={settings["fulltext.visible"]}
-            label={t("settings.fulltext.visible")}
-            onChange={(v) => void change({ "fulltext.visible": v })}
-          />
-        </div>
+        ) : null}
 
         {ft ? (
           <div className="settings-row">

@@ -19,6 +19,8 @@ from pathlib import Path
 log = logging.getLogger(__name__)
 
 PROVIDERS = ("gemini", "openai", "anthropic")
+# Other secrets kept the same way: the browser extension's pairing key (fulltext/bridge.py).
+NAMES = PROVIDERS + ("extension",)
 _ENTROPY = b"WorldSignal API keys"
 
 
@@ -68,7 +70,7 @@ class SecretStore:
     def _read(self) -> dict[str, str]:
         try:
             data = json.loads(self.path.read_text(encoding="utf-8"))
-            return {k: v for k, v in data.items() if k in PROVIDERS and isinstance(v, str)}
+            return {k: v for k, v in data.items() if k in NAMES and isinstance(v, str)}
         except FileNotFoundError:
             return {}
         except (OSError, ValueError):
@@ -91,7 +93,7 @@ class SecretStore:
             return None
 
     def set(self, provider: str, key: str) -> None:
-        if provider not in PROVIDERS:
+        if provider not in NAMES:
             raise KeyError(provider)
         data = self._read()
         data[provider] = base64.b64encode(self._protect(key.encode("utf-8"))).decode("ascii")
