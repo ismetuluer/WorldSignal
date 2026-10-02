@@ -3,6 +3,27 @@
 English version of [CHANGELOG.md](CHANGELOG.md), from 0.10.0 on. Version numbers follow
 [Semantic Versioning](https://semver.org/).
 
+## [0.14.1] — 2026-10-02 — The extension reads in the background; reports in other scripts get the right language
+
+### Changed
+- **The extension now opens pages in a background tab** (before, each page got a minimized window of its own, which
+  often came to the front). When the browser has a window open, the page is loaded in it with `active: false`, read,
+  and the tab is closed; with no window open (the browser was started without one) a minimized window is used as before.
+  Tried in a real Chromium with two Guardian reports: the extracted text has the same length (2468 and 5079
+  characters), a second window was never open, the tabs were closed. **After the update, press "Reload" for the
+  extension once on the browser's extensions page.**
+- The extension texts and setup steps say "Chromium-based browser (Chrome, Brave, Edge, Opera)".
+
+### Fixed
+- **A report's language is read from the letters of its text.** The Japanese, Arabic or Russian section of a feed
+  labelled English (Reuters, CNN, UNIAN, SANA ...) was shown as "English" on the card; 798 of 24,000 reports in the
+  last 3 days. Now, when the text is not in Latin letters, the language comes from the letters (Japanese, Chinese,
+  Korean, Arabic, Persian, Urdu, Russian, Ukrainian, Hebrew, Greek, Thai). Latin-letter texts keep the feed's label;
+  a label that is already right (e.g. Ukrainian) is left alone. Existing reports are corrected once (`repair.languages`).
+
+### Added
+- Reports the extension read are summarised from their full text, ahead of the AI queue (published in 0.14.0; see there).
+
 ## [0.14.0] — 2026-10-01 — Browser extension: subscription sites are read in your own browser
 
 ### Added
@@ -13,7 +34,7 @@ English version of [CHANGELOG.md](CHANGELOG.md), from 0.10.0 on. Version numbers
   when the queue is empty. A story's summary is still written from its reports' summaries (not from full texts).
 - **The World Signal browser extension** (the `extension` folder inside the program folder; for Chrome and Brave).
   Reports from subscription sites, especially exclusives that appear only there, are opened by **your own browser**
-  instead of the program's automation browser: your real profile, your real session; it is designed so that no automation traces are left. The program
+  instead of the program's automation browser: your real profile, your real session. The program
   decides which report is read when (the same queue, the same human pace); the extension only opens the page in a
   separate minimized window, looks at it for 3–8 seconds, scrolls down like a reader, hands the page's HTML to the
   program and closes the window. Extracting the text, detecting blocks and resting a site stay in the program. Every

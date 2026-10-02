@@ -1,5 +1,5 @@
 """Starting the user's own browser for the extension: a normal start (no automation flags), without a window, only
-when it is not running. The extension then opens its own minimized reading window."""
+when it is not running. The extension then opens its own minimized reading window (it has no other window to open a tab in)."""
 
 from __future__ import annotations
 

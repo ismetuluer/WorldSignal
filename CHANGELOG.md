@@ -3,6 +3,28 @@
 Sürüm numaraları [Anlamsal Sürümleme](https://semver.org/lang/tr/) izler. 1.0'a kadar her faz bir ara sürümdür.
 İngilizcesi (0.10.0'dan itibaren): [CHANGELOG.en.md](CHANGELOG.en.md).
 
+## [0.14.1] — 2026-10-02 — Eklenti arka planda okur; yabancı yazılı haberlerin dili doğru
+
+### Değişti
+- **Eklenti sayfaları artık arka plan sekmesinde açar** (eskiden her sayfa için küçültülmüş ayrı bir pencere açılıyor,
+  bu da çoğu zaman öne geliyordu). Tarayıcıda açık bir pencere varsa sayfa onda, `active: false` ile arka planda
+  yüklenir, okunur ve sekme kapanır; açık pencere yoksa (tarayıcı pencere açmadan başlatılmışsa) eskisi gibi küçültülmüş
+  bir pencere kullanılır. Gerçek Chromium'da iki Guardian haberiyle denendi: çıkan metin aynı uzunlukta (2468 ve 5079
+  karakter), hiçbir an ikinci bir pencere açılmadı, sekmeler kapandı. **Güncelleme sonrası tarayıcının eklentiler
+  sayfasında eklentiye bir kez "Yeniden yükle" demek gerekir.**
+- Eklenti açıklamaları ve kurulum adımları "Chromium tabanlı tarayıcı (Chrome, Brave, Edge, Opera)" diyor.
+
+### Düzeltildi
+- **Haberin dili metnin harflerinden anlaşılır.** İngilizce etiketli bir akışın Japonca, Arapça ya da Rusça bölümü
+  (Reuters, CNN, UNIAN, SANA gibi) kartta "İngilizce" yazıyordu; son 3 günde 24.000 haberin 798'i böyleydi. Artık metin
+  Latin harfli değilse dil harflerden bulunur (Japonca, Çince, Korece, Arapça, Farsça, Urduca, Rusça, Ukraynaca,
+  İbranice, Yunanca, Tay). Latin harfli metinlerde akışın etiketi aynen kalır; doğru etiketli olan (ör. Ukraynaca)
+  değiştirilmez. Var olan haberler bir kez düzeltilir (`repair.languages`).
+
+### Eklendi
+- Eklentinin okuduğu haberler tam metinden özetlenir ve yapay zekâ kuyruğunun başına geçer (0.14.0'da yayımlanmıştı;
+  ayrıntı orada).
+
 ## [0.14.0] — 2026-10-01 — Tarayıcı eklentisi: abonelik siteleri kendi tarayıcınızda okunur
 
 ### Eklendi
@@ -13,7 +35,7 @@ Sürüm numaraları [Anlamsal Sürümleme](https://semver.org/lang/tr/) izler. 1
   eskisi gibi sıra boşaldığında işlenir. Hikâye özeti hâlâ haberlerin özetlerinden yazılır (tam metinden değil).
 - **World Signal tarayıcı eklentisi** (program klasöründeki `extension` klasörü; Chrome ve Brave için).
   Abonelik sitelerinin haberlerini, özellikle yalnızca orada çıkan özel haberleri, programın kendi otomasyon
-  tarayıcısı yerine **sizin tarayıcınız** açar: gerçek profiliniz, gerçek oturumunuz; amaç, otomasyon izi bırakmamaktır. Hangi haberin
+  tarayıcısı yerine **sizin tarayıcınız** açar: gerçek profiliniz, gerçek oturumunuz. Hangi haberin
   ne zaman okunacağına program karar verir (aynı kuyruk, aynı insan temposu); eklenti yalnızca sayfayı küçültülmüş ayrı
   bir pencerede açar, 3–8 saniye bakıp insan gibi aşağı kaydırır, sayfanın HTML'ini programa verir ve pencereyi kapatır.
   Metni çıkarma, engel algılama ve bekletme programdadır. Her sayfa için ayrı pencere açılır ve sayfa bitince kapanır.

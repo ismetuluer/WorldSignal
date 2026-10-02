@@ -16,6 +16,7 @@ from datetime import UTC, date, datetime, timedelta, tzinfo
 from typing import Any
 
 from ..db import Database, utc_now_iso
+from ..textlang import correct as correct_language
 from ..textnorm import fold_for_search, repair_mojibake
 from ..stories.score import Interest, Member, independent_sources, score_story
 from .stories import StoryRepository, parse_iso
@@ -251,6 +252,24 @@ class HistoryRepository:
                     c.execute("UPDATE articles_fts SET title = ?, summary = ? WHERE rowid = ?",
                               (fold_for_search(title), fold_for_search(summary), r["id"]))
                     repaired += 1
+
+    def repair_languages(self, batch: int = 5000) -> int:
+        """Reports stored with their feed's language although they are written in another script (a Japanese or
+        Arabic section of an English-labelled feed) get the language their letters show. Returns the number fixed."""
+        fixed, last = 0, 0
+        while True:
+            rows = self.db.conn.execute(
+                "SELECT id, title, summary, language FROM articles WHERE id > ? ORDER BY id LIMIT ?", (last, batch)
+            ).fetchall()
+            if not rows:
+                return fixed
+            last = rows[-1]["id"]
+            changes = [(new, r["id"]) for r in rows
+                       if (new := correct_language(r["language"], f"{r['title']} {r['summary'] or ''}")) != r["language"]]
+            if changes:
+                with self.db.transaction() as c:
+                    c.executemany("UPDATE articles SET language = ? WHERE id = ?", changes)
+                fixed += len(changes)
 
     def reclaim(self, min_ratio: float = 0.2, min_bytes: int = 16_000_000) -> int:
         """Give the space of deleted rows back to the disk (VACUUM) once it is a noticeable part of the file.

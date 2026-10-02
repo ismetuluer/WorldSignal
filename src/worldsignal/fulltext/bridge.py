@@ -1,6 +1,6 @@
 """The browser extension's side of the full-text queue (decision 2026-10-01: subscription sites are read in the user's
 own browser). The program decides what and when (the same queue and human pace as the background worker); the
-extension asks for one page at a time, reads it in a minimized window and posts its HTML back. A job is lent under a
+extension asks for one page at a time, reads it in a background tab and posts its HTML back. A job is lent under a
 lease: a result for a lost lease is refused. The page was asked for once the lease was handed out, so an expired lease
 (counted as ``timeout``), a page that did not load or could not be read, and a page too large to accept all count as a
 failed attempt (after ``MAX_ATTEMPTS`` the article is given up) and rest the site. Only the user closing the window

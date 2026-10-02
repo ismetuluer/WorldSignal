@@ -413,12 +413,12 @@ sayfayı açıp HTML'ini geri verir. Metin çıkarma, engel algılama ve bekletm
 - **Tarayıcıyı başlatma** (`fulltext/launcher.py`, `ExtensionBridge.launch_if_needed`, her dakika denetlenir): eklenti modu açık,
   eklentiden 10 dk'dır ses yok, kullanıcının tarayıcısı çalışmıyorsa (`tasklist`, 10 sn zaman aşımı) tarayıcı **otomasyon
   bayrağı olmadan, kullanıcının kendi profiliyle**, yalnızca `--no-startup-window` ile başlatılır; en çok yarım saatte bir.
-  Açık tarayıcıya dokunulmaz. Eklenti uyanınca kendi küçültülmüş penceresini açar.
+  Açık tarayıcıya dokunulmaz. Eklenti uyanınca (açık pencere yoksa) kendi küçültülmüş penceresini açar.
 - **Eklenti** (`extension/`): `background.js` hizmet işçisi, `chrome.alarms` ile programın söylediği süre sonra (`wait_seconds`,
   en erken 30 sn) turu yineler; tek seferlik alarm yalnızca tur sonunda kurulduğundan dakikada bir **bekçi alarmı** döngüyü
   gerekirse yeniden başlatır; okurken 20 sn'de bir eklenti API çağrısı işçiyi uyanık tutar. `lib.js` (sahte `chrome` ile
   sınanabilir; vitest): `findProgram` (kanıt doğrulamasıyla), `isWebUrl`, `call`, `readingPlan` (3–8 sn bakış, 4–9 adım, 2,5–7 sn aralık), `readPage` (her sayfa
-  için **ayrı, küçültülmüş pencere**; sayfa bitince kapanır; işçi okurken durdurulursa pencere kimliği `storage.session`'da
+  için **arka planda ayrı bir sekme** (`active:false`, açık normal bir pencerede; hiç pencere yoksa küçültülmüş pencere); sayfa bitince kapanır; işçi okurken durdurulursa sekme/pencere kimliği `storage.session`'da
   durur, sonraki tur kapatır; HTML ile birlikte sayfanın HTTP durumunu navigasyon kaydının `responseStatus`'undan verir),
   `tick`. Eklenti sayfada yalnızca kaydırır ve HTML'i okur; tıklamaz, yazmaz, robot
   doğrulamasına dokunmaz (gelen sayfa olduğu gibi sunucuya gider, sunucu `bot_check` der).

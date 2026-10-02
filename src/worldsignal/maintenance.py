@@ -70,6 +70,11 @@ class Maintenance:
             self.settings.set("repair.mojibake", 1)
             if fixed:
                 log.info("Repaired the letters of %d reports", fixed)
+        if not self.settings.get("repair.languages"):  # once: reports labelled with their feed's language (0.14.1)
+            fixed = self.history.repair_languages()
+            self.settings.set("repair.languages", 1)
+            if fixed:
+                log.info("Corrected the language of %d reports", fixed)
         removed = self.history.prune(self.clock(), int(prefs["retention.fulltext_days"]), VECTOR_KEEP_DAYS)
         self._state.update(last_run_at=utc_now_iso(self.clock()), last_removed=removed, last_error=None)
         if any(removed.values()):

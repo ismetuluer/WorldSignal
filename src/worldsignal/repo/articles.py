@@ -14,6 +14,7 @@ from ..collector.rss import ParsedEntry
 from ..country import HomeProfile
 from ..db import Database, utc_now_iso
 from ..flags import MARKER_WINDOW, group_condition, has_breaking_marker, is_exclusive
+from ..textlang import correct as correct_language
 from ..textnorm import build_fts_query, fold_for_search
 from .sources import region_condition
 
@@ -95,8 +96,8 @@ class ArticleRepository:
                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                    ON CONFLICT(source_id, dedupe_key) DO NOTHING
                    RETURNING id""",
-                (source_id, feed_id, e.dedupe_key, e.url, e.title, e.summary, e.author, language,
-                 published_iso, now_iso, sort_at),
+                (source_id, feed_id, e.dedupe_key, e.url, e.title, e.summary, e.author,
+                 correct_language(language, f"{e.title} {e.summary or ''}"), published_iso, now_iso, sort_at),
             ).fetchone()
             if row is None:
                 continue

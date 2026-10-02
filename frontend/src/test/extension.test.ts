@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 // @ts-expect-error plain JS module outside the app
-import { HELLO_TIMEOUT_MS, PORTS, call, findProgram, isWebUrl, readPage, readingPlan, tick } from "../../../extension/lib.js";
+import { HELLO_TIMEOUT_MS, PORTS, call, closeOpened, findProgram, isWebUrl, readPage, readingPlan, tick } from "../../../extension/lib.js";
 
 const json = (status: number, body: unknown) => Promise.resolve({ ok: status < 400, status, json: () => Promise.resolve(body) });
 const webcrypto = globalThis.crypto;
@@ -191,21 +191,21 @@ describe("the extension", () => {
     expect(methods).toEqual({ "/api/ext/status": "GET", "/api/ext/next": "POST", "/api/ext/result": "POST" });
   });
 
-  it("tells the caller which window it opened and when it is closed", async () => {
+  it("tells the caller what it opened and when it is closed", async () => {
     const chrome = fakeChrome({ html: "<p>a</p>", url: "https://x.example/a" });
     const events: string[] = [];
     await readPage(chrome, "https://x.example/a", { firstLook: 0, steps: [] }, {
-      onWindow: (id: number) => events.push(`open ${id}`),
+      onOpened: (what: { window?: number; tab?: number }) => events.push(`open ${JSON.stringify(what)}`),
       onClosed: () => events.push("closed"),
     });
-    expect(events).toEqual(["open 7", "closed"]);
+    expect(events).toEqual(["open {\"window\":7}", "closed"]);
     const failing = fakeChrome({ closed: true });
     const again: string[] = [];
     await readPage(failing, "https://x.example/a", { firstLook: 0, steps: [] }, {
-      onWindow: (id: number) => again.push(`open ${id}`),
+      onOpened: (what: { window?: number; tab?: number }) => again.push(`open ${JSON.stringify(what)}`),
       onClosed: () => again.push("closed"),
     });
-    expect(again).toEqual(["open 7", "closed"]);
+    expect(again).toEqual(["open {\"window\":7}", "closed"]);
   });
 
   it("gives up with timeout when the page never finishes loading, and closes the window", async () => {
@@ -231,7 +231,37 @@ describe("the extension", () => {
     expect((await readPage(empty, "https://x.example/a", { firstLook: 0, steps: [] })).result).toEqual({ error: "script_failed" });
   });
 
-  it("opens the page in its own minimized window, reads it and closes the window", async () => {
+  it("opens the page in a background tab of a window that is already open, and closes only that tab", async () => {
+    const chrome = fakeChrome({ html: "<html>report</html>", url: "https://x.example/a", hosts: [{ id: 5, focused: false }, { id: 9, focused: true }] });
+    const events: string[] = [];
+    const out = await readPage(chrome, "https://x.example/a", { firstLook: 0, steps: [0] }, {
+      onOpened: (what: { window?: number; tab?: number }) => events.push(`open ${JSON.stringify(what)}`),
+      onClosed: () => events.push("closed"),
+    });
+    expect(chrome.tabs.create).toHaveBeenCalledWith({ windowId: 9, url: "https://x.example/a", active: false });
+    expect(chrome.windows.create).not.toHaveBeenCalled();
+    expect(out.result).toEqual({ html: "<html>report</html>", final_url: "https://x.example/a" });
+    expect(chrome.tabs.remove).toHaveBeenCalledWith(3);
+    expect(chrome.windows.remove).not.toHaveBeenCalled();
+    expect(events).toEqual(["open {\"tab\":3}", "closed"]);
+  });
+
+  it("closes the background tab even when the page could not be read", async () => {
+    const chrome = fakeChrome({ closed: true, hosts: [{ id: 5, focused: true }] });
+    expect((await readPage(chrome, "https://x.example/a", { firstLook: 0, steps: [] })).result).toEqual({ error: "tab_closed" });
+    expect(chrome.tabs.remove).toHaveBeenCalledWith(3);
+  });
+
+  it("closeOpened closes what the stopped worker left, tab or window", async () => {
+    const chrome = fakeChrome({});
+    await closeOpened(chrome, { tab: 11 });
+    await closeOpened(chrome, { window: 12 });
+    await closeOpened(chrome, null);
+    expect(chrome.tabs.remove).toHaveBeenCalledWith(11);
+    expect(chrome.windows.remove).toHaveBeenCalledWith(12);
+  });
+
+  it("without any open window the page gets a minimized window of its own, reads it and closes the window", async () => {
     const chrome = fakeChrome({ html: "<html>report</html>", url: "https://x.example/a" });
     const out = await readPage(chrome, "https://x.example/a", { firstLook: 0, steps: [0, 0, 0, 0] });
     expect(chrome.windows.create).toHaveBeenCalledWith(expect.objectContaining({ url: "https://x.example/a", state: "minimized", focused: false }));
@@ -328,10 +358,16 @@ describe("the extension", () => {
   });
 });
 
-function fakeChrome(page: { html?: string; url?: string; closed?: boolean; loading?: boolean; status?: number }) {
+function fakeChrome(page: { html?: string; url?: string; closed?: boolean; loading?: boolean; status?: number; hosts?: { id: number; focused: boolean }[] }) {
   return {
-    windows: { create: vi.fn(async () => ({ id: 7, tabs: [{ id: 3 }] })), remove: vi.fn(async () => undefined) },
+    windows: {
+      create: vi.fn(async () => ({ id: 7, tabs: [{ id: 3 }] })),
+      remove: vi.fn(async () => undefined),
+      getAll: vi.fn(async () => page.hosts ?? []),
+    },
     tabs: {
+      create: vi.fn(async () => ({ id: 3 })),
+      remove: vi.fn(async () => undefined),
       get: vi.fn(async () => (page.closed ? Promise.reject(new Error("No tab")) : { id: 3, status: page.loading ? "loading" : "complete", url: page.url })),
     },
     scripting: {

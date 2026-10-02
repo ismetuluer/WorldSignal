@@ -266,13 +266,14 @@ bir sayı varsa "Dikkat" uyarısı gösterilir.
 
 Abonelik sitelerinin haberlerini (özellikle yalnızca orada çıkan **özel haberleri**) World Signal, isterseniz **kendi
 tarayıcınızdaki küçük bir eklenti** aracılığıyla okur: sayfaları programın ayrı bir otomasyon tarayıcısı değil, sizin
-Brave ya da Chrome'unuz, sizin profiliniz ve oturumunuzla açar. Hangi haberin ne zaman okunacağına program karar verir;
-eklenti yalnızca sayfayı küçültülmüş ayrı bir pencerede açar, birkaç saniye bakıp insan gibi aşağı kaydırır, sayfayı
-programa verir ve pencereyi kapatır. Öne bir pencere gelmez (küçültülmüş pencerede okur).
+Chromium tabanlı tarayıcınız (Chrome, Brave, Edge, Opera), sizin profiliniz ve oturumunuzla açar. Hangi haberin ne zaman okunacağına program karar verir;
+eklenti yalnızca sayfayı arka planda açık bir sekmede açar (tarayıcı hiç açık pencere bulamazsa küçültülmüş bir
+pencerede), birkaç saniye bakıp insan gibi aşağı kaydırır, sayfayı programa verir ve sekmeyi kapatır. Öne bir pencere
+gelmez.
 
 **Bir kerelik kurulum, üç adım** (Ayarlar → Tam metin → **Eklenti** bölümü aynı adımları gösterir):
 
-1. Tarayıcınızda eklentiler sayfasını açın (Brave'de `brave://extensions`, Chrome'da `chrome://extensions`),
+1. Tarayıcınızda eklentiler sayfasını açın (`chrome://extensions`, `brave://extensions`, `edge://extensions`, `opera://extensions`),
    **Geliştirici modu**nu açın, **Paketlenmemiş öğe yükle**'yi seçip program klasöründeki `extension` klasörünü gösterin
    (Ayarlar'daki **Eklenti klasörünü aç** düğmesi klasörü açar).
 2. Eklentinin simgesine tıklayın ve Ayarlar'daki **eşleşme kodunu** (**Kodu kopyala**) yapıştırın.
@@ -281,8 +282,8 @@ programa verir ve pencereyi kapatır. Öne bir pencere gelmez (küçültülmüş
 Sonra Ayarlar → Tam metin'de okuyucu **Eklenti** olsun; gerisi kendiliğinden yürür (Ayarlar bir kez programı yeniden
 başlatmanızı söylerse söylediğini yapın). Bilmeniz gerekenler:
 
-- **Henüz sınırlı denendi:** eklenti, abonelik sitelerinde ve Brave'de henüz kullanıcı denemesinden geçmedi; ilk
-  kullanımda sonucu gözlemleyin.
+- **Denendi, ama sınırlı:** eklenti Brave'de, çoğu abonelik sitesinde (ilk saatte 40'tan fazla haber) çalıştı; bazı
+  siteler (ör. Le Monde, FT) bazen sayfayı vermedi. İlk kullanımda sonucu gözlemleyin.
 - **Tarayıcı açık olmalıdır.** Kapalıysa program onu pencere açmadan başlatabilir (Ayarlar'dan kapatılır); eklenti
   duraklatılmışsa ya da tarayıcı açılamıyorsa hiçbir sayfa okunmaz, işler sırada bekler ve kenar çubuğunda tek satırlık
   bir uyarı çıkar.
@@ -297,12 +298,27 @@ başlatmanızı söylerse söylediğini yapın). Bilmeniz gerekenler:
   ile yenilenir (eski eklenti bağlantısı kopar).
 - Eklenti tarayıcı mağazalarında yayımlanmaz; program güncellenince eklenti klasörü de güncellenir, tarayıcınızın
   eklentiler sayfasında bir kez **Yenile**'ye basın.
-- Programın eski yolu da durur: okuyucu olarak **Programın tarayıcısı** seçilirse sayfalar eskisi gibi programa ait
-  ayrı bir tarayıcı profiliyle açılır.
+- Programın eski yolu da durur (önerilmez): okuyucu olarak **Programın tarayıcısı** seçilirse sayfalar programa ait
+  ayrı bir tarayıcı profiliyle açılır. Burada da yukarıdaki [net ilkeler](#telif-ve-abonelikler) aynen geçerlidir.
 
 ## Telif ve abonelikler
 
 World Signal kimsenin içeriğini yeniden yayımlamaz; yalnızca **sizin** ekranınızda gösterir.
+
+> **Net olarak: World Signal abonelik duvarlarını (paywall) aşmaz ve bot korumalarını aşmaz.**
+>
+> - Bir makalenin tam metnini yalnızca **sizin** o sitede geçerli bir aboneliğiniz ve oturumunuz varsa, sizin
+>   tarayıcınızın zaten gösterdiği sayfadan alır. Abonelik yoksa yalnızca herkese açık başlık, özet ve bağlantı görünür.
+> - Robot doğrulaması, CAPTCHA, Cloudflare ya da benzeri bir koruma çıkarsa **durur**: doğrulamayı çözmeye ya da
+>   atlatmaya çalışmaz, sayfayı atlar ve o siteyi bir süre bekletir.
+> - Arşiv ya da paywall atlatma siteleri, sahte kimlik ve sahte parmak izi, IP gizleme (proxy/VPN) ve başkasının
+>   hesabını ya da oturumunu kullanmak **yoktur**.
+> - Tam metinler yalnızca sizin yerel kullanımınız içindir: hiçbir çıktıya, hiçbir sunucuya (sizin seçtiğiniz bulut
+>   yapay zekâ hizmeti dışında) gönderilmez ve başkasıyla paylaşılmaz.
+>
+> Bu bir hukuki görüş değildir. Birçok sitenin kullanım şartları, abonelere bile **otomatik okumayı yasaklayabilir**;
+> şartlara uymak ve doğabilecek sonuçlar (hesabın uyarılması ya da kapatılması dahil) **size aittir**. Sitenin şartları
+> otomatik okumaya izin vermiyorsa o site için tam metni kapatın (Kaynaklar → kaynağın "Tam metin" ayarı).
 
 - Haberler yayıncıların herkese açık RSS akışlarından gelir: başlık, kısa özet ve bağlantı. RSS vermeyen birkaç kaynak
   için Bing Haberler'in herkese açık RSS araması kullanılır; bağlantılar doğrudan yayıncıya gider. Reuters ve AP'nin

@@ -273,13 +273,14 @@ checked against the source. If a number does not appear in the source, a "Check"
 
 Reports from subscription sites (especially **exclusives** that appear only there) can be read by World Signal through
 **a small extension in your own browser**: the pages are opened not by a separate automation browser of the program but
-by your own Brave or Chrome, with your profile and your session. The program decides which report is read when; the
-extension only opens the page in a separate minimized window, looks at it for a few seconds, scrolls down like a
-reader, hands the page to the program and closes the window. No window comes to the front (it reads in a minimized window).
+by your own Chromium-based browser (Chrome, Brave, Edge, Opera), with your profile and your session. The program decides which report is read when; the
+extension only opens the page in a background tab (in a minimized window if the browser has no window open), looks
+at it for a few seconds, scrolls down like a reader, hands the page to the program and closes the tab. No window comes
+to the front.
 
 **One-time setup, three steps** (Settings → Full text → **Extension** shows the same steps):
 
-1. Open your browser's extensions page (`brave://extensions` in Brave, `chrome://extensions` in Chrome), turn on
+1. Open your browser's extensions page (`chrome://extensions`, `brave://extensions`, `edge://extensions`, `opera://extensions`), turn on
    **Developer mode**, choose **Load unpacked** and pick the `extension` folder inside the program folder (the **Open
    the extension folder** button in Settings opens it).
 2. Click the extension's icon and paste the **pairing code** from Settings (**Copy code**).
@@ -288,8 +289,8 @@ reader, hands the page to the program and closes the window. No window comes to 
 Then set the reader to **Extension** under Settings → Full text; the rest runs by itself (if Settings asks you to
 restart the program once, do so). What you need to know:
 
-- **Little tried so far:** it has not yet been tried by users on subscription sites or in Brave; watch the result
-  the first time you use it.
+- **Tried, but only a little:** the extension worked in Brave on most subscription sites (more than 40 reports in the
+  first hour); some sites (e.g. Le Monde, FT) sometimes did not give the page. Watch the result the first time you use it.
 - **The browser must be open.** If it is closed the program can start it without a window (switch this off in
   Settings); while the extension is paused or the browser cannot start, no page is read, the jobs wait in the queue and
   the sidebar shows a one-line warning.
@@ -306,12 +307,27 @@ restart the program once, do so). What you need to know:
   **New code** replaces the code (the old extension connection stops working).
 - The extension is not published in a browser store; when the program is updated the extension folder is updated too,
   and you press **Reload** once on the browser's extensions page.
-- The earlier way remains: if the reader is set to **The program's browser**, pages are opened as before with a
-  separate browser profile that belongs to the program.
+- The earlier way remains (not recommended): if the reader is set to **The program's browser**, pages are opened with a
+  separate browser profile that belongs to the program. The [clear rules](#copyright-and-subscriptions) above apply here too.
 
 ## Copyright and subscriptions
 
 World Signal republishes nobody's content; it shows it only on **your** screen.
+
+> **To be clear: World Signal does not get around paywalls and does not get around bot protection.**
+>
+> - It takes an article's full text only when **you** have a valid subscription and session on that site, from the
+>   page your own browser already shows. Without a subscription only the public headline, summary and link appear.
+> - If a robot check, CAPTCHA, Cloudflare or a similar protection appears, it **stops**: it does not try to solve or
+>   evade it, it skips the page and rests that site for a while.
+> - There are no archive or paywall-bypass sites, no fake identity or fake fingerprint, no IP hiding (proxy/VPN), and
+>   no use of anybody else's account or session.
+> - Full texts are for your local use only: they go into no output, to no server (other than a cloud AI service you
+>   choose yourself) and are not shared.
+>
+> This is not legal advice. Many sites' terms of use may **forbid automated reading, even for subscribers**; keeping to
+> the terms and any consequences (including a warning or closing of your account) are **yours**. If a site's terms do
+> not allow automated reading, switch full text off for that site (Sources → the source's "Full text" setting).
 
 - Articles come from publishers' public RSS feeds: headline, short summary and link. For a few sources without RSS,
   Bing News' public RSS search is used, and the links lead straight to the publisher. The Reuters and AP websites are

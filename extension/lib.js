@@ -145,17 +145,32 @@ async function loaded(chrome, tabId) {
   return false;
 }
 
-// One page, one minimized window of its own that is closed afterwards (a service worker can be stopped by the
-// browser between pages, so no window is kept for reuse: nothing is left behind). If the worker itself is stopped
-// mid-read, `finally` never runs: `onWindow(id)` lets the caller remember the window (outside lib.js, which stays free
-// of chrome.storage) so a later round can close what was left; `onClosed()` says it is gone.
+// Opens the page where it disturbs nobody: a background tab in a browser window that is already open (no window
+// appears, nothing takes focus). Only when the browser has no normal window (started without one) a minimized window
+// of its own is made. Returns what to close afterwards: {tab} or {window}.
+async function open(chrome, url) {
+  const hosts = (await chrome.windows.getAll({ windowTypes: ["normal"] }).catch(() => [])) || [];
+  const host = hosts.find((w) => w.focused) || hosts[0];
+  if (host && host.id != null) {
+    const tab = await chrome.tabs.create({ windowId: host.id, url, active: false });
+    return { tabId: tab.id, close: { tab: tab.id } };
+  }
+  const win = await chrome.windows.create({ url, state: "minimized", focused: false });
+  const tabId = win.tabs && win.tabs[0] ? win.tabs[0].id : null;
+  return { tabId, close: { window: win.id } };
+}
+
+// One page, one background tab of its own that is closed afterwards (a service worker can be stopped by the
+// browser between pages, so nothing is kept for reuse: nothing is left behind). If the worker itself is stopped
+// mid-read, `finally` never runs: `onOpened({tab} | {window})` lets the caller remember what was opened (outside
+// lib.js, which stays free of chrome.storage) so a later round can close what was left; `onClosed()` says it is gone.
 export async function readPage(chrome, url, plan, hooks = {}) {
   if (!isWebUrl(url)) return { result: { error: "load_failed" } };
-  let win = null;
+  let opened = null;
   try {
-    win = await chrome.windows.create({ url, state: "minimized", focused: false });
-    if (win && win.id != null && hooks.onWindow) await hooks.onWindow(win.id);
-    const tabId = win.tabs && win.tabs[0] ? win.tabs[0].id : null;
+    opened = await open(chrome, url);
+    if (hooks.onOpened) await hooks.onOpened(opened.close);
+    const tabId = opened.tabId;
     if (tabId == null) return { result: { error: "load_failed" } };
     if (!(await loaded(chrome, tabId))) return { result: { error: "timeout" } };
     const [frame] = await chrome.scripting.executeScript({ target: { tabId }, func: readInPage, args: [plan] });
@@ -165,11 +180,16 @@ export async function readPage(chrome, url, plan, hooks = {}) {
     const closed = /No tab|closed|No window/i.test(String(e && e.message));
     return { result: { error: closed ? "tab_closed" : "load_failed" } };
   } finally {
-    if (win && win.id != null) {
-      await chrome.windows.remove(win.id).catch(() => undefined);
+    if (opened) {
+      await closeOpened(chrome, opened.close);
       if (hooks.onClosed) await hooks.onClosed();
     }
   }
+}
+
+export async function closeOpened(chrome, close) {
+  if (close && close.tab != null) await chrome.tabs.remove(close.tab).catch(() => undefined);
+  else if (close && close.window != null) await chrome.windows.remove(close.window).catch(() => undefined);
 }
 
 // One round: returns how many seconds to wait before the next one. `deps.port(key)` finds the program that proves it

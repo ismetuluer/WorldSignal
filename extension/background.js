@@ -1,4 +1,4 @@
-import { call, findProgram, readPage, readingPlan, tick } from "./lib.js";
+import { call, closeOpened, findProgram, readPage, readingPlan, tick } from "./lib.js";
 
 const state = { port: null, busy: false };
 
@@ -14,12 +14,12 @@ async function settings() {
 }
 
 // A service worker can be stopped by the browser in the middle of a read, so `finally` blocks cannot be relied on:
-// the window being read is remembered and a later round closes what a stopped worker left behind.
-async function closeStaleWindow() {
-  const { readingWindow } = await chrome.storage.session.get({ readingWindow: null });
-  if (readingWindow == null) return;
-  await chrome.windows.remove(readingWindow).catch(() => undefined);
-  await chrome.storage.session.remove("readingWindow");
+// the tab (or window) being read is remembered and a later round closes what a stopped worker left behind.
+async function closeStaleReading() {
+  const { reading } = await chrome.storage.session.get({ reading: null });
+  if (reading == null) return;
+  await closeOpened(chrome, reading);
+  await chrome.storage.session.remove("reading");
 }
 
 // While a page is being read nothing else keeps the worker alive (Chrome stops an idle one after about 30 s), so an
@@ -28,8 +28,8 @@ async function read(url) {
   const keepAlive = setInterval(() => void chrome.runtime.getPlatformInfo(), 20000);
   try {
     return await readPage(chrome, url, readingPlan(), {
-      onWindow: (id) => chrome.storage.session.set({ readingWindow: id }),
-      onClosed: () => chrome.storage.session.remove("readingWindow"),
+      onOpened: (what) => chrome.storage.session.set({ reading: what }),
+      onClosed: () => chrome.storage.session.remove("reading"),
     });
   } finally {
     clearInterval(keepAlive);
@@ -41,7 +41,7 @@ async function round() {
   state.busy = true;
   let wait = 60;
   try {
-    await closeStaleWindow();
+    await closeStaleReading();
     wait = await tick({
       port,
       key: async () => (await settings()).key,
