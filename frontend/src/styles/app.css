@@ -450,6 +450,14 @@ textarea {
   background: var(--surface);
 }
 
+/* The field has its own clear button; hide the one the browser adds to type="search". */
+.search .input::-webkit-search-cancel-button,
+.search .input::-webkit-search-decoration {
+  -webkit-appearance: none;
+  appearance: none;
+  display: none;
+}
+
 .search .search-clear {
   position: absolute;
   right: 3px;

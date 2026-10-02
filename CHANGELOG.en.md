@@ -3,6 +3,12 @@
 English version of [CHANGELOG.md](CHANGELOG.md), from 0.10.0 on. Version numbers follow
 [Semantic Versioning](https://semver.org/).
 
+## [0.15.1] — 2026-10-02 — One clear button in the search box
+
+### Fixed
+- Search boxes showed two "×" buttons once text was typed (the browser's own clear button next to ours); only ours is left.
+- The extension version matches the program version; after this release press Reload on `brave://extensions`.
+
 ## [0.15.0] — 2026-10-02 — The instructions sent to the AI can be changed in the interface
 
 ### Added

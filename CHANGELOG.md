@@ -3,6 +3,12 @@
 Sürüm numaraları [Anlamsal Sürümleme](https://semver.org/lang/tr/) izler. 1.0'a kadar her faz bir ara sürümdür.
 İngilizcesi (0.10.0'dan itibaren): [CHANGELOG.en.md](CHANGELOG.en.md).
 
+## [0.15.1] — 2026-10-02 — Arama kutusunda tek silme düğmesi
+
+### Düzeltildi
+- Arama kutularında metin yazınca iki "×" görünüyordu (tarayıcının kendi silme düğmesi bizimkinin yanındaydı); yalnızca bizimki kalıyor.
+- Eklenti sürümü program sürümüyle eşleşir; bu sürümden sonra `brave://extensions` → Yeniden yükle gerekir.
+
 ## [0.15.0] — 2026-10-02 — Yapay zekâya giden talimatlar arayüzden değiştirilebiliyor
 
 ### Eklendi
