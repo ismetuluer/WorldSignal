@@ -198,14 +198,14 @@ describe("the extension", () => {
       onOpened: (what: { window?: number; tab?: number }) => events.push(`open ${JSON.stringify(what)}`),
       onClosed: () => events.push("closed"),
     });
-    expect(events).toEqual(["open {\"window\":7}", "closed"]);
+    expect(events).toEqual(["open {\"tab\":3}", "closed"]);
     const failing = fakeChrome({ closed: true });
     const again: string[] = [];
     await readPage(failing, "https://x.example/a", { firstLook: 0, steps: [] }, {
       onOpened: (what: { window?: number; tab?: number }) => again.push(`open ${JSON.stringify(what)}`),
       onClosed: () => again.push("closed"),
     });
-    expect(again).toEqual(["open {\"window\":7}", "closed"]);
+    expect(again).toEqual(["open {\"tab\":3}", "closed"]);
   });
 
   it("gives up with timeout when the page never finishes loading, and closes the window", async () => {
@@ -215,7 +215,7 @@ describe("the extension", () => {
       const pending = readPage(chrome, "https://x.example/a", { firstLook: 0, steps: [] });
       await vi.advanceTimersByTimeAsync(50000);
       expect((await pending).result).toEqual({ error: "timeout" });
-      expect(chrome.windows.remove).toHaveBeenCalledWith(7);
+      expect(chrome.tabs.remove).toHaveBeenCalledWith(3);
       expect(chrome.scripting.executeScript).not.toHaveBeenCalled();
     } finally {
       vi.useRealTimers();
@@ -226,7 +226,7 @@ describe("the extension", () => {
     const chrome = fakeChrome({ url: "https://x.example/a" }); // no html
     const out = await readPage(chrome, "https://x.example/a", { firstLook: 0, steps: [] });
     expect(out.result).toEqual({ error: "script_failed" });
-    expect(chrome.windows.remove).toHaveBeenCalledWith(7);
+    expect(chrome.tabs.remove).toHaveBeenCalledWith(3);
     const empty = fakeChrome({ html: "", url: "https://x.example/a" });
     expect((await readPage(empty, "https://x.example/a", { firstLook: 0, steps: [] })).result).toEqual({ error: "script_failed" });
   });
@@ -261,18 +261,28 @@ describe("the extension", () => {
     expect(chrome.windows.remove).toHaveBeenCalledWith(12);
   });
 
-  it("without any open window the page gets a minimized window of its own, reads it and closes the window", async () => {
+  it("without any open window one minimized window with an empty tab is made and kept; the page is a tab in it", async () => {
     const chrome = fakeChrome({ html: "<html>report</html>", url: "https://x.example/a" });
     const out = await readPage(chrome, "https://x.example/a", { firstLook: 0, steps: [0, 0, 0, 0] });
-    expect(chrome.windows.create).toHaveBeenCalledWith(expect.objectContaining({ url: "https://x.example/a", state: "minimized", focused: false }));
+    expect(chrome.windows.create).toHaveBeenCalledWith({ url: "about:blank", state: "minimized", focused: false });
+    expect(chrome.tabs.create).toHaveBeenCalledWith({ windowId: 7, url: "https://x.example/a", active: false });
     expect(out.result).toEqual({ html: "<html>report</html>", final_url: "https://x.example/a" });
-    expect(chrome.windows.remove).toHaveBeenCalledWith(7);
+    expect(chrome.tabs.remove).toHaveBeenCalledWith(3);
+    expect(chrome.windows.remove).not.toHaveBeenCalled(); // the host window stays for the next page
   });
 
-  it("closes the window even when the page could not be read", async () => {
+  it("prefers a window the user can see over a minimized one", async () => {
+    const chrome = fakeChrome({ html: "<p>a</p>", url: "https://x.example/a",
+      hosts: [{ id: 5, focused: false, state: "minimized" }, { id: 9, focused: false, state: "normal" }] });
+    await readPage(chrome, "https://x.example/a", { firstLook: 0, steps: [] });
+    expect(chrome.tabs.create).toHaveBeenCalledWith({ windowId: 9, url: "https://x.example/a", active: false });
+    expect(chrome.windows.create).not.toHaveBeenCalled();
+  });
+
+  it("closes the tab even when the page could not be read", async () => {
     const chrome = fakeChrome({ closed: true });
     await readPage(chrome, "https://x.example/a", { firstLook: 0, steps: [] });
-    expect(chrome.windows.remove).toHaveBeenCalledWith(7);
+    expect(chrome.tabs.remove).toHaveBeenCalledWith(3);
   });
 
   it("says the tab was closed instead of failing", async () => {
@@ -358,7 +368,7 @@ describe("the extension", () => {
   });
 });
 
-function fakeChrome(page: { html?: string; url?: string; closed?: boolean; loading?: boolean; status?: number; hosts?: { id: number; focused: boolean }[] }) {
+function fakeChrome(page: { html?: string; url?: string; closed?: boolean; loading?: boolean; status?: number; hosts?: { id: number; focused: boolean; state?: string }[] }) {
   return {
     windows: {
       create: vi.fn(async () => ({ id: 7, tabs: [{ id: 3 }] })),

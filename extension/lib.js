@@ -6,6 +6,8 @@ export const PORTS = Array.from({ length: 10 }, (_, i) => 47821 + i);
 const LOAD_TIMEOUT_MS = 45000;
 const HELLO_PREFIX = "worldsignal-hello:";
 export const HELLO_TIMEOUT_MS = 5000;
+// Told to the program with every keyed request, so it can say when the browser still runs an older copy (Reload).
+const VERSION = globalThis.chrome?.runtime?.getManifest?.().version ?? "";
 
 const base64url = (bytes) =>
   btoa(String.fromCharCode(...bytes)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
@@ -99,7 +101,7 @@ export const GET_PATHS = new Set(["/api/ext/status"]);
 export async function call(fetch, port, key, path, body) {
   const r = await fetch(`http://127.0.0.1:${port}${path}`, {
     method: GET_PATHS.has(path) ? "GET" : "POST",
-    headers: { "Content-Type": "application/json", "X-WorldSignal-Extension": key },
+    headers: { "Content-Type": "application/json", "X-WorldSignal-Extension": key, "X-WorldSignal-Extension-Version": VERSION },
     body: body === undefined ? undefined : JSON.stringify(body),
   });
   if (r.status === 401) throw new Error("not_paired");
@@ -146,18 +148,15 @@ async function loaded(chrome, tabId) {
 }
 
 // Opens the page where it disturbs nobody: a background tab in a browser window that is already open (no window
-// appears, nothing takes focus). Only when the browser has no normal window (started without one) a minimized window
-// of its own is made. Returns what to close afterwards: {tab} or {window}.
+// appears, nothing takes focus). Only when the browser has no normal window (started without one) one minimized window
+// with an empty tab is made and kept: later pages become background tabs in it, so a window is made at most once per
+// browser start instead of once per page. Returns what to close afterwards: {tab}.
 async function open(chrome, url) {
   const hosts = (await chrome.windows.getAll({ windowTypes: ["normal"] }).catch(() => [])) || [];
-  const host = hosts.find((w) => w.focused) || hosts[0];
-  if (host && host.id != null) {
-    const tab = await chrome.tabs.create({ windowId: host.id, url, active: false });
-    return { tabId: tab.id, close: { tab: tab.id } };
-  }
-  const win = await chrome.windows.create({ url, state: "minimized", focused: false });
-  const tabId = win.tabs && win.tabs[0] ? win.tabs[0].id : null;
-  return { tabId, close: { window: win.id } };
+  let host = hosts.find((w) => w.focused) || hosts.find((w) => w.state !== "minimized") || hosts[0];
+  if (!host || host.id == null) host = await chrome.windows.create({ url: "about:blank", state: "minimized", focused: false });
+  const tab = await chrome.tabs.create({ windowId: host.id, url, active: false });
+  return { tabId: tab.id, close: { tab: tab.id } };
 }
 
 // One page, one background tab of its own that is closed afterwards (a service worker can be stopped by the

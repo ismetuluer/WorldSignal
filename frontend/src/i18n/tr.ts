@@ -632,6 +632,8 @@ export const tr = {
   "extension.reading": "Okunuyor: {source}",
   "extension.notConnected": "Eklenti bağlı değil: tarayıcı kapalı, eklenti yüklenmemiş ya da duraklatılmış.",
   "extension.sidebarWarning": "Eklenti bağlı değil",
+  "extension.sidebarOutdated": "Eklentiyi yeniden yükleyin",
+  "extension.outdated": "Tarayıcı eklentinin eski bir kopyasını çalıştırıyor. Tarayıcının eklentiler sayfasında World Signal okuyucuya bir kez Yeniden yükle deyin.",
   "extension.launch": "Tarayıcı kapalıysa pencere açmadan başlat",
   "extension.browserHint": "Eklentiyi yüklediğiniz tarayıcıyı seçin; giriş sayfaları ve kapalıyken başlatma bu tarayıcıda olur.",
   "extension.loadFailed": "Eklenti durumu okunamadı.",

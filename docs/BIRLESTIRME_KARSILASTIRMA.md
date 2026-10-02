@@ -48,3 +48,22 @@
 - **118 haber**: Iran Ready to Reopen Strait of Hormuz if US Eases Military Pressure, L · Iran rules out nuclear concessions even if US accepts Hormuz proposal · Iran awaits US reply to seven-day Hormuz plan · Trump rejects Iranian proposal to open Hormuz and end fighting · Iran insists on diplomatic solution after Trump rejects peace plan · 'Only negotiated solution can end deadlock': Iran as Trump rejects pea
 - **88 haber**: (Asiad) S. Korea wins silver in women's team sepaktakraw · (Asiad) Kim Min-seop wins bronze in men's 200m butterfly swimming · (LEAD) (Asiad) S. Korea beats China to reach women's basketball final · (LEAD) (Asiad) S. Korea beats China to advance to men's handball semif · (Asiad) S. Korea ends worst table tennis campaign with 3 bronze medals · (URGENT) S. Korea wins gold in men's street skateboarding at Asian Gam
 - **88 haber**: Pope Leo's Paris trip to highlight support for Christians in Arab worl · BESuch von Leo XIV.: „Papamania“ in Frankreich · Pope Leo to meet clergy sexual abuse victims in Lourdes · 'A once-in-a-lifetime event': Faithful and curious flock to Pope Leo X · Pope Leo XIV celebrates open-air Mass in front of 800,000 people in ce · Leo XIV, a calm and unifying pope, draws huge crowds in Paris for Mass
+
+## Ek ölçüm (2026-10-02): ortalama benzerlik eşiği 0,50 → 0,55
+
+Gerçek bir kullanıcıda toplantı notunda alakasız bir haber görülmesi üzerine (Gazze hikâyesine, 7 güne yayılan 40 haber arasında
+bir petrol sızıntısı haberi katılmıştı) kural yeniden ölçüldü. Yöntem: son 66 saatin 18.664 haberi, kayıtlı bge-m3 başlık
+vektörleriyle zaman sırasıyla yeniden oynatıldı (72 saatlik pencere, uygulamanın kuralı). Bu akışta etiketli bir doğruluk
+kümesi yoktur; ölçütler hikâyelerin iç tutarlılığıdır (10+ haberli hikâyelerde ikili benzerlik ortalaması).
+
+| Kural | En büyük hikâye | 50+ haberli hikâyelerdeki haber payı | Hikâye içi tutarlılık | 3+ haberli hikâye |
+|---|---|---|---|---|
+| en yakın ≥ 0,55, ortalama ≥ 0,50 (eski) | 525 | %13,7 | 0,600 | 1418 |
+| en yakın ≥ 0,55, ortalama ≥ 0,55 | 278 | %7,6 | 0,646 | 1634 |
+| en yakın ≥ 0,60, ortalama ≥ 0,50 | 518 | %11,4 | 0,615 | 1329 |
+| en yakın ≥ 0,60, ortalama ≥ 0,55 | 285 | %7,1 | 0,650 | 1476 |
+
+Sonuç: ortalama eşiğini 0,55'e çıkarmak en büyük hikâyeleri yarıya indiriyor ve tutarlılığı artırıyor. Bedeli: yukarıdaki
+etiketli kümede aynı olayın bazı haberleri iki hikâyeye bölünüyor (duyarlılık 0,896 → 0,802; kesinlik aynı, 0,972). Bu
+yüzden varsayılan 0,55 oldu; bölünmeyi sakıncalı bulan kullanıcı Ayarlar'dan 0,50'ye dönebilir. Var olan hikâyeler
+değişmez; yeni haberler yeni kurala göre birleşir. Eşiğin daha da yükseltilmesi (ortalama ≥ 0,60) denenmedi.

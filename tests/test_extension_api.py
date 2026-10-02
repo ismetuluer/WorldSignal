@@ -309,3 +309,17 @@ def test_sign_in_in_extension_mode_refuses_a_stored_homepage_that_is_not_a_web_p
     opened.clear()
     assert client.post("/api/fulltext/login", headers=H, json={}).status_code == 200  # about:blank
     assert opened == [["brave.exe", "about:blank"]]
+
+
+def test_the_extension_reports_its_version_and_an_old_copy_is_flagged(client, ctx):
+    from worldsignal import __version__
+    keyed = pair(client)
+    assert client.get("/api/extension", headers=H).json()["status"]["outdated"] is False  # never seen: no warning
+    client.post("/api/ext/next", headers=keyed)  # an old copy says nothing
+    s = client.get("/api/extension", headers=H).json()["status"]
+    assert s["version"] is None and s["outdated"] is True
+    client.post("/api/ext/next", headers={**keyed, "X-WorldSignal-Extension-Version": __version__})
+    s = client.get("/api/extension", headers=H).json()["status"]
+    assert s["version"] == __version__ and s["outdated"] is False
+    client.post("/api/ext/next", headers={**keyed, "X-WorldSignal-Extension-Version": "<script>"})
+    assert client.get("/api/extension", headers=H).json()["status"]["version"] is None  # junk is not echoed

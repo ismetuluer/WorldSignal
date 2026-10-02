@@ -98,11 +98,14 @@ def extension_routers(ctx: AppContext, require_token: Any) -> tuple[APIRouter, A
         if host not in LOCAL_HOSTS or origin.startswith(("http://", "https://")):
             raise _error(403, "forbidden")
 
-    def from_extension(request: Request, x_worldsignal_extension: Annotated[str | None, Header()] = None) -> None:
+    def from_extension(request: Request, x_worldsignal_extension: Annotated[str | None, Header()] = None,
+                       x_worldsignal_extension_version: Annotated[str | None, Header()] = None) -> None:
         local_only(request)
         key = ctx.keys.get(KEY_NAME) if ctx.keys is not None else None
         if not key or not x_worldsignal_extension or not _same_key(x_worldsignal_extension, key):
             raise _error(401, "not_paired")
+        if ctx.bridge is not None:
+            ctx.bridge.note_version(x_worldsignal_extension_version)
 
     def bridge():
         if ctx.bridge is None:

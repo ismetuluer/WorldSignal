@@ -3,6 +3,27 @@
 English version of [CHANGELOG.md](CHANGELOG.md), from 0.10.0 on. Version numbers follow
 [Semantic Versioning](https://semver.org/).
 
+## [0.14.3] — 2026-10-02 — The extension opens no windows; old-extension warning; new icons
+
+### Fixed
+- **No window pops up while the extension reads.** When the browser was started without a window (the program found it
+  closed and started it), the extension made a new minimized window for every page. Now at most one minimized window
+  with an empty tab is made, and later pages are read as background tabs in it. With windows open, one that is not
+  minimized is used.
+- **Old extension warning.** The extension reports its version with every request. If the browser runs another (older)
+  copy than the program folder's, Settings → Full text and the sidebar say "Reload the extension". After an update,
+  pressing **Reload** once on the browser's extensions page is enough.
+
+### Changed
+- **Stricter story merging:** for a report to join a story, its average similarity to the story's reports must now be at
+  least 0.55 (it was 0.50). A story spread over 7 days drifted from topic to topic and collected unrelated reports (e.g. an
+  oil-spill report in the Gaza satellite-images story). Measured on 18,664 real reports of the last 66 hours: the largest
+  story fell from 525 to 278 reports, the share of reports in 50+ stories from 13.7% to 7.6%, in-story coherence rose from
+  0.60 to 0.65, and the number of real (3+ report) stories grew. The cost: in the labelled set some reports of one event
+  may split into two stories. Existing stories do not change; Settings can go back to 0.50. See docs/BIRLESTIRME_KARSILASTIRMA.md.
+- A README intro animation (GIF) and screenshots refreshed with the new icons.
+- In the sidebar the **Feed** (newspaper) and **Meeting** (presentation board) icons are easy to tell apart.
+
 ## [0.14.2] — 2026-10-02 — The Independent's feed is fetched again
 
 ### Fixed

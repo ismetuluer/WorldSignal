@@ -5,6 +5,8 @@
 **A Windows desktop app that gathers the world's news on one screen, merges reports of the same event, ranks them by
 importance and summarises them in the languages you choose.**
 
+<p align="center"><img src="docs/showreel.gif" alt="World Signal intro animation" width="720"></p>
+
 It was built to prepare the morning editorial meeting in a newsroom. It scans the RSS feeds of hundreds of sources all
 day and gathers reports of the same event into one "story" card ("in 9 sources"). It then ranks the stories by
 importance and, if you wish, uses AI to write headlines and summaries in the languages you pick, for example English and

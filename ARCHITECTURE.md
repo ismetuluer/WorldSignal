@@ -274,7 +274,7 @@ articles ─► StoryWorker: gömme (Ollama /api/embed, işlemcide) ─► artic
 - **Birleştirme** (`stories/worker.py: choose_story`): haberler zaman sırasıyla işlenir ve son 72 saatte bir hikâyeye
   girmiş haberlerle karşılaştırılır (kosinüs benzerliği). Yeni haber bir hikâyeye ancak iki koşulla katılır:
   1. hikâyede ona en az `stories.threshold` (0,55) benzeyen bir haber vardır (aynı olayın yakın bir haberi), **ve**
-  2. hikâyenin tüm haberlerine ortalama benzerliği en az `stories.cohesion` (0,50)'dir.
+  2. hikâyenin tüm haberlerine ortalama benzerliği en az `stories.cohesion` (0,55; 0,50 iken hikâyeler günler içinde konudan konuya kayıyordu, bkz. docs/BIRLESTIRME_KARSILASTIRMA.md)'dir.
   İkinci koşul **zincirlenmeyi** önler: yalnızca birinci koşulla A haberi B'ye, C de A'ya benzediği için alakasız
   olaylar tek hikâyede toplanıyordu (gerçek akışta 494 haberlik karışık "hikâye"). Ölçüm: gerçek veritabanındaki 6.919
   haber zaman sırasıyla yeniden oynatıldı (`tools/benchmark_clustering.py`, `docs/BIRLESTIRME_KARSILASTIRMA.md`).

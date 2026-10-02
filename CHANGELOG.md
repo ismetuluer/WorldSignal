@@ -3,6 +3,27 @@
 Sürüm numaraları [Anlamsal Sürümleme](https://semver.org/lang/tr/) izler. 1.0'a kadar her faz bir ara sürümdür.
 İngilizcesi (0.10.0'dan itibaren): [CHANGELOG.en.md](CHANGELOG.en.md).
 
+## [0.14.3] — 2026-10-02 — Eklenti pencere açmıyor; eski eklenti uyarısı; yeni simgeler
+
+### Düzeltildi
+- **Eklenti okurken önünüze pencere çıkmıyor.** Tarayıcı penceresiz başlatıldığında (program onu kapalı bulup
+  başlattığında) eklenti her sayfa için küçültülmüş yeni bir pencere açıyordu. Artık böyle bir durumda en fazla bir kez,
+  boş sekmeli küçültülmüş bir pencere açılır ve sonraki sayfalar onun içinde arka plan sekmesi olarak okunur. Açık bir
+  pencere varsa, küçültülmüş olmayan bir pencere seçilir.
+- **Eski eklenti uyarısı.** Eklenti her istekte sürümünü bildiriyor. Tarayıcı, program klasöründekinden farklı (eski)
+  bir kopya çalıştırıyorsa Ayarlar → Tam metin'de ve kenar çubuğunda "Eklentiyi yeniden yükleyin" yazar.
+  Güncellemeden sonra tarayıcının eklentiler sayfasında bir kez **Yeniden yükle** demek yeterlidir.
+
+### Değişti
+- **Hikâye birleştirme daha sıkı:** bir haberin hikâyeye katılması için hikâyedeki haberlere ortalama benzerliği artık en az
+  0,55 (eskiden 0,50). 7 güne yayılan bir hikâye, konudan konuya kayıp alakasız haberler topluyordu (ör. Gazze'deki uydu
+  görüntüleri hikâyesine bir petrol sızıntısı haberi). Son 66 saatin 18.664 gerçek haberiyle ölçüldü: en büyük hikâye 525 →
+  278 habere, 50+ haberli hikâyelerdeki haber payı %13,7 → %7,6'ya indi, hikâye içi tutarlılık 0,60 → 0,65'e çıktı, gerçek
+  (3+ haberli) hikâye sayısı arttı. Bedeli: etiketli kümede aynı olayın bazı haberleri iki hikâyeye bölünebiliyor. Var olan
+  hikâyeler değişmez; Ayarlar'dan 0,50'ye dönülebilir. Ayrıntı: docs/BIRLESTIRME_KARSILASTIRMA.md.
+- README'de tanıtım animasyonu (GIF) ve yeni simgelerle yenilenmiş ekran görüntüleri.
+- Kenar çubuğunda **Akış** (gazete) ve **Toplantı** (sunum tahtası) simgeleri birbirinden kolayca ayrılıyor.
+
 ## [0.14.2] — 2026-10-02 — The Independent akışı yeniden çekiliyor
 
 ### Düzeltildi

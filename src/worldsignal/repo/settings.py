@@ -53,7 +53,7 @@ DEFAULTS: dict[str, Any] = {
     # Measured in docs/GOMME_KARSILASTIRMA.md: titles alone separate distinct events better.
     "stories.embed_summary": False,
     "stories.threshold": 0.55,
-    "stories.cohesion": 0.5,  # docs/BIRLESTIRME_KARSILASTIRMA.md: stops chaining
+    "stories.cohesion": 0.55,  # docs/BIRLESTIRME_KARSILASTIRMA.md: stops chaining (0.5 let stories drift, 0.55 halves the giants)
     "stories.min_sources_for_ai": 2,
     "score.w_sources": 0.45,
     "score.w_freshness": 0.25,

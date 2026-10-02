@@ -132,6 +132,7 @@ export function ExtensionSettings() {
                   : t("extension.notConnected")}
               </p>
               {s.last_seen ? <p className="field-hint">{t("extension.lastSeen", { time: i18n.relative(s.last_seen) })}</p> : null}
+              {s.outdated ? <p className="field-hint warn" role="status">{t("extension.outdated")}</p> : null}
               {s.last_error ? (
                 <p className="field-hint warn">{t("extension.lastError", { reason: errorText(s.last_error) })}</p>
               ) : null}

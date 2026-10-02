@@ -629,6 +629,8 @@ export const en: Record<MessageKey, string> = {
   "extension.readToday.other": "{count} today",
   "extension.reading": "Reading: {source}",
   "extension.notConnected": "Extension not connected: the browser is closed, the extension is not loaded or it is paused.",
+  "extension.sidebarOutdated": "Reload the extension",
+  "extension.outdated": "The browser runs an older copy of the extension. On the browser's extensions page, press Reload once for World Signal reader.",
   "extension.sidebarWarning": "Extension not connected",
   "extension.launch": "Start the browser without a window when it is closed",
   "extension.browserHint": "Choose the browser you loaded the extension into; sign-in pages open there and it is started there when closed.",

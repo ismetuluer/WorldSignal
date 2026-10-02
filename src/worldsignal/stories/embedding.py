@@ -15,7 +15,7 @@ SUMMARY_CHARS = 400
 # real article stream for bge-m3 only (docs/BIRLESTIRME_KARSILASTIRMA.md); 0 = not measured,
 # nearest-neighbour rule alone.
 RECOMMENDED = {
-    "bge-m3": {"stories.threshold": 0.55, "stories.cohesion": 0.5},
+    "bge-m3": {"stories.threshold": 0.55, "stories.cohesion": 0.55},
     "qwen3-embedding": {"stories.threshold": 0.67, "stories.cohesion": 0.0},
     "embeddinggemma": {"stories.threshold": 0.84, "stories.cohesion": 0.0},
 }

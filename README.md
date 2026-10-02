@@ -5,6 +5,8 @@
 **Dünya gündemini tek ekranda toplayan, aynı olayı anlatan haberleri birleştiren, önem sırasına dizen ve seçtiğiniz
 dillerde özetleyen bir Windows masaüstü programı.**
 
+<p align="center"><img src="docs/showreel.gif" alt="World Signal tanıtım animasyonu" width="720"></p>
+
 Haber merkezlerinde sabah toplantısına hazırlanmak için yapıldı: yüzlerce kaynağın RSS akışlarını gün boyu tarar,
 aynı olayı anlatan haberleri tek bir "hikâye" kartında toplar ("9 kaynakta geçiyor"), hikâyeleri önem sırasına koyar
 ve isterseniz yapay zekâyla seçtiğiniz dillerde (örneğin Türkçe ve İngilizce) başlık ve özet yazar. Toplantı listesi, not

@@ -205,6 +205,12 @@ export function CollectorFooter() {
     <div className="sidebar-footer">
       <div className="collector-line" aria-live="polite">{line}</div>
       {status?.ai ? <AiLine /> : null}
+      {status?.extension?.active && status.extension.outdated && !status.extension.warn ? (
+        <button type="button" className="collector-line link-btn" title={t("extension.outdated")} onClick={() => navigate("settings")}>
+          <Icon name="alert" size={14} />
+          <span className="collector-text">{t("extension.sidebarOutdated")}</span>
+        </button>
+      ) : null}
       {status?.extension?.active && status.extension.warn ? (
         <button type="button" className="collector-line link-btn" title={t("extension.notConnected")} onClick={() => navigate("settings")}>
           <Icon name="alert" size={14} />

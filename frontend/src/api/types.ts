@@ -538,6 +538,10 @@ export interface ExtensionStatus {
   reading: string | null;
   last_source: string | null;
   last_error: string | null;
+  /** The version the extension reported (null: an older copy that does not report one). */
+  version: string | null;
+  /** The browser runs another copy of the extension than the program's: press Reload on the extensions page. */
+  outdated: boolean;
 }
 
 /** GET /api/extension: the pairing code the extension needs, where to find the program, and the connection. */

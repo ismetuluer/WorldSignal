@@ -386,7 +386,7 @@ def test_changing_embedding_model_switches_to_its_measured_threshold(client):
     assert r["stories.cohesion"] == 0.0
     # An explicit threshold in the same change wins; an unknown model keeps the current threshold.
     r = client.patch("/api/settings", headers=H, json={"stories.embed_model": "bge-m3:latest", "stories.threshold": 0.6}).json()
-    assert r["stories.threshold"] == 0.6 and r["stories.cohesion"] == 0.5
+    assert r["stories.threshold"] == 0.6 and r["stories.cohesion"] == 0.55
     r = client.patch("/api/settings", headers=H, json={"stories.embed_model": "my-embedder:latest"}).json()
     assert r["stories.embed_model"] == "my-embedder:latest" and r["stories.threshold"] == 0.6
 

@@ -27,7 +27,7 @@ import { renderWithApp } from "./render";
 const mocked = vi.mocked(api, true);
 const INFO = {
   code: "abc123", port: 47821, fixed_port: true,
-  status: { connected: true, warn: false, last_seen: "2026-10-01T09:00:00Z", read_today: 4, reading: null, last_source: "WSJ", last_error: null },
+  status: { connected: true, warn: false, last_seen: "2026-10-01T09:00:00Z", read_today: 4, reading: null, last_source: "WSJ", last_error: null, version: "0.14.3", outdated: false },
 };
 
 beforeEach(() => {
@@ -185,7 +185,7 @@ describe("Sidebar", () => {
     collector: { running: true, busy: false, offline: false, last_cycle_at: null, last_cycle_new: 0, last_cycle_feeds: 0, last_cycle_errors: 0 },
     articles: { total: 0, recent: 0 }, extension: null,
   };
-  const EXT = { connected: false, warn: false, last_seen: null, read_today: 0, reading: null, last_source: null, last_error: null };
+  const EXT = { connected: false, warn: false, last_seen: null, read_today: 0, reading: null, last_source: null, last_error: null, version: "0.14.3", outdated: false };
 
   const footer = () => render(
     <AppStateProvider initialSettings={{} as never} initialMeta={{} as never}>

@@ -2,7 +2,7 @@ import type { SVGProps } from "react";
 
 /** Small hand-drawn stroke icon set (24x24 grid, currentColor). */
 const PATHS = {
-  feed: "M4 5h16M4 12h16M4 19h10",
+  feed: "M4 5h13a1 1 0 0 1 1 1v12a2 2 0 0 0 2 2H6a2 2 0 0 1-2-2ZM18 9h2v9a2 2 0 0 1-2 2M7.5 9h7M7.5 12.5h7M7.5 16h4", // newspaper
   sources: "M5 12a7 7 0 0 1 14 0M8.5 12a3.5 3.5 0 0 1 7 0M12 12v8M12 12h.01",
   settings:
     "M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM19.4 13.5l1.6 1.2-2 3.4-1.9-.7a7 7 0 0 1-2.1 1.2L14.7 21h-4l-.3-2.4a7 7 0 0 1-2.1-1.2l-1.9.7-2-3.4 1.6-1.2a7 7 0 0 1 0-2.4L4.4 9.9l2-3.4 1.9.7a7 7 0 0 1 2.1-1.2L10.7 3h4l.3 2.4a7 7 0 0 1 2.1 1.2l1.9-.7 2 3.4-1.6 1.2a7 7 0 0 1 0 2.4Z",
@@ -21,7 +21,7 @@ const PATHS = {
   info: "M12 11v6M12 7h.01M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Z",
   folder: "M3 7a1 1 0 0 1 1-1h5l2 2h9a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1Z",
   signal: "M5 16a7 7 0 0 1 14 0M8.5 16a3.5 3.5 0 0 1 7 0M12 16h.01",
-  meeting: "M9 6h11M9 12h11M9 18h11M4.5 6h.01M4.5 12h.01M4.5 18h.01",
+  meeting: "M3 4h18M4 4v10a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1V4M12 15v3M8 21l4-3 4 3M8 11l3-3 2 2 3-3", // presentation board
   notebook: "M6 3h11a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6V3ZM6 3H5M6 21H5M10 8h5M10 12h5",
   copy: "M9 9h10v11H9zM5 15V4h10",
   print: "M7 9V3h10v6M7 17H4v-7h16v7h-3M7 14h10v7H7z",

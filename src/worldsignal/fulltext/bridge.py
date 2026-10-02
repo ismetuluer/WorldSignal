@@ -12,6 +12,7 @@ import asyncio
 import hmac
 import logging
 import math
+import re
 import secrets
 import threading
 from collections.abc import Callable
@@ -20,6 +21,7 @@ from datetime import UTC, datetime, timedelta, tzinfo
 from typing import Any
 from urllib.parse import urlsplit
 
+from .. import __version__
 from ..db import utc_now_iso
 from ..repo.fulltext import FullTextJob, FullTextRepository
 from ..repo.settings import SettingsRepository
@@ -44,6 +46,7 @@ WAIT = {"disabled": 300, "resting": 300, "busy": 30, "idle": 60}
 COOLDOWN_START = timedelta(minutes=1)
 COOLDOWN_MAX = timedelta(minutes=30)
 MIN_COOLDOWN_WAIT = 30
+VERSION_PATTERN = re.compile(r"[0-9]{1,4}(\.[0-9]{1,4}){0,3}")
 MAX_BACKOFF_STEPS = 10  # 1 minute * 2**10 is far beyond the 30 minute cap
 SILENT_LAUNCH = timedelta(minutes=10)  # the extension has been silent this long: the browser may be closed
 LAUNCH_EVERY = timedelta(minutes=30)
@@ -91,6 +94,7 @@ class ExtensionBridge:
         self._started = clock()  # start-up, or the last time the extension was not the reader (``_note_reader``)
         self._reader_active = True  # as last seen by ``_note_reader`` (start-up itself starts the grace)
         self.last_error: str | None = None
+        self.extension_version: str | None = None  # as the extension last said (None: an old copy that says nothing)
         self.last_source: str | None = None
         self._launched_at: datetime | None = None
         self._day = ""
@@ -283,6 +287,10 @@ class ExtensionBridge:
                 log.exception("Starting the browser for the extension failed")
             await asyncio.sleep(60)
 
+    def note_version(self, version: str | None) -> None:
+        """The version the extension sent with its request; anything that is not a plain version number is ignored."""
+        self.extension_version = version if version and VERSION_PATTERN.fullmatch(version) else None
+
     def status(self) -> dict[str, Any]:
         """``connected``: the extension asked within the wait it was handed. ``warn``: the extension reads, but has
         been silent for long enough to tell the user (never at start-up, never while it keeps to a long wait)."""
@@ -301,4 +309,7 @@ class ExtensionBridge:
             "last_seen": utc_now_iso(self.last_seen) if self.last_seen else None,
             "read_today": self._read_today if self._day == utc_now_iso(now)[:10] else 0,
             "reading": reading, "last_source": self.last_source, "last_error": self.last_error,
+            # The browser still runs another copy than the one in the program folder: press Reload once.
+            "version": self.extension_version,
+            "outdated": self.last_seen is not None and self.extension_version != __version__,
         }
