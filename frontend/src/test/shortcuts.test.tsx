@@ -1,6 +1,6 @@
 import { fireEvent, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("../api/client", async (importOriginal) => {
@@ -43,12 +43,12 @@ describe("shortcut helpers", () => {
   });
 });
 
-function Harness({ onMeeting, onOpen }: { onMeeting: (i: number) => void; onOpen: (i: number) => void }) {
+function Harness({ onMeeting, onOpen, count = 3 }: { onMeeting: (i: number) => void; onOpen: (i: number) => void; count?: number }) {
   const ref = useRef<HTMLUListElement>(null);
-  const [selected] = useListKeys(ref, 3, () => undefined, (_, i) => onOpen(i), { meeting: onMeeting });
+  const [selected] = useListKeys(ref, count, () => undefined, (_, i) => onOpen(i), { meeting: onMeeting });
   return (
     <ul ref={ref}>
-      {[0, 1, 2].map((i) => <li key={i} data-index={i} data-selected={selected === i}>{i}</li>)}
+      {Array.from({ length: count }, (_, i) => i).map((i) => <li key={i} data-index={i} data-selected={selected === i}>{i}</li>)}
     </ul>
   );
 }
@@ -65,6 +65,25 @@ describe("the list follows the user's keys", () => {
     fireEvent.keyDown(window, { key: "Enter" });
     expect(meeting).toHaveBeenCalledWith(1);
     expect(open).toHaveBeenCalledWith(1);
+  });
+
+  it("scrolls to the selection only when a key moved it, not when the list grows", () => {
+    const scroll = vi.spyOn(Element.prototype, "scrollIntoView");
+    function Growing() {
+      const [count, setCount] = useState(3);
+      return (
+        <>
+          <button onClick={() => setCount(6)}>more</button>
+          <Harness onMeeting={vi.fn()} onOpen={vi.fn()} count={count} />
+        </>
+      );
+    }
+    renderWithApp(<Growing />);
+    fireEvent.keyDown(window, { key: "j" });
+    expect(scroll).toHaveBeenCalledTimes(1);
+    fireEvent.click(screen.getByRole("button", { name: "more" })); // more stories arrived or were loaded
+    expect(scroll).toHaveBeenCalledTimes(1);
+    scroll.mockRestore();
   });
 
   it("uses the user's keys, and the old ones stop working", () => {

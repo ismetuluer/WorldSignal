@@ -31,6 +31,7 @@ export function StorySettings() {
   const [models, setModels] = useState<OllamaModel[] | null>(null);
   const [keywords, setKeywords] = useState(settings["interest.keywords"].join(", "));
   const [threshold, setThreshold] = useState(settings["stories.threshold"]);
+  const [regroup, setRegroup] = useState<{ changed: number; created: number } | null>(null);
   const [weights, setWeights] = useState(() => Object.fromEntries(WEIGHTS.map((k) => [k, settings[`score.w_${k}`]])));
 
   const fail = useCallback(
@@ -65,6 +66,18 @@ export function StorySettings() {
     setKeywords(list.join(", "));
     if (JSON.stringify(list) !== JSON.stringify(settings["interest.keywords"])) void change({ "interest.keywords": list });
   };
+
+  const checkRegroup = () =>
+    api.regroupStories(true).then((r) => {
+      if (r.created === 0) toast.show(t("settings.stories.regroupNone"), "info");
+      else setRegroup(r);
+    }, fail);
+  const applyRegroup = () =>
+    api.regroupStories(false).then((r) => {
+      setRegroup(null);
+      toast.show(t("settings.stories.regroupDone", { changed: i18n.number(r.changed), created: i18n.number(r.created) }), "success");
+      void refreshStatus();
+    }, fail);
 
   const st = status?.stories;
 
@@ -125,6 +138,31 @@ export function StorySettings() {
             />
             <span className="score-num">{i18n.number(threshold)}</span>
           </div>
+        </div>
+
+        <div className="settings-row">
+          <div className="settings-row-text" style={{ flex: 1 }}>
+            <div className="settings-row-title">{t("settings.stories.regroup")}</div>
+            <div className="settings-row-hint">
+              {regroup
+                ? t("settings.stories.regroupAsk", { changed: i18n.number(regroup.changed), created: i18n.number(regroup.created) })
+                : t("settings.stories.regroupHint")}
+            </div>
+          </div>
+          {regroup ? (
+            <div className="inline-row">
+              <button type="button" className="btn btn-primary" onClick={() => void applyRegroup()}>
+                {t("settings.stories.regroupApply")}
+              </button>
+              <button type="button" className="btn" onClick={() => setRegroup(null)}>
+                {t("settings.stories.regroupCancel")}
+              </button>
+            </div>
+          ) : (
+            <button type="button" className="btn" onClick={() => void checkRegroup()}>
+              {t("settings.stories.regroupCheck")}
+            </button>
+          )}
         </div>
 
         <div className="settings-row settings-row-block">

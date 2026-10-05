@@ -13,6 +13,7 @@ from conftest import MINI_CATALOG
 from worldsignal.ai.ollama import OllamaClient
 from worldsignal.ai.worker import AiWorker
 from worldsignal.collector.rss import ParsedEntry
+from worldsignal.db import utc_now_iso
 from worldsignal.repo.ai import AiRepository
 from worldsignal.repo.stories import StoryFilter, StoryRepository
 from worldsignal.stories.embedding import embed_text
@@ -445,3 +446,40 @@ def test_exclusive_and_breaking_badges(db, sources, articles, settings):
     by_id = {a["id"]: a for a in articles.list(ArticleFilter(limit=50))}
     assert by_id[ids["e1"]]["exclusive"] and not by_id[ids["e1"]]["breaking"]
     assert by_id[ids["m1"]]["breaking"] and not by_id[ids["o1"]]["breaking"]
+
+
+LOOSE = [
+    ("alpha", "l1", "Iran seizes drone in Hormuz", 50),
+    ("beta", "l2", "hormuz drone seized by Iran", 45),
+    ("gamma-live", "l3", "Hormuz storm flood", 40),
+    ("beta-sister", "l4", "storm flood hits Hormuz coast", 35),
+]
+
+
+def test_stories_formed_under_a_lower_threshold_are_split_when_the_threshold_is_raised(db, sources, articles, settings):
+    ids = seed_articles(db, sources, articles, LOOSE)
+    worker = make_worker(db, settings, FakeEmbedOllama(), threshold=0.3)
+    settings.set_many({"stories.cohesion": 0.0})  # the loose story the older program would have built
+    run(worker.step())
+    repo = StoryRepository(db)
+    assert len({repo.story_of(ids[k]) for k in ("l1", "l2", "l3", "l4")}) == 1  # one loose story
+    settings.set_many({"stories.threshold": 0.8})
+    since = utc_now_iso(NOW - timedelta(hours=72))
+    touched, created = repo.split_loose(since, "bge-m3:latest", 0.8, dry_run=True)  # looking changes nothing
+    assert (len(touched), created) == (1, 1) and len({repo.story_of(ids[k]) for k in ("l1", "l2", "l3", "l4")}) == 1
+    repo.split_loose(since, "bge-m3:latest", 0.8)
+    assert repo.story_of(ids["l1"]) == repo.story_of(ids["l2"]) != repo.story_of(ids["l3"]) == repo.story_of(ids["l4"])
+    assert len(repo.get(repo.story_of(ids["l3"]))["members"]) == 2
+    assert repo.split_loose(since, "bge-m3:latest", 0.8) == (set(), 0)  # nothing left to split
+
+
+def test_splitting_leaves_a_story_the_user_corrected_alone(db, sources, articles, settings):
+    ids = seed_articles(db, sources, articles, LOOSE)
+    worker = make_worker(db, settings, FakeEmbedOllama(), threshold=0.3)
+    settings.set_many({"stories.cohesion": 0.0})  # the loose story the older program would have built
+    run(worker.step())
+    repo = StoryRepository(db)
+    story = repo.story_of(ids["l1"])
+    repo.merge(repo.detach(ids["l4"]), story)  # the user says l4 belongs with the others
+    repo.split_loose(utc_now_iso(NOW - timedelta(hours=72)), "bge-m3:latest", 0.8)
+    assert {repo.story_of(ids[k]) for k in ("l1", "l2", "l3", "l4")} == {story}  # a story the user corrected is kept whole

@@ -145,6 +145,8 @@ export const api = {
   story: (id: number) => request<Story>("GET", `/stories/${id}`),
   detachArticle: (articleId: number) =>
     request<{ story_id: number; previous_story_id: number | null }>("POST", `/articles/${articleId}/detach`),
+  regroupStories: (dryRun: boolean) =>
+    request<{ changed: number; created: number }>("POST", "/stories/regroup", { dry_run: dryRun }),
   mergeStories: (storyId: number, into: number) => request<Story>("POST", `/stories/${storyId}/merge`, { into }),
   summarizeStory: (storyId: number) => request<{ status: string }>("POST", `/stories/${storyId}/summarize`),
 

@@ -56,6 +56,7 @@ from ..repo.sources import ABROAD, CATALOG_GROUPS, HOME_REGION, REGIONS, Conflic
 from ..repo.stats import PERIODS, StatsRepository, period as stats_period
 from ..repo.stories import StoryFilter, StoryRepository
 from ..stories.embedding import recommended_settings
+from ..stories.worker import WINDOW_HOURS as STORY_WINDOW_HOURS
 from ..stories.worker import StoryWorker, interest_from, weights_from
 from ..textnorm import MAX_ALTERNATIVES
 from ..updater import UpdateError, Updater
@@ -306,6 +307,10 @@ class RestoreRequest(BaseModel):
 
 class MergeRequest(BaseModel):
     into: int
+
+
+class RegroupRequest(BaseModel):
+    dry_run: bool = True
 
 
 class LoginRequest(BaseModel):
@@ -674,6 +679,20 @@ def create_app(ctx: AppContext) -> FastAPI:
             alternatives=search_alternatives(qx), sort=sort, limit=limit, offset=offset,
         ))
         return {"items": items, "total": total}
+
+    @api.post("/stories/regroup")
+    def regroup_stories(body: RegroupRequest) -> dict[str, int]:
+        """Hold the stories of the last days to the current threshold (stories formed under a lower one are split).
+        With ``dry_run`` only says how many would change."""
+        prefs = ctx.settings.get_preferences()
+        model = (prefs.get("stories.embed_model") or "").strip()
+        if not model:
+            return {"changed": 0, "created": 0}
+        since = utc_now_iso(datetime.now(UTC) - timedelta(hours=STORY_WINDOW_HOURS))
+        touched, created = ctx.stories.split_loose(since, model, float(prefs["stories.threshold"]), dry_run=body.dry_run)
+        if touched and not body.dry_run:
+            rescore(sorted(touched))
+        return {"changed": len(touched) - created if not body.dry_run else len(touched), "created": created}
 
     @api.get("/stories/{story_id}")
     def get_story(story_id: int) -> dict[str, Any]:

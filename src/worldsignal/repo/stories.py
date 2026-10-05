@@ -205,6 +205,64 @@ class StoryRepository:
             c.execute("UPDATE stories SET ai_status = NULL WHERE id = ? AND ai_status = 'done'", (target_id,))
         return target_id
 
+    def split_loose(self, since_iso: str, model: str, threshold: float, *, dry_run: bool = False) -> tuple[set[int], int]:
+        """Hold the stories of the window to ``threshold``: a story whose members no longer hang together at that
+        similarity (they joined under a lower threshold) is split into the groups that do. The largest group keeps
+        the story (and its notes, meeting entries, summary); the others become stories of their own. A story the
+        user has corrected by hand is left alone. Returns (touched story ids, stories created); with ``dry_run``
+        nothing is changed and the ids are those that would be touched."""
+        ids, story_ids, _, matrix = self.recent_vectors(since_iso, model)
+        if not ids:
+            return set(), 0
+        by_story: dict[int, list[int]] = {}
+        for pos, sid in enumerate(story_ids):
+            if sid is not None:
+                by_story.setdefault(sid, []).append(pos)
+        pinned = {r["article_id"] for r in self.db.conn.execute(
+            "SELECT article_id FROM story_articles WHERE assigned_by = 'user'")}
+        touched: set[int] = set()
+        created = 0
+        for sid, rows in by_story.items():
+            if len(rows) < 2:
+                continue
+            sims = matrix[rows] @ matrix[rows].T
+            parent = list(range(len(rows)))
+
+            def find(x: int) -> int:
+                while parent[x] != x:
+                    parent[x] = parent[parent[x]]
+                    x = parent[x]
+                return x
+
+            for i, j in zip(*np.nonzero(np.triu(sims >= threshold, k=1)), strict=True):
+                parent[find(int(i))] = find(int(j))
+            if any(ids[pos] in pinned for pos in rows):
+                continue  # the user has already corrected this story; their say stands
+            groups: dict[int, list[int]] = {}
+            for k in range(len(rows)):
+                groups.setdefault(find(k), []).append(k)
+            if len(groups) < 2:
+                continue
+            main = max(groups.values(), key=lambda g: (len(g), -min(g)))
+            created += len(groups) - 1
+            touched.add(sid)
+            if dry_run:
+                continue
+            with self.db.transaction() as c:
+                for group in groups.values():
+                    if group is main:
+                        continue
+                    first = ids[rows[group[0]]]
+                    new = self.create_story(c, first)
+                    for k in group:
+                        c.execute(
+                            "UPDATE story_articles SET story_id = ?, similarity = NULL, assigned_by = 'auto', assigned_at = ? "
+                            "WHERE article_id = ?", (new, utc_now_iso(), ids[rows[k]]))
+                    touched.add(new)
+                # The kept story's summary no longer covers what was taken out of it.
+                c.execute("UPDATE stories SET ai_status = NULL WHERE id = ? AND ai_status = 'done'", (sid,))
+        return touched, created
+
     def _delete_if_empty(self, c: sqlite3.Connection, story_id: int) -> None:
         if c.execute("SELECT 1 FROM story_articles WHERE story_id = ? LIMIT 1", (story_id,)).fetchone() is None:
             c.execute("DELETE FROM stories WHERE id = ?", (story_id,))

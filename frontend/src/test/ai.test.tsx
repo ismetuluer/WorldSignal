@@ -27,6 +27,7 @@ vi.mock("../api/client", async (importOriginal) => {
       setAiKey: vi.fn(),
       deleteAiKey: vi.fn(),
       testCloud: vi.fn(),
+      regroupStories: vi.fn(),
     },
   };
 });
@@ -472,5 +473,31 @@ describe("Settings page layout", () => {
     await userEvent.clear(screen.getByRole("searchbox", { name: "Ayar ara" }));
     await userEvent.type(screen.getByRole("searchbox", { name: "Ayar ara" }), "zzzyok");
     expect(await screen.findByText("“zzzyok” ile eşleşen ayar yok.")).toBeInTheDocument();
+  });
+});
+
+describe("Regrouping stories", () => {
+  beforeEach(() => localStorage.clear());
+
+  it("tells how many stories would change, and only changes them after the user agrees", async () => {
+    mocked.regroupStories.mockResolvedValue({ changed: 3, created: 5 });
+    openSettings("collect");
+    await userEvent.click(await screen.findByRole("button", { name: "Denetle" }));
+    expect(await screen.findByText("3 hikâye bölünecek, 5 yeni hikâye oluşacak. Uygulansın mı?")).toBeInTheDocument();
+    expect(mocked.regroupStories).toHaveBeenCalledWith(true);
+    await userEvent.click(screen.getByRole("button", { name: "Vazgeç" }));
+    expect(screen.queryByText(/Uygulansın mı/)).not.toBeInTheDocument();
+    expect(mocked.regroupStories).toHaveBeenCalledTimes(1);
+    await userEvent.click(screen.getByRole("button", { name: "Denetle" }));
+    await userEvent.click(await screen.findByRole("button", { name: "Uygula" }));
+    expect(mocked.regroupStories).toHaveBeenLastCalledWith(false);
+    expect(await screen.findByText("3 hikâye bölündü, 5 yeni hikâye oluştu.")).toBeInTheDocument();
+  });
+
+  it("says so when the stories already fit", async () => {
+    mocked.regroupStories.mockResolvedValue({ changed: 0, created: 0 });
+    openSettings("collect");
+    await userEvent.click(await screen.findByRole("button", { name: "Denetle" }));
+    expect(await screen.findByText("Son 3 günün hikâyeleri bu eşikle zaten uyumlu.")).toBeInTheDocument();
   });
 });

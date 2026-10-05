@@ -360,6 +360,9 @@ def test_story_endpoints(client, ctx):
 
     assert client.post(f"/api/stories/{top['id']}/summarize", headers=H).json() == {"status": "pending"}
     assert client.post("/api/stories/99999/summarize", headers=H).status_code == 404
+    looked = client.post("/api/stories/regroup", headers=H, json={"dry_run": True}).json()
+    assert set(looked) == {"changed", "created"} and looked["created"] >= 0
+    assert set(client.post("/api/stories/regroup", headers=H, json={"dry_run": False}).json()) == {"changed", "created"}
     assert "stories" in client.get("/api/status", headers=H).json()
 
 

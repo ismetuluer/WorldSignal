@@ -3,6 +3,20 @@
 Sürüm numaraları [Anlamsal Sürümleme](https://semver.org/lang/tr/) izler. 1.0'a kadar her faz bir ara sürümdür.
 İngilizcesi (0.10.0'dan itibaren): [CHANGELOG.en.md](CHANGELOG.en.md).
 
+## [0.15.2] — 2026-10-02 — Eşiği yükselttikten sonra eski hikâyeleri düzenleme
+
+### Eklendi
+- **Ayarlar → Haber toplama → "Son 3 günün hikâyelerini bu eşiğe göre düzenle".** Birleştirme eşiği yalnızca yeni haberleri
+  etkiler; daha düşük bir eşikle kurulmuş hikâyeler olduğu gibi kalıyordu (ör. bir belediye başkanının Cumhurbaşkanı ziyareti
+  hikâyesine, ertesi gün başka bir başkanın ziyareti de katılmıştı). **Denetle** düğmesi kaç hikâyenin bölüneceğini söyler,
+  **Uygula** böler. Büyük grup hikâyeyi (notlar, toplantı kayıtları) korur, ayrılanlar yeni hikâye olur. Elle düzelttiğiniz
+  (ayırdığınız ya da birleştirdiğiniz) hikâyelere dokunulmaz. Hiçbir şey kendiliğinden bölünmez.
+
+### Düzeltildi
+- **Akışta ve hikâyelerde aşağı gezinirken liste son seçilen satıra geri zıplıyordu.** Liste her uzadığında (aşağıda yeni
+  haberler yüklenince ya da yeni hikâye gelince) program seçili satırı ekrana getiriyordu. Artık yalnızca tuşla (J/K)
+  seçimi hareket ettirince oraya kaydırır.
+
 ## [0.15.1] — 2026-10-02 — Arama kutusunda tek silme düğmesi
 
 ### Düzeltildi

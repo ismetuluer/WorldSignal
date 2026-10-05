@@ -3,6 +3,20 @@
 English version of [CHANGELOG.md](CHANGELOG.md), from 0.10.0 on. Version numbers follow
 [Semantic Versioning](https://semver.org/).
 
+## [0.15.2] — 2026-10-02 — Holding old stories to a raised threshold
+
+### Added
+- **Settings → News collection → "Hold the last 3 days' stories to this threshold".** The merge threshold only affects new
+  reports; stories built under a lower one stayed as they were (for example a mayor's visit to the President kept pulling in
+  another mayor's visit the next day). **Check** says how many stories would be split, **Apply** splits them. The largest
+  group keeps the story (its notes and meeting entries), the others become new stories. Stories you corrected by hand
+  (detached or merged) are left alone. Nothing is split by itself.
+
+### Fixed
+- **Scrolling down the feed or the stories threw the page back to the last selected row.** Whenever the list grew (more
+  loaded below, or a new story arrived) the program scrolled the selected row into view. It now does so only when a key
+  (J/K) moves the selection.
+
 ## [0.15.1] — 2026-10-02 — One clear button in the search box
 
 ### Fixed

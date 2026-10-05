@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "__MSG_name__",
   "description": "__MSG_description__",
-  "version": "0.15.1",
+  "version": "0.15.2",
   "default_locale": "tr",
   "minimum_chrome_version": "116",
   "background": { "service_worker": "background.js", "type": "module" },

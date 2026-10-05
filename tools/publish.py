@@ -35,7 +35,8 @@ RELEASES = ROOT / "release"
 CONFIG = ROOT / "publish.private.json"
 # Never published: private project notes and documents that quote publishers' feed texts.
 PRIVATE = ("CLAUDE.md", "HANDOFF.md", ".claude/", "docs/MODEL_KARSILASTIRMA.md",
-           "docs/superpowers/specs/2026-10-02-android-uygulamasi-design.md")  # a personal-device design with the owner's name
+           "docs/superpowers/specs/2026-10-02-android-uygulamasi-design.md",
+           "docs/superpowers/plans/2026-10-02-android-")  # the personal-device Android plans name the owner
 # Also stops a publication, whatever the private list says: absolute user paths and personal e-mail.
 GENERIC = [r"[A-Za-z]:\\{1,2}Users\\{1,2}(?!Public\\)[^\\\s]+",r"@gmail\.com", r"@hotmail\.com", r"@outlook\.com"]
 

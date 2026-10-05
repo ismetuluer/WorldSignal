@@ -77,6 +77,8 @@ export function useListKeys(
   const keys = useShortcuts();
   const activateRef = useRef(activate);
   activateRef.current = activate;
+  // Only a move with the keys scrolls to the selection; a longer list (more loaded, new stories) or a click must not.
+  const followSelection = useRef(false);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -87,6 +89,7 @@ export function useListKeys(
       if (keys.next.includes(key) || keys.prev.includes(key)) {
         e.preventDefault();
         const forward = keys.next.includes(key);
+        followSelection.current = true;
         setSelected((i) => (forward ? Math.min(count - 1, i + 1) : Math.max(0, i - 1)));
       } else if (keys.open.includes(key) && selected >= 0) {
         const el = listRef.current?.querySelector<HTMLElement>(`[data-index="${selected}"]`);
@@ -105,10 +108,14 @@ export function useListKeys(
   }, [count, selected, listRef, keys]);
 
   useEffect(() => {
-    if (selected < 0) return;
+    if (!followSelection.current) return;
+    followSelection.current = false;
     listRef.current?.querySelector(`[data-index="${selected}"]`)?.scrollIntoView({ block: "nearest" });
-    if (selected >= count - 5) loadMore();
-  }, [selected, count, loadMore, listRef]);
+  }, [selected, listRef]);
+
+  useEffect(() => {
+    if (selected >= 0 && selected >= count - 5) loadMore();
+  }, [selected, count, loadMore]);
 
   // A reset (new list) clamps the selection.
   useEffect(() => {
