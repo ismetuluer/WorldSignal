@@ -22,7 +22,7 @@ def queue_browser_job(ctx):
     add_articles(ctx)
     beta = next(s for s in ctx.sources.list_sources() if s["slug"] == "beta")
     ctx.sources.update_source(beta["id"], {"fulltext_mode": "browser"})
-    ctx.settings.set_many({"fulltext.reader": "extension", "fulltext.browser_night_rest": False})
+    ctx.settings.set_many({"fulltext.browser_night_rest": False})
     article_id = ctx.db.conn.execute("SELECT id FROM articles ORDER BY id LIMIT 1").fetchone()[0]
     ctx.fulltext.request(article_id)
     return article_id
@@ -223,12 +223,12 @@ def test_sign_in_opens_the_users_own_browser_in_extension_mode(client, ctx, monk
     monkeypatch.setattr(app_module, "browser_for", lambda p: BrowserInfo("Brave", Path("brave.exe"), Path("p")))
     monkeypatch.setattr(app_module.subprocess, "Popen", lambda args, **k: opened.append(args))
     monkeypatch.setattr(app_module, "open_login_window", lambda *a: opened.append("own-profile"))
-    ctx.settings.set("fulltext.reader", "extension")
+    ctx.settings.set("fulltext.enabled", True)
     assert client.post("/api/fulltext/login", headers=H, json={"url": "https://www.wsj.com/"}).status_code == 200
     assert opened == [["brave.exe", "https://www.wsj.com/"]]
 
 
-def test_sign_in_still_uses_the_programs_profile_in_automation_mode(client, ctx, monkeypatch):
+def test_sign_in_opens_the_programs_own_profile_when_the_extension_lives_there(client, ctx, monkeypatch):
     from pathlib import Path
 
     from worldsignal.api import app as app_module
@@ -237,17 +237,20 @@ def test_sign_in_still_uses_the_programs_profile_in_automation_mode(client, ctx,
     opened = []
     monkeypatch.setattr(app_module, "browser_for", lambda p: BrowserInfo("Brave", Path("brave.exe"), Path("p")))
     monkeypatch.setattr(app_module.subprocess, "Popen", lambda args, **k: opened.append(args))
-    monkeypatch.setattr(app_module, "open_login_window", lambda *a: opened.append("own-profile"))
+    monkeypatch.setattr(app_module, "open_login_window", lambda *a: opened.append(("own-profile", a[2])))
+    ctx.settings.set("extension.profile", "own")
     assert client.post("/api/fulltext/login", headers=H, json={"url": "https://www.wsj.com/"}).status_code == 200
-    assert opened == ["own-profile"]
+    assert opened == [("own-profile", "https://www.wsj.com/")]
+    opened.clear()
+    assert client.post("/api/extension/profile/open", headers=H).json() == {"status": "opened"}
+    assert opened == [("own-profile", "chrome://extensions")]  # the page where the extension is loaded, once
 
 
 def test_status_tells_whether_the_extension_reads_and_is_connected(client, ctx):
     block = client.get("/api/status", headers=H).json()["extension"]
-    assert block["active"] is False and block["connected"] is False and block["warn"] is False
-    ctx.settings.set("fulltext.reader", "extension")
-    block = client.get("/api/status", headers=H).json()["extension"]
-    assert block["active"] is True and block["warn"] is False  # just started: no warning yet
+    assert block["active"] is True and block["connected"] is False and block["warn"] is False  # just started: no warning
+    ctx.settings.set("fulltext.enabled", False)
+    assert client.get("/api/status", headers=H).json()["extension"]["active"] is False
 
 
 def test_status_has_no_extension_block_without_a_bridge(client, ctx):
@@ -294,7 +297,7 @@ def test_sign_in_in_extension_mode_refuses_a_stored_homepage_that_is_not_a_web_p
     opened = []
     monkeypatch.setattr(app_module, "browser_for", lambda p: BrowserInfo("Brave", Path("brave.exe"), Path("p")))
     monkeypatch.setattr(app_module.subprocess, "Popen", lambda args, **k: opened.append(args))
-    ctx.settings.set("fulltext.reader", "extension")
+    ctx.settings.set("fulltext.enabled", True)
     source = ctx.sources.list_sources()[0]
     for bad in ("file:///C:/Windows/System32/calc.exe", "--utility-sub-type=x", "javascript:alert(1)", "ftp://x.example/"):
         ctx.db.conn.execute("UPDATE sources SET homepage = ? WHERE id = ?", (bad, source["id"]))

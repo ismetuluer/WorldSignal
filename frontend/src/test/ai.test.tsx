@@ -28,6 +28,7 @@ vi.mock("../api/client", async (importOriginal) => {
       deleteAiKey: vi.fn(),
       testCloud: vi.fn(),
       regroupStories: vi.fn(),
+      extension: vi.fn(),
     },
   };
 });
@@ -120,6 +121,7 @@ function openSettings(category: string) {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  mocked.extension.mockResolvedValue({ code: "abc", port: 47821, fixed_port: true, status: { connected: true, warn: false, last_seen: null, read_today: 0, reading: null, last_source: null, last_error: null, version: "0.16.0", outdated: false } });
   mocked.update.mockResolvedValue(UPDATE_IDLE);
   mocked.status.mockResolvedValue(STATUS);
   mocked.sources.mockResolvedValue([]);

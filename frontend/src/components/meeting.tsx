@@ -12,7 +12,10 @@ interface MeetingApi {
   loaded: boolean;
   error: string | null;
   has: (storyId: number) => boolean;
+  hasArticle: (articleId: number) => boolean;
   toggle: (storyId: number) => Promise<void>;
+  /** The same for one report (a story is not needed). */
+  toggleArticle: (articleId: number) => Promise<void>;
   remove: (itemId: number) => Promise<void>;
   reorder: (ids: number[]) => Promise<void>;
   setComment: (itemId: number, comment: string) => Promise<void>;
@@ -26,7 +29,9 @@ const MeetingContext = createContext<MeetingApi>({
   loaded: false,
   error: null,
   has: () => false,
+  hasArticle: () => false,
   toggle: async () => undefined,
+  toggleArticle: async () => undefined,
   remove: async () => undefined,
   reorder: async () => undefined,
   setComment: async () => undefined,
@@ -71,16 +76,17 @@ export function MeetingProvider({ children }: { children: ReactNode }) {
     return () => window.removeEventListener("focus", onFocus);
   }, [reload]);
 
-  const toggle = useCallback(
-    async (storyId: number) => {
-      const existing = itemsRef.current.find((i) => i.story_id === storyId);
+  // Adds the item when it is not on the list, removes it when it is (a story or one report).
+  const flip = useCallback(
+    async (find: (i: MeetingItem) => boolean, add: () => Promise<MeetingItem>) => {
+      const existing = itemsRef.current.find(find);
       try {
         if (existing) {
           await api.removeMeetingItem(existing.id);
           setItems((list) => list.filter((i) => i.id !== existing.id));
           toast.show(t("meeting.removed"), "success");
         } else {
-          const item = await api.addToMeeting(storyId);
+          const item = await add();
           setItems((list) => (list.some((i) => i.id === item.id) ? list : [...list, item]));
           toast.show(t("meeting.added"), "success");
         }
@@ -90,6 +96,11 @@ export function MeetingProvider({ children }: { children: ReactNode }) {
       }
     },
     [toast, t, fail, reload],
+  );
+  const toggle = useCallback((storyId: number) => flip((i) => i.story_id === storyId, () => api.addToMeeting(storyId)), [flip]);
+  const toggleArticle = useCallback(
+    (articleId: number) => flip((i) => i.article_id === articleId, () => api.addArticleToMeeting(articleId)),
+    [flip],
   );
 
   const remove = useCallback(
@@ -135,13 +146,15 @@ export function MeetingProvider({ children }: { children: ReactNode }) {
       loaded,
       error,
       has: (storyId) => items.some((i) => i.story_id === storyId),
+      hasArticle: (articleId) => items.some((i) => i.article_id === articleId),
       toggle,
+      toggleArticle,
       remove,
       reorder,
       setComment,
       reload,
     }),
-    [day, items, loaded, error, toggle, remove, reorder, setComment, reload],
+    [day, items, loaded, error, toggle, toggleArticle, remove, reorder, setComment, reload],
   );
   return <MeetingContext.Provider value={value}>{children}</MeetingContext.Provider>;
 }

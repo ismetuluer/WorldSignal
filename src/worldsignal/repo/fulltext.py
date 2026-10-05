@@ -419,6 +419,11 @@ class FullTextRepository:
                     (sid, reason, since_iso, limit - have),
                 ).fetchall()
                 out[reason] += [r[0] for r in rows]
+        # A single report on today's meeting list is read too.
+        out["notebook"] += [r[0] for r in self.db.conn.execute(
+            """SELECT a.id FROM meeting_items m JOIN articles a ON a.id = m.article_id JOIN sources s ON s.id = a.source_id
+               WHERE m.day = ? AND s.enabled = 1 AND s.fulltext_mode != 'off'
+                 AND NOT EXISTS (SELECT 1 FROM article_fulltext f WHERE f.article_id = a.id)""", (today,))]
         out["exclusive"], out["paid"] = [], []
         if paid:
             from ..flags import is_exclusive  # flags imports nothing from repo

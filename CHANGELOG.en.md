@@ -3,6 +3,31 @@
 English version of [CHANGELOG.md](CHANGELOG.md), from 0.10.0 on. Version numbers follow
 [Semantic Versioning](https://semver.org/).
 
+## [0.16.0] — 2026-10-05 — Single reports on the meeting list; own browser profile for the extension; automation browser removed
+
+### Added
+- **A single report can be put on the meeting list** (not only a story). Every card of the feed's "Articles" view has an
+  **Add to meeting** button and the **T** key; the list shows the report with a link to its source (the "story no longer
+  exists" warning is only for stories that really vanished). If the AI text arrives later, today's list follows it.
+  Outputs use the same format as for stories, under the same copyright rule (AI text and link only). The full text of a
+  listed report is queued too. (Database migration 0012: `meeting_items.article_id`.)
+- **A browser profile of its own for the extension.** Settings → Full text → "Which browser profile does the extension run
+  in?": *Own profile (recommended)* or *My browser*. In the own profile the extension and your subscription sign-ins live
+  in a profile of World Signal's own; the program starts it without a window and your everyday browser, tabs and session
+  are left alone. **Open own profile** opens that profile on the extensions page (you load the extension once). The default
+  is still *My browser*; to switch, the extension has to be loaded into that profile once.
+
+### Removed
+- **The program's automation browser (patchright).** It was not used (not one full text came through it since the
+  extension), the subscription sites refused it and it crashed the browser. Gone: that reader, the `fulltext.reader`,
+  `fulltext.profile`, `fulltext.visible` settings, the "Show the browser window" and profile rows, the patchright
+  dependency. The package gets about 100 MB smaller. Sources read "in the browser" are now read only by the extension.
+
+### Measured
+- Reports of the same kind of event with a changed name ("Erdoğan received X") are 0.66–0.73 similar with bge-m3 on real
+  data; those above the 0.8 threshold are really the same event (two people received in the same visit). No extra merge rule
+  that looks at the names was needed.
+
 ## [0.15.2] — 2026-10-02 — Holding old stories to a raised threshold
 
 ### Added

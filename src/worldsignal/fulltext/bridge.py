@@ -18,6 +18,7 @@ import threading
 from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta, tzinfo
+from pathlib import Path
 from typing import Any
 from urllib.parse import urlsplit
 
@@ -80,7 +81,9 @@ class Lease:
 
 class ExtensionBridge:
     def __init__(self, repo: FullTextRepository, settings: SettingsRepository, *, resting: Callable[[], bool],
-                 clock: Callable[[], datetime] = lambda: datetime.now(UTC), local_zone: tzinfo | None = None) -> None:
+                 clock: Callable[[], datetime] = lambda: datetime.now(UTC), local_zone: tzinfo | None = None,
+                 own_profile: Path | None = None) -> None:
+        self.own_profile = own_profile  # the browser profile World Signal keeps for the extension (setting extension.profile)
         self.repo = repo
         self.settings = settings
         self.resting = resting
@@ -129,10 +132,10 @@ class ExtensionBridge:
         return answer
 
     def _note_reader(self, prefs: dict[str, Any], now: datetime) -> bool:
-        """Is the extension the reader? While it is not (and when it is seen again as the reader), the start-up grace
-        starts over, so switching to the extension later gets the full ``WARN_AFTER`` before any warning. The switch is
+        """Is the extension reading (full texts switched on)? While it is not (and when it is on again), the start-up
+        grace starts over, so switching on later gets the full ``WARN_AFTER`` before any warning. The switch is
         seen at the next status poll or extension request."""
-        active = prefs.get("fulltext.reader") == "extension"
+        active = bool(prefs.get("fulltext.enabled", True))
         if not active or not self._reader_active:
             self._started = now
         self._reader_active = active
@@ -145,7 +148,7 @@ class ExtensionBridge:
 
     def _answer(self, now: datetime) -> dict[str, Any]:
         prefs = self.settings.get_preferences()
-        if not self._note_reader(prefs, now) or not prefs.get("fulltext.enabled", True):
+        if not self._note_reader(prefs, now):
             with self._lock:
                 if self._lease is not None:
                     # Switched off while a page was out: forget the lease (a late result is refused). The page may
@@ -258,10 +261,11 @@ class ExtensionBridge:
 
     def launch_if_needed(self, find_browser: Callable[[str], Any], is_running: Callable[[Any], bool],
                          start: Callable[[Any], None]) -> bool:
-        """Extension mode, nothing heard for a while, the browser not running: start it (at most twice an hour)."""
+        """Nothing heard for a while, the browser not running: start it (at most twice an hour). With the own profile
+        chosen it is that profile that has to be open, not the browser."""
         prefs = self.settings.get_preferences()
         now = self.clock()
-        if prefs.get("fulltext.reader") != "extension" or not prefs.get("fulltext.launch_browser", True):
+        if not prefs.get("fulltext.enabled", True) or not prefs.get("fulltext.launch_browser", True):
             return False
         silent = self.silent_for()
         if silent is not None and silent < SILENT_LAUNCH:
@@ -269,11 +273,12 @@ class ExtensionBridge:
         if self._launched_at is not None and now - self._launched_at < LAUNCH_EVERY:
             return False
         browser = find_browser(str(prefs.get("fulltext.browser_path") or ""))
-        if browser is None or is_running(browser.executable):
+        profile = self.own_profile if prefs.get("extension.profile") == "own" else None
+        if browser is None or is_running(browser.executable, profile):
             return False
         self._launched_at = now
-        log.info("Starting %s for the extension (no window)", browser.name)
-        start(browser.executable)
+        log.info("Starting %s for the extension (no window%s)", browser.name, ", own profile" if profile else "")
+        start(browser.executable, profile)
         return True
 
     async def watch_forever(self) -> None:

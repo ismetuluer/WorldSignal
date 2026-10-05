@@ -26,16 +26,14 @@ def test_next_job_can_be_limited_to_one_mode(world):
     assert repo.next_job(now, 99, modes=("browser",)).article_id == ids["a1"]
 
 
-def test_extension_mode_leaves_browser_sources_to_the_extension(world, tmp_path):
+def test_the_worker_leaves_browser_sources_to_the_extension(world, tmp_path):
     repo, ids = world["repo"], world["ids"]
     world["sources"].update_source(source_of(world, "a1"), {"fulltext_mode": "browser"})
-    world["settings"].set("fulltext.reader", "extension")
+    world["settings"].set("fulltext.enabled", True)
     repo.request(ids["a1"])
     worker = make_ft_worker(world, tmp_path)
     run(worker.step())
-    assert repo.get(ids["a1"])["status"] == "pending"  # untouched: no automation browser was started
-    from test_fulltext import FakeSession
-    assert FakeSession.instances == []
+    assert repo.get(ids["a1"])["status"] == "pending"  # untouched: the extension reads it
 
 
 def test_paid_exclusives_come_before_other_paid_reports(world):
@@ -107,20 +105,18 @@ def test_the_worker_keeps_the_article_the_extension_is_reading(world, tmp_path):
     repo.enqueue([ids["a1"], ids["a2"]], "auto")
     worker = make_ft_worker(world, tmp_path)
     worker.leased = lambda: ids["a1"]
-    world["settings"].set("fulltext.reader", "extension")
+    world["settings"].set("fulltext.enabled", True)
     run(worker.step())
     assert repo.get(ids["a1"]) is not None and repo.get(ids["a2"]) is None
 
 
-def test_the_worker_drops_stale_automatic_picks_in_either_mode(world, tmp_path):
+def test_the_worker_drops_stale_automatic_picks(world, tmp_path):
     repo, ids = world["repo"], world["ids"]
-    for reader in ("extension", "automation"):
-        world["settings"].set("fulltext.reader", reader)
-        make_old(world, "a1")
-        repo.enqueue([ids["a1"]], "auto")
-        assert repo.get(ids["a1"])["status"] == "pending"
-        run(make_ft_worker(world, tmp_path).step())
-        assert repo.get(ids["a1"]) is None, reader
+    make_old(world, "a1")
+    repo.enqueue([ids["a1"]], "auto")
+    assert repo.get(ids["a1"])["status"] == "pending"
+    run(make_ft_worker(world, tmp_path).step())
+    assert repo.get(ids["a1"]) is None
 
 
 def test_old_members_of_an_important_story_are_not_picked_again_and_again(world):

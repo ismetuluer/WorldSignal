@@ -25,7 +25,6 @@ GOOD = {
     f"{TOP}/_internal/worldsignal/catalog/sources.json": "{}",
     f"{TOP}/_internal/worldsignal/catalog/countries.json": "{}",
     f"{TOP}/_internal/worldsignal/db/migrations/0001_initial.sql": "--",
-    f"{TOP}/_internal/patchright/driver/node.exe": "x",
 }
 
 
@@ -44,7 +43,6 @@ def test_a_complete_package_passes(tmp_path):
 
 
 @pytest.mark.parametrize("change", [
-    {"drop": f"{TOP}/_internal/patchright/driver/node.exe"},
     {"drop": f"{TOP}/version.txt"},
     {"drop": f"{TOP}/WorldSignal.exe.config"},
     {"drop": f"{TOP}/extension/manifest.json"},

@@ -5,6 +5,7 @@ import { ArticleCard } from "../components/ArticleCard";
 import { useToast } from "../components/Toasts";
 import { Banner, Spinner, StateView } from "../components/controls";
 import { describeError, useI18n } from "../i18n";
+import { useMeeting } from "../components/meeting";
 import { useAppState } from "../state";
 import { FeedEmpty, useListKeys } from "./feedShared";
 
@@ -148,9 +149,14 @@ export function ArticleList({
     return () => io.disconnect();
   }, [next, loadMore]);
 
-  // J/K move, Enter/O open the original.
-  const [selected, setSelected] = useListKeys(listRef, items.length, loadMore, (el) =>
-    el.querySelector<HTMLElement>(".article-title button, .article-title a")?.click(),
+  // J/K move, Enter/O open the original, T adds the report to the meeting list.
+  const meeting = useMeeting();
+  const [selected, setSelected] = useListKeys(
+    listRef,
+    items.length,
+    loadMore,
+    (el) => el.querySelector<HTMLElement>(".article-title button, .article-title a")?.click(),
+    meeting.available ? { meeting: (index) => items[index] && void meeting.toggleArticle(items[index].id) } : {},
   );
 
   let content: React.ReactNode;

@@ -8,6 +8,7 @@ import { StoryDetail } from "../components/StoryDetail";
 import { describeError, useI18n } from "../i18n";
 import { useAutosave } from "../lib/autosave";
 import { meetingText } from "../lib/aiText";
+import { openableUrl } from "../lib/links";
 import { meetingOutput } from "../lib/outputs";
 import { useAppState } from "../state";
 
@@ -149,12 +150,16 @@ function MeetingRow({ item, onOpen }: { item: MeetingItem; onOpen: (storyId: num
       <div className="article-meta">
         {item.category ? <span className="badge">{t(`category.${item.category}`)}</span> : null}
         <span>{plural("output.sourceCount", item.sources.length)}</span>
-        {item.story_id === null ? <span className="badge badge-warning">{t("meeting.storyGone")}</span> : null}
+        {item.story_id === null && item.article_id === null ? <span className="badge badge-warning">{t("meeting.storyGone")}</span> : null}
       </div>
       {item.story_id !== null ? (
         <button type="button" className="meeting-title story-open-inline" onClick={() => onOpen(item.story_id!)} title={t("meeting.openStory")}>
           {text.title}
         </button>
+      ) : item.article_id !== null && item.sources[0] ? (
+        <a className="meeting-title story-open-inline" href={openableUrl(item.sources[0].url, text.title)} target="_blank" rel="noopener noreferrer">
+          {text.title}
+        </a>
       ) : (
         <p className="meeting-title">{text.title}</p>
       )}

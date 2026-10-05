@@ -11,15 +11,15 @@ const REFRESH_MS = 15_000;
 const EXTENSION_ERRORS = ["tab_closed", "load_failed", "script_failed", "record_failed"];
 const MASK = "•".repeat(12);
 
-type Reader = "automation" | "extension";
+type Profile = "daily" | "own";
 
-/** Who reads the subscription sites: World Signal's own browser, or the extension in the user's browser. */
+/** The extension that reads the subscription sites: where it lives (everyday browser or own profile), pairing, state. */
 export function ExtensionSettings() {
   const i18n = useI18n();
   const { t, plural } = i18n;
   const toast = useToast();
   const { settings, updateSettings } = useAppState();
-  const reader = settings["fulltext.reader"];
+  const profile = settings["extension.profile"];
   const [info, setInfo] = useState<ExtensionInfo | null>(null);
   const [loadFailed, setLoadFailed] = useState(false);
 
@@ -32,7 +32,6 @@ export function ExtensionSettings() {
   const renewals = useRef(0);
 
   useEffect(() => {
-    if (reader !== "extension") return;
     const load = () => {
       const seen = renewals.current;
       return api.extension().then(
@@ -47,7 +46,7 @@ export function ExtensionSettings() {
     void load();
     const timer = window.setInterval(load, REFRESH_MS);
     return () => window.clearInterval(timer);
-  }, [reader]);
+  }, []);
 
   // The code is shown masked and is never put in a toast or a log: it is the key to the program's local API.
   const copy = async () => {
@@ -68,7 +67,7 @@ export function ExtensionSettings() {
       fail(e);
     }
   };
-  const choose = (v: Reader) => updateSettings({ "fulltext.reader": v }).catch(fail);
+  const choose = (v: Profile) => updateSettings({ "extension.profile": v }).catch(fail);
 
   // What the extension reports (tab closed, ...) or the program's own full-text outcome (bot check, paywall, ...).
   const errorText = (code: string) =>
@@ -78,29 +77,33 @@ export function ExtensionSettings() {
   return (
     <div className="settings-row settings-row-block extension-reader">
       <div className="settings-row-text">
-        <div className="settings-row-title">{t("extension.reader")}</div>
-        <div className="settings-row-hint">{t("extension.readerHint")}</div>
+        <div className="settings-row-title">{t("extension.profile")}</div>
+        <div className="settings-row-hint">{t("extension.profileHint")}</div>
       </div>
-      <Segmented<Reader>
-        label={t("extension.reader")}
-        value={reader}
+      <Segmented<Profile>
+        label={t("extension.profile")}
+        value={profile}
         onChange={(v) => void choose(v)}
         options={[
-          { value: "extension", label: t("extension.reader.extension") },
-          { value: "automation", label: t("extension.reader.automation") },
+          { value: "own", label: t("extension.profile.own") },
+          { value: "daily", label: t("extension.profile.daily") },
         ]}
       />
-      {reader === "extension" ? (
-        <>
+      <>
           <ol className="extension-steps">
             <li>
-              {t("extension.step1")}{" "}
+              {profile === "own" ? t("extension.ownStep1") : t("extension.step1")}{" "}
+              {profile === "own" ? (
+                <button type="button" className="link-btn" onClick={() => void api.openExtensionProfile().catch(fail)}>
+                  {t("extension.openProfile")}
+                </button>
+              ) : null}{" "}
               <button type="button" className="link-btn" onClick={() => void api.openExtensionDir().catch(fail)}>
                 {t("extension.openDir")}
               </button>
             </li>
             <li>{t("extension.step2")}</li>
-            <li>{t("extension.step3")}</li>
+            <li>{profile === "own" ? t("extension.ownStep3") : t("extension.step3")}</li>
           </ol>
           {info ? (
             <div className="extension-actions">
@@ -146,8 +149,7 @@ export function ExtensionSettings() {
               onChange={(v) => void updateSettings({ "fulltext.launch_browser": v }).catch(fail)}
             />
           </div>
-        </>
-      ) : null}
+      </>
     </div>
   );
 }

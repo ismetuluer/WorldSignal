@@ -9,6 +9,7 @@ import { LangToggle } from "./StoryCard";
 import { openableUrl } from "../lib/links";
 import { BreakingBadge, ExclusiveBadge } from "./Badges";
 import { CardFullText, FullTextReader } from "./FullText";
+import { useMeeting } from "./meeting";
 
 /** One article in the feed. AI output is labelled and the original is always one click away. */
 export function ArticleCard({
@@ -31,6 +32,8 @@ export function ArticleCard({
   const { t } = i18n;
   const [showOriginal, setShowOriginal] = useState(false);
   const [reading, setReading] = useState(false);
+  const meeting = useMeeting();
+  const inMeeting = meeting.hasArticle(a.id);
 
   const [lang, setLang] = useState<AiLang>(i18n.lang);
   const { settings } = useAppState();
@@ -49,6 +52,19 @@ export function ArticleCard({
 
   return (
     <li className="article" data-index={index} aria-selected={selected} dir={dir} onMouseDown={() => onSelect(index)}>
+      {meeting.available ? (
+        <button
+          type="button"
+          className="meeting-toggle"
+          data-active={inMeeting}
+          aria-pressed={inMeeting}
+          title={inMeeting ? t("meeting.remove") : t("meeting.add")}
+          onClick={() => void meeting.toggleArticle(a.id)}
+        >
+          <Icon name={inMeeting ? "check" : "plus"} size={14} strokeWidth={2.2} />
+          <span>{inMeeting ? t("meeting.inList") : t("meeting.add")}</span>
+        </button>
+      ) : null}
       <div className="article-meta" dir="ltr">
         <span className="article-source">{a.source_name}</span>
         <time dateTime={a.sort_at} title={i18n.dateTime(a.sort_at)}>

@@ -110,10 +110,9 @@ export interface Settings {
   /** Also translate every full text that arrives (summary + full text); off: the summary only. */
   "fulltext.translate": boolean;
   "fulltext.browser_path": string;
-  "fulltext.profile": "own" | "main";
-  "fulltext.visible": boolean;
+  /** Where the browser extension lives: the everyday browser, or a profile of World Signal's own. */
+  "extension.profile": "daily" | "own";
   /** Who reads the subscription sites: World Signal's own browser, or the extension in the user's browser. */
-  "fulltext.reader": "automation" | "extension";
   /** Extension reader: start the user's browser without a window when it is closed. */
   "fulltext.launch_browser": boolean;
   "fulltext.per_site_hour": number;
@@ -754,6 +753,8 @@ export interface MeetingItem {
   id: number;
   day: string;
   story_id: number | null;
+  /** Set when the item is one report instead of a story (then story_id is null). */
+  article_id: number | null;
   position: number;
   comment: string;
   /** The headline when there is no AI text (e.g. the original title). */

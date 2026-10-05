@@ -82,6 +82,23 @@ def story_snapshot(story: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def article_snapshot(row: sqlite3.Row) -> dict[str, Any]:
+    """What the notebook keeps of one report: only its AI texts (never the publisher's own text) and one link."""
+    texts: dict[str, dict[str, str]] = {}
+    for lang, t in json.loads(row["ai_texts"] or "{}").items():
+        texts[lang] = {"title": t.get("title", ""), "summary": t.get("summary", ""), "why": ""}
+        if "points" in t:
+            texts[lang]["points"] = t["points"]
+    return {"title": row["title"], "texts": texts, "category": row["category"],
+            "sources": [{"name": row["source_name"], "url": row["url"]}]}
+
+
+ARTICLE_SQL = """SELECT a.id, a.title, a.url, s.name AS source_name, x.texts AS ai_texts, x.category
+                 FROM articles a JOIN sources s ON s.id = a.source_id
+                 LEFT JOIN article_ai x ON x.article_id = a.id AND x.status = 'done'
+                 WHERE a.id = ?"""
+
+
 class NotebookRepository:
     def __init__(self, db: Database, stories: StoryRepository, today: Callable[[], str] = local_today) -> None:
         self.db = db
@@ -137,6 +154,30 @@ class NotebookRepository:
                                                   created_at, updated_at)
                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                     (day, story_id, pos, snap["title"], json.dumps(snap["texts"], ensure_ascii=False),
+                     snap["category"], json.dumps(snap["sources"], ensure_ascii=False), now, now),
+                )
+                item_id = cur.lastrowid
+            else:
+                item_id = existing["id"]
+        return self._get_item(int(item_id))  # type: ignore[arg-type]
+
+    def add_article_to_meeting(self, article_id: int) -> dict[str, Any]:
+        """Append one report to today's list (no-op if it is already there). Returns the item."""
+        day = self.today()
+        row = self.db.conn.execute(ARTICLE_SQL, (article_id,)).fetchone()
+        if row is None:
+            raise KeyError(article_id)
+        snap = article_snapshot(row)
+        now = utc_now_iso()
+        with self.db.transaction() as c:
+            existing = c.execute("SELECT id FROM meeting_items WHERE day = ? AND article_id = ?", (day, article_id)).fetchone()
+            if existing is None:
+                pos = c.execute("SELECT COALESCE(MAX(position), -1) + 1 FROM meeting_items WHERE day = ?", (day,)).fetchone()[0]
+                cur = c.execute(
+                    """INSERT INTO meeting_items (day, story_id, article_id, position, title, texts, category, sources,
+                                                  created_at, updated_at)
+                       VALUES (?, NULL, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                    (day, article_id, pos, snap["title"], json.dumps(snap["texts"], ensure_ascii=False),
                      snap["category"], json.dumps(snap["sources"], ensure_ascii=False), now, now),
                 )
                 item_id = cur.lastrowid
@@ -250,6 +291,15 @@ class NotebookRepository:
             if story is None:
                 continue
             snap = story_snapshot(story)
+            updates.append((snap["title"], json.dumps(snap["texts"], ensure_ascii=False), snap["category"],
+                            json.dumps(snap["sources"], ensure_ascii=False), it["id"]))
+        for it in self.db.conn.execute(
+            "SELECT id, article_id FROM meeting_items WHERE day = ? AND article_id IS NOT NULL", (day,)
+        ).fetchall():
+            row = self.db.conn.execute(ARTICLE_SQL, (it["article_id"],)).fetchone()
+            if row is None:
+                continue
+            snap = article_snapshot(row)  # the report's AI texts arrive after it was listed
             updates.append((snap["title"], json.dumps(snap["texts"], ensure_ascii=False), snap["category"],
                             json.dumps(snap["sources"], ensure_ascii=False), it["id"]))
         if updates:

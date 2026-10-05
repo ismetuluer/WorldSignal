@@ -11,7 +11,7 @@ const DAY = "2026-09-27";
 
 function item(id: number, extra: Partial<MeetingItem> = {}): MeetingItem {
   return {
-    id, day: DAY, story_id: id, position: id - 1, comment: "", title: `Başlık ${id}`, texts: { tr: { title: `Başlık ${id}`, summary: `Özet ${id}.`, why: `YZ gerekçe ${id}` } },
+    id, day: DAY, story_id: id, article_id: null, position: id - 1, comment: "", title: `Başlık ${id}`, texts: { tr: { title: `Başlık ${id}`, summary: `Özet ${id}.`, why: `YZ gerekçe ${id}` } },
     category: "politics", sources: [{ name: "Reuters", url: "https://r.example/1" }, { name: "BBC", url: "https://b.example/1" }],
     created_at: DAY, updated_at: DAY, ...extra,
   };

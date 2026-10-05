@@ -317,8 +317,11 @@ restart the program once, do so). What you need to know:
   **New code** replaces the code (the old extension connection stops working).
 - The extension is not published in a browser store; when the program is updated the extension folder is updated too,
   and you press **Reload** once on the browser's extensions page.
-- The earlier way remains (not recommended): if the reader is set to **The program's browser**, pages are opened with a
-  separate browser profile that belongs to the program. The [clear rules](#copyright-and-subscriptions) above apply here too.
+- **Own profile (recommended):** you can put the extension not in your everyday browser but in a browser profile of
+  World Signal's own (Settings → Full text → **Which browser profile does the extension run in?** → *Own profile*). The
+  extension and your subscription sign-ins live in that profile and the program starts it without a window; your everyday
+  browser's tabs, session and focus are left alone. This is not automation: it is an ordinary browser profile, no robot
+  driver is attached. (The "program's browser" way, driven by the program's own driver, existed before 0.16.0 and was removed.)
 
 ## Copyright and subscriptions
 
@@ -345,10 +348,9 @@ World Signal republishes nobody's content; it shows it only on **your** screen.
 - Some sites without RSS are read from the **news sitemap** they publish for search engines. This is done only if the
   site's robots.txt allows automated readers.
 - **Paid sites:** you can read a whole article only if **you** subscribe to that site. Open the site from
-  **Sources → Subscription sites** and sign in once with your own account. With the reader set to **Extension** (see
-  [the browser extension](#subscription-sites-the-browser-extension)) the session stays in your own browser; with
-  **The program's browser** it is kept only on this computer, in a separate browser profile that belongs to World
-  Signal. Without a subscription you see only the headline, the short summary and the link.
+  **Sources → Subscription sites** and sign in once with your own account. With the browser extension (see
+  [the browser extension](#subscription-sites-the-browser-extension)) the session stays in your own browser or in the
+  separate browser profile that belongs to World Signal; it is kept only on this computer. Without a subscription you see only the headline, the short summary and the link.
 - The app does not get around paywalls, does not solve robot checks (CAPTCHAs), and does not use archive or
   paywall-bypass sites. It opens pages at a human pace: one page at a time, a few pages per site per hour.
   Subscription sites (read in the browser) go slower still: at least 20 minutes between two pages of one site
@@ -399,7 +401,7 @@ into backups.
 
 ## Development
 
-Stack: Python 3.12 (FastAPI, SQLite + FTS5, feedparser, trafilatura, patchright) · React 19 + TypeScript + Vite ·
+Stack: Python 3.12 (FastAPI, SQLite + FTS5, feedparser, trafilatura) · React 19 + TypeScript + Vite ·
 pywebview/WebView2 · PyInstaller. The project documents are in Turkish:
 - architecture: [ARCHITECTURE.md](ARCHITECTURE.md);
 - version history: [CHANGELOG.en.md](CHANGELOG.en.md) (English from 0.10.0) and [CHANGELOG.md](CHANGELOG.md);

@@ -8,7 +8,7 @@ vi.mock("../api/client", async (importOriginal) => {
   return {
     ...original,
     api: {
-      extension: vi.fn(), renewExtensionCode: vi.fn(), openExtensionDir: vi.fn(), updateSettings: vi.fn(),
+      extension: vi.fn(), renewExtensionCode: vi.fn(), openExtensionDir: vi.fn(), openExtensionProfile: vi.fn(), updateSettings: vi.fn(),
       restartApp: vi.fn(), status: vi.fn(), browsers: vi.fn(),
     },
   };
@@ -38,7 +38,7 @@ beforeEach(() => {
 
 describe("Extension settings", () => {
   it("switches the reader and shows the steps, the code and the connection", async () => {
-    renderWithApp(<ExtensionSettings />, { "fulltext.reader": "extension" });
+    renderWithApp(<ExtensionSettings />);
     expect(await screen.findByText(/Bağlı · bugün 4 haber/)).toBeInTheDocument();
     expect(screen.getByText(/Paketlenmemiş öğe yükle/)).toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: "Kodu kopyala" }));
@@ -49,7 +49,7 @@ describe("Extension settings", () => {
 
   it("copies the real code but never shows it", async () => {
     const user = userEvent.setup();
-    renderWithApp(<ExtensionSettings />, { "fulltext.reader": "extension" });
+    renderWithApp(<ExtensionSettings />);
     await screen.findByText(/Bağlı · bugün 4 haber/);
     expect(screen.queryByText(/abc123/)).not.toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Kodu kopyala" }));
@@ -62,11 +62,12 @@ describe("Extension settings", () => {
     expect(screen.queryByText(/zzz999/)).not.toBeInTheDocument();
   });
 
-  it("saves the reader choice and the browser switch", async () => {
-    renderWithApp(<ExtensionSettings />, { "fulltext.reader": "automation" });
-    expect(screen.queryByRole("button", { name: "Kodu kopyala" })).not.toBeInTheDocument();
-    await userEvent.click(screen.getByRole("button", { name: "Eklenti (önerilen)" }));
-    expect(mocked.updateSettings).toHaveBeenCalledWith({ "fulltext.reader": "extension" });
+  it("saves the profile choice and the browser switch", async () => {
+    renderWithApp(<ExtensionSettings />);
+    expect(await screen.findByRole("button", { name: "Kodu kopyala" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Ayrı profili aç" })).not.toBeInTheDocument(); // the everyday browser
+    await userEvent.click(screen.getByRole("button", { name: "Ayrı profil (önerilen)" }));
+    expect(mocked.updateSettings).toHaveBeenCalledWith({ "extension.profile": "own" });
     const launch = await screen.findByRole("switch", { name: /Tarayıcı kapalıysa pencere açmadan başlat/ });
     await userEvent.click(launch);
     expect(mocked.updateSettings).toHaveBeenLastCalledWith({ "fulltext.launch_browser": true });
@@ -74,7 +75,7 @@ describe("Extension settings", () => {
 
   it("opens the extension folder", async () => {
     mocked.openExtensionDir.mockResolvedValue({ ok: true });
-    renderWithApp(<ExtensionSettings />, { "fulltext.reader": "extension" });
+    renderWithApp(<ExtensionSettings />);
     await userEvent.click(await screen.findByRole("button", { name: "Eklenti klasörünü aç" }));
     expect(mocked.openExtensionDir).toHaveBeenCalled();
   });
@@ -82,14 +83,14 @@ describe("Extension settings", () => {
   it("asks for a restart when the program is not on a fixed port, and can restart it", async () => {
     mocked.extension.mockResolvedValue({ ...INFO, fixed_port: false, port: 51234 });
     mocked.restartApp.mockResolvedValue({ ok: true });
-    renderWithApp(<ExtensionSettings />, { "fulltext.reader": "extension" });
+    renderWithApp(<ExtensionSettings />);
     expect(await screen.findByText(/Programı yeniden başlatın/)).toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: "Şimdi yeniden başlat" }));
     expect(mocked.restartApp).toHaveBeenCalled();
   });
 
   it("does not ask for a restart on a fixed port", async () => {
-    renderWithApp(<ExtensionSettings />, { "fulltext.reader": "extension" });
+    renderWithApp(<ExtensionSettings />);
     await screen.findByText(/Bağlı/);
     expect(screen.queryByText(/Programı yeniden başlatın/)).not.toBeInTheDocument();
   });
@@ -99,26 +100,26 @@ describe("Extension settings", () => {
     mocked.extension.mockResolvedValue({
       ...INFO, status: { ...INFO.status, last_seen: seen, last_source: "WSJ", last_error: "tab_closed" },
     });
-    renderWithApp(<ExtensionSettings />, { "fulltext.reader": "extension" });
+    renderWithApp(<ExtensionSettings />);
     expect(await screen.findByText(/Son görülme: 5 dakika önce/)).toBeInTheDocument();
     expect(screen.getByText(/Son sorun: sekme kapatıldı/)).toBeInTheDocument();
   });
 
   it("explains a page that was too large to take", async () => {
     mocked.extension.mockResolvedValue({ ...INFO, status: { ...INFO.status, last_error: "too_large" } });
-    renderWithApp(<ExtensionSettings />, { "fulltext.reader": "extension" });
+    renderWithApp(<ExtensionSettings />);
     expect(await screen.findByText(/Son sorun: sayfa alınamayacak kadar büyük/)).toBeInTheDocument();
   });
 
   it("shows no last-error line when there is none", async () => {
-    renderWithApp(<ExtensionSettings />, { "fulltext.reader": "extension" });
+    renderWithApp(<ExtensionSettings />);
     await screen.findByText(/Bağlı · bugün 4 haber/);
     expect(screen.queryByText(/Son sorun/)).not.toBeInTheDocument();
   });
 
   it("says so when the extension state cannot be read, instead of silently showing steps without buttons", async () => {
     mocked.extension.mockRejectedValue(new Error("boom"));
-    renderWithApp(<ExtensionSettings />, { "fulltext.reader": "extension" });
+    renderWithApp(<ExtensionSettings />);
     expect(await screen.findByText(/Eklenti durumu okunamadı/)).toBeInTheDocument();
   });
 
@@ -126,7 +127,7 @@ describe("Extension settings", () => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
     try {
       const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
-      renderWithApp(<ExtensionSettings />, { "fulltext.reader": "extension" });
+      renderWithApp(<ExtensionSettings />);
       await screen.findByText(/Bağlı · bugün 4 haber/);
       let finishPoll: (info: typeof INFO) => void = () => undefined;
       mocked.extension.mockImplementationOnce(() => new Promise((resolve) => { finishPoll = resolve; }));
@@ -144,7 +145,7 @@ describe("Extension settings", () => {
 
   it("says when the extension has not been heard from", async () => {
     mocked.extension.mockResolvedValue({ ...INFO, status: { ...INFO.status, connected: false, last_seen: null } });
-    renderWithApp(<ExtensionSettings />, { "fulltext.reader": "extension" });
+    renderWithApp(<ExtensionSettings />);
     expect(await screen.findByText(/Eklenti bağlı değil/)).toBeInTheDocument();
   });
 });
@@ -157,7 +158,7 @@ describe("Full-text settings with the extension reader", () => {
 
   it("keeps the browser choice (sign-in and launch use it) but hides the profile and window rows", async () => {
     mocked.browsers.mockResolvedValue(BROWSERS);
-    renderWithApp(<FullTextSettings />, { "fulltext.reader": "extension" });
+    renderWithApp(<FullTextSettings />);
     expect(await screen.findByRole("button", { name: "Kodu kopyala" })).toBeInTheDocument();
     const select = await screen.findByRole("combobox", { name: "Tarayıcı" });
     expect(screen.getByText(/Eklentiyi yüklediğiniz tarayıcıyı seçin/)).toBeInTheDocument();
@@ -167,13 +168,12 @@ describe("Full-text settings with the extension reader", () => {
     expect(screen.queryByRole("switch", { name: "Tarayıcı penceresini göster" })).not.toBeInTheDocument();
   });
 
-  it("shows every browser row, without the extension hint, when the program's own browser reads", async () => {
-    mocked.browsers.mockResolvedValue(BROWSERS);
-    renderWithApp(<FullTextSettings />, { "fulltext.reader": "automation" });
-    expect(await screen.findByText("Tarayıcı profili")).toBeInTheDocument();
-    expect(screen.getByRole("combobox", { name: "Tarayıcı" })).toBeInTheDocument();
-    expect(screen.getByRole("switch", { name: "Tarayıcı penceresini göster" })).toBeInTheDocument();
-    expect(screen.queryByText(/Eklentiyi yüklediğiniz tarayıcıyı seçin/)).not.toBeInTheDocument();
+  it("with the own profile, offers to open it and says the sign-ins happen there", async () => {
+    mocked.openExtensionProfile.mockResolvedValue({ status: "opened" });
+    renderWithApp(<ExtensionSettings />, { "extension.profile": "own" });
+    await userEvent.click(await screen.findByRole("button", { name: "Ayrı profili aç" }));
+    expect(mocked.openExtensionProfile).toHaveBeenCalledTimes(1);
+    expect(screen.getByText(/o pencerede abonelik sitelerine giriş yapın/i)).toBeInTheDocument();
   });
 });
 

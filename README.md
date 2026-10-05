@@ -308,8 +308,11 @@ başlatmanızı söylerse söylediğini yapın). Bilmeniz gerekenler:
   ile yenilenir (eski eklenti bağlantısı kopar).
 - Eklenti tarayıcı mağazalarında yayımlanmaz; program güncellenince eklenti klasörü de güncellenir, tarayıcınızın
   eklentiler sayfasında bir kez **Yenile**'ye basın.
-- Programın eski yolu da durur (önerilmez): okuyucu olarak **Programın tarayıcısı** seçilirse sayfalar programa ait
-  ayrı bir tarayıcı profiliyle açılır. Burada da yukarıdaki [net ilkeler](#telif-ve-abonelikler) aynen geçerlidir.
+- **Ayrı profil (önerilen):** eklentiyi günlük tarayıcınıza değil, World Signal'e özel bir tarayıcı profiline yükleyebilirsiniz
+  (Ayarlar → Tam metin → **Eklenti hangi tarayıcı profilinde çalışsın?** → *Ayrı profil*). Eklenti ve abonelik girişleri o
+  profilde durur, program onu pencere açmadan başlatır; günlük tarayıcınızın sekmelerine, oturumuna ve odağına dokunulmaz.
+  Bu bir otomasyon değildir: normal bir tarayıcı profilidir, hiçbir robot sürücüsü bağlanmaz. (0.16.0'dan önce bulunan ve
+  programın kendi sürücüsüyle çalışan "Programın tarayıcısı" yolu kaldırıldı.)
 
 ## Telif ve abonelikler
 
@@ -389,7 +392,7 @@ aynı klasörde, Windows'un kullanıcı hesabınıza bağlı şifrelemesiyle (`s
 
 ## Geliştirme
 
-Yığın: Python 3.12 (FastAPI, SQLite + FTS5, feedparser, trafilatura, patchright) · React 19 + TypeScript + Vite ·
+Yığın: Python 3.12 (FastAPI, SQLite + FTS5, feedparser, trafilatura) · React 19 + TypeScript + Vite ·
 pywebview/WebView2 · PyInstaller. Mimari ayrıntılar: [ARCHITECTURE.md](ARCHITECTURE.md); sürüm geçmişi:
 [CHANGELOG.md](CHANGELOG.md); kaynak doğrulama raporu: [docs/KAYNAK_DOGRULAMA.md](docs/KAYNAK_DOGRULAMA.md).
 

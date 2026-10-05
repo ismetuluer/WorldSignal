@@ -155,6 +155,7 @@ export const api = {
     request<{ note: StoryNote | null }>("PUT", `/stories/${storyId}/note`, { body }),
   meeting: (day?: string) => request<MeetingList>("GET", `/meeting${query({ day })}`),
   addToMeeting: (storyId: number) => request<MeetingItem>("POST", "/meeting", { story_id: storyId }),
+  addArticleToMeeting: (articleId: number) => request<MeetingItem>("POST", "/meeting", { article_id: articleId }),
   updateMeetingItem: (itemId: number, comment: string) => request<MeetingItem>("PATCH", `/meeting/${itemId}`, { comment }),
   removeMeetingItem: (itemId: number) => request<void>("DELETE", `/meeting/${itemId}`),
   reorderMeeting: (day: string, ids: number[]) => request<MeetingList>("PUT", "/meeting/order", { day, ids }),
@@ -207,6 +208,7 @@ export const api = {
 
   runCollector: () => request<{ scheduled: number }>("POST", "/collector/run"),
   openDataDir: () => request<{ ok: boolean }>("POST", "/app/open-data-dir"),
+  openExtensionProfile: () => request<{ status: string }>("POST", "/extension/profile/open"),
   openExtensionDir: () => request<{ ok: boolean }>("POST", "/app/open-extension-dir"),
   extension: () => request<ExtensionInfo>("GET", "/extension"),
   renewExtensionCode: () => request<{ code: string }>("POST", "/extension/code"),

@@ -13,10 +13,9 @@ from worldsignal.fulltext.fetch import BrowserInfo
 from worldsignal.fulltext.launcher import is_running
 
 
-def test_ports_in_extension_mode():
-    assert server_ports(0, "automation") == [0]
-    assert server_ports(0, "extension") == [*range(47821, 47831), 0]
-    assert server_ports(8765, "extension") == [8765]  # development: --port wins
+def test_the_fixed_ports_are_tried_first():
+    assert server_ports(0) == [*range(47821, 47831), 0]
+    assert server_ports(8765) == [8765]  # development: --port wins
 
 
 def test_a_taken_port_is_skipped():
@@ -50,12 +49,12 @@ def test_a_hung_task_list_counts_as_running():
 
 
 def test_the_browser_is_started_only_when_needed(world):  # noqa: F811
-    world["settings"].set("fulltext.reader", "extension")
+    world["settings"].set("fulltext.enabled", True)
     clock = Clock()
     bridge = ExtensionBridge(world["repo"], world["settings"], resting=lambda: False, clock=clock)
     brave = BrowserInfo("Brave", Path("brave.exe"), Path("profile"))
     started = []
-    launch = lambda: bridge.launch_if_needed(lambda p: brave, lambda exe: False, started.append)  # noqa: E731
+    launch = lambda: bridge.launch_if_needed(lambda p: brave, lambda exe, profile: False, lambda exe, profile: started.append(exe))  # noqa: E731
     assert launch() and started == [brave.executable]  # never heard from the extension: start it
     assert not launch()  # not again within half an hour
     clock.now += timedelta(minutes=31)
@@ -65,3 +64,35 @@ def test_the_browser_is_started_only_when_needed(world):  # noqa: F811
     bridge.last_seen = None
     clock.now += timedelta(hours=1)
     assert not launch()
+
+
+def test_with_the_own_profile_that_profile_has_to_be_open_not_the_browser(world, tmp_path):  # noqa: F811
+    world["settings"].set("extension.profile", "own")
+    bridge = ExtensionBridge(world["repo"], world["settings"], resting=lambda: False, clock=Clock(), own_profile=tmp_path / "own")
+    brave = BrowserInfo("Brave", Path("brave.exe"), Path("profile"))
+    asked, started = [], []
+
+    def running(exe, profile):
+        asked.append(profile)
+        return True  # the everyday browser would be running; the own profile is not asked as "the browser"
+
+    assert not bridge.launch_if_needed(lambda p: brave, running, lambda exe, profile: started.append((exe, profile)))
+    assert asked == [tmp_path / "own"] and started == []
+    bridge._launched_at = None
+    assert bridge.launch_if_needed(lambda p: brave, lambda exe, profile: False, lambda exe, profile: started.append((exe, profile)))
+    assert started == [(brave.executable, tmp_path / "own")]
+
+
+def test_the_own_profile_is_started_on_its_own_folder_without_a_window(tmp_path):
+    from worldsignal.fulltext.launcher import start_hidden
+
+    calls = []
+    start_hidden(Path("brave.exe"), tmp_path / "own", popen=lambda args, **k: calls.append(args))
+    start_hidden(Path("brave.exe"), popen=lambda args, **k: calls.append(args))
+    assert calls[0][0] == "brave.exe" and f"--user-data-dir={(tmp_path / 'own').resolve()}" in calls[0] and calls[0][-1] == "--no-startup-window"
+    assert calls[1] == ["brave.exe", "--no-startup-window"]  # no profile: the everyday browser, as before
+    assert (tmp_path / "own").is_dir()
+
+
+def test_is_running_with_a_profile_asks_the_profile_lock(tmp_path):
+    assert not is_running(Path("brave.exe"), tmp_path)  # nobody holds the profile

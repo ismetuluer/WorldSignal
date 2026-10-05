@@ -151,3 +151,22 @@ def test_snapshot_uses_only_ai_text():
     snap = story_snapshot(story)
     assert snap["title"] == "Manchete" and snap["texts"] == {"pt": {"title": "Manchete", "summary": "Resumo.", "why": ""}}
     assert snap["sources"] == [{"name": "A", "url": "https://a/1"}, {"name": "B", "url": "https://b/1"}]
+
+
+def test_a_single_report_can_be_put_on_the_meeting_list(world):
+    nb, ids, db = world["nb"], world["ids"], world["db"]
+    story = nb.add_to_meeting(world["hormuz"])
+    one = nb.add_article_to_meeting(ids["b2"])
+    assert one["story_id"] is None and one["article_id"] == ids["b2"] and one["title"] == "swiss neutrality vote result"
+    assert [s["url"] for s in one["sources"]] == ["https://x.example/b2"] and one["texts"] == {}  # no AI text yet
+    assert nb.add_article_to_meeting(ids["b2"])["id"] == one["id"]  # once only
+    assert [i["id"] for i in nb.meeting(TODAY)] == [story["id"], one["id"]]
+    with db.transaction() as c:  # the report's AI text arrives later: today's list follows it
+        c.execute("INSERT INTO article_ai (article_id, status, texts, category, queued_at) VALUES (?, 'done', ?, 'world', '2026-09-27T00:00:00Z')",
+                  (ids["b2"], '{"tr": {"title": "Isvicre oylamasi", "summary": "Ozet"}}'))
+    again = nb.meeting(TODAY)[1]
+    assert again["texts"]["tr"]["title"] == "Isvicre oylamasi" and again["category"] == "world"
+    with pytest.raises(KeyError):
+        nb.add_article_to_meeting(99999)
+    nb.remove_item(one["id"])
+    assert [i["id"] for i in nb.meeting(TODAY)] == [story["id"]]

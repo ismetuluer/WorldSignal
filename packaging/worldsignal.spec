@@ -14,11 +14,11 @@ datas = [
     (str(SRC / "db" / "migrations"), "worldsignal/db/migrations"),
     (str(SRC / "assets" / "worldsignal.ico"), "worldsignal/assets"),
 ]
-# Text extraction needs its language data; patchright needs its browser driver (node + scripts).
-for package in ("trafilatura", "justext", "courlan", "htmldate", "patchright"):
+# Text extraction needs its language data.
+for package in ("trafilatura", "justext", "courlan", "htmldate"):
     datas += collect_data_files(package)
 
-hiddenimports = collect_submodules("worldsignal") + collect_submodules("uvicorn") + collect_submodules("patchright")
+hiddenimports = collect_submodules("worldsignal") + collect_submodules("uvicorn")
 
 a = Analysis(  # noqa: F821
     [str(ROOT / "packaging" / "launch.py")],

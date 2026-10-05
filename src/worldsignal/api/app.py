@@ -266,9 +266,7 @@ class SettingsPatch(BaseModel):
     fulltext_enabled: bool | None = Field(None, alias="fulltext.enabled")
     fulltext_translate: bool | None = Field(None, alias="fulltext.translate")
     fulltext_browser_path: str | None = Field(None, alias="fulltext.browser_path", max_length=400)
-    fulltext_profile: Literal["own", "main"] | None = Field(None, alias="fulltext.profile")
-    fulltext_visible: bool | None = Field(None, alias="fulltext.visible")
-    fulltext_reader: Literal["automation", "extension"] | None = Field(None, alias="fulltext.reader")
+    extension_profile: Literal["daily", "own"] | None = Field(None, alias="extension.profile")
     fulltext_launch_browser: bool | None = Field(None, alias="fulltext.launch_browser")
     fulltext_per_site_hour: int | None = Field(None, alias="fulltext.per_site_hour", ge=1, le=20)
     fulltext_browser_gap_min: int | None = Field(None, alias="fulltext.browser_gap_min", ge=5, le=240)
@@ -330,7 +328,8 @@ class MailDraft(BaseModel):
 
 
 class MeetingAdd(BaseModel):
-    story_id: int
+    story_id: int | None = None
+    article_id: int | None = None  # exactly one of the two
 
 
 class MeetingPatch(BaseModel):
@@ -466,7 +465,7 @@ def create_app(ctx: AppContext) -> FastAPI:
             "notify": ctx.notifier.status(),
             "articles": ctx.articles.counts(since),
             "extension": None if ctx.bridge is None else {
-                **ctx.bridge.status(), "active": ctx.settings.get_preferences()["fulltext.reader"] == "extension",
+                **ctx.bridge.status(), "active": bool(ctx.settings.get_preferences()["fulltext.enabled"]),
             },
         }
 
@@ -759,7 +758,12 @@ def create_app(ctx: AppContext) -> FastAPI:
 
     @api.post("/meeting", status_code=201)
     def add_meeting(body: MeetingAdd) -> dict[str, Any]:
+        if (body.story_id is None) == (body.article_id is None):
+            raise api_error(422, "invalid_request")
         try:
+            if body.article_id is not None:
+                return ctx.notebook.add_article_to_meeting(body.article_id)
+            assert body.story_id is not None
             return ctx.notebook.add_to_meeting(body.story_id)
         except KeyError:
             raise api_error(404, "not_found") from None
@@ -860,13 +864,12 @@ def create_app(ctx: AppContext) -> FastAPI:
     @api.get("/fulltext/sites")
     def fulltext_sites() -> dict[str, Any]:
         """Subscription sites and whether their full text works (the latest attempt)."""
-        return {"sites": ctx.fulltext.sites(), "login_window_open": profile_in_use(ctx.paths.browser_profile)
-                and not ctx.fulltext_worker.browser_open}
+        return {"sites": ctx.fulltext.sites(), "login_window_open": profile_in_use(ctx.paths.browser_profile)}
 
     @api.post("/fulltext/login")
     def open_login(body: LoginRequest) -> dict[str, str]:
-        """Opens a normal browser window (no automation) on World Signal's profile so the user can sign in
-        once. If that window is already open, the page opens in it as a new tab."""
+        """Opens a site's page so the user can sign in: in the everyday browser, or (extension.profile = own) in a
+        normal window on World Signal's own profile, where the extension and the sign-ins live. No automation."""
         prefs = ctx.settings.get_preferences()
         browser = browser_for(str(prefs.get("fulltext.browser_path") or ""))
         if browser is None:
@@ -879,17 +882,24 @@ def create_app(ctx: AppContext) -> FastAPI:
             if not source.get("homepage"):
                 raise api_error(409, "no_homepage")
             url = str(source["homepage"])
-        if prefs.get("fulltext.reader") == "extension":
-            # The extension reads in the user's own browser profile, so that is where the sign-in has to happen.
-            # The program is handed to the browser as it is: a stored homepage is not re-validated at use, so only
-            # a web page (or the blank page) may reach the command line (not a file:, a script or a browser switch).
-            if url != "about:blank" and not url.lower().startswith(("http://", "https://")):
-                raise api_error(409, "bad_url")
+        # The program is handed to the browser as it is: a stored homepage is not re-validated at use, so only
+        # a web page (or the blank page) may reach the command line (not a file:, a script or a browser switch).
+        if url != "about:blank" and not url.lower().startswith(("http://", "https://")):
+            raise api_error(409, "bad_url")
+        if prefs.get("extension.profile") == "own":
+            open_login_window(browser, ctx.paths.browser_profile, url)
+        else:
             subprocess.Popen([str(browser.executable), url])  # noqa: S603 - the browser found on this PC, the site's page
-            return {"status": "opened"}
-        # The hidden full-text browser uses the same profile: it must not receive the page.
-        ctx.fulltext_worker.make_room_for_login()
-        open_login_window(browser, ctx.paths.browser_profile, url)
+        return {"status": "opened"}
+
+    @api.post("/extension/profile/open")
+    def open_extension_profile() -> dict[str, str]:
+        """Opens World Signal's own browser profile on the browser's extensions page, where the user loads the
+        extension (once) and signs in to the subscriptions."""
+        browser = browser_for(str(ctx.settings.get_preferences().get("fulltext.browser_path") or ""))
+        if browser is None:
+            raise api_error(409, "no_browser")
+        open_login_window(browser, ctx.paths.browser_profile, "chrome://extensions")  # a fixed page, never user input
         return {"status": "opened"}
 
     def end_site_rest(source_id: int) -> None:

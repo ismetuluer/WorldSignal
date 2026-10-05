@@ -22,7 +22,7 @@ export function SubscriptionSitesSection() {
   return (
     <section className="section">
       <div className="settings-card">
-        <SubscriptionSites canOpen={settings["fulltext.profile"] === "own" && !!browsers?.chosen} />
+        <SubscriptionSites canOpen={!!browsers?.chosen} />
       </div>
     </section>
   );

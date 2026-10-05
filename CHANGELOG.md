@@ -3,6 +3,30 @@
 Sürüm numaraları [Anlamsal Sürümleme](https://semver.org/lang/tr/) izler. 1.0'a kadar her faz bir ara sürümdür.
 İngilizcesi (0.10.0'dan itibaren): [CHANGELOG.en.md](CHANGELOG.en.md).
 
+## [0.16.0] — 2026-10-05 — Haberi toplantıya ekleme; eklenti için ayrı tarayıcı profili; otomasyon tarayıcısı kalktı
+
+### Eklendi
+- **Tek bir haber de toplantı listesine eklenebilir** (yalnızca hikâye değil). Akışta "Haberler" görünümündeki her kartta
+  **Toplantıya ekle** düğmesi ve **T** tuşu var; listede haber, kaynağının bağlantısıyla görünür ("Hikâye artık yok"
+  uyarısı yalnızca gerçekten kaybolmuş hikâyeler içindir). Yapay zekâ metni sonradan gelirse bugünün listesi onu izler.
+  Çıktılarda hikâyeyle aynı biçim; telif kuralı aynı (yalnızca yapay zekâ metni ve bağlantı). Listeye eklenen haberin tam
+  metni de kuyruğa girer. (Veritabanı göçü 0012: `meeting_items.article_id`.)
+- **Eklenti için ayrı tarayıcı profili.** Ayarlar → Tam metin → "Eklenti hangi tarayıcı profilinde çalışsın?":
+  *Ayrı profil (önerilen)* ya da *Kendi tarayıcım*. Ayrı profilde eklenti ve abonelik girişleri World Signal'e özel bir
+  profilde durur; program onu pencere açmadan başlatır, günlük tarayıcınıza, sekmelerinize ve oturumunuza dokunulmaz.
+  **Ayrı profili aç** düğmesi o profili eklentiler sayfasında açar (eklentiyi bir kez yüklersiniz). Varsayılan hâlâ *Kendi
+  tarayıcım*; geçmek için eklentiyi o profile bir kez yüklemek gerekir.
+
+### Kaldırıldı
+- **Programın otomasyon tarayıcısı (patchright).** Hiç kullanılmıyordu (eklentiden beri tek bir tam metin onunla alınmadı),
+  abonelik siteleri onu reddediyor ve tarayıcıyı çökertiyordu. Gitti: bu okuyucu, `fulltext.reader`, `fulltext.profile`,
+  `fulltext.visible` ayarları, "Tarayıcı penceresini göster" ve profil satırları, patchright bağımlılığı. Paket yaklaşık 100 MB
+  küçülür. `browser` yöntemli kaynakları artık yalnızca eklenti okur.
+
+### Ölçüldü
+- Aynı olayın isim değişik haberleri ("Erdoğan X'i kabul etti") gerçek veride bge-m3 ile 0,66–0,73 benzer; 0,8 eşiğinin
+  üstündekiler aynı ziyaretteki iki kişi gibi gerçekten aynı olay. İsim farkına bakan ek bir birleştirme kuralı gerekmedi.
+
 ## [0.15.2] — 2026-10-02 — Eşiği yükselttikten sonra eski hikâyeleri düzenleme
 
 ### Eklendi

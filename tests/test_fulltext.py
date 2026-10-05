@@ -9,7 +9,7 @@ import pytest
 from test_stories import SPECS, FakeEmbedOllama, make_worker, seed_articles
 from worldsignal.ai import translate
 from worldsignal.fulltext.extract import SHORT_TEXT, declared_word_count, extract, judge, tidy
-from worldsignal.fulltext.fetch import BrowserInfo, FetchFailed, Page, profile_in_use, read_like_a_person
+from worldsignal.fulltext.fetch import FetchFailed, Page, profile_in_use
 from worldsignal.fulltext.worker import FullTextWorker
 from worldsignal.repo.fulltext import MAX_PAUSE, PAUSE_AFTER, BrowserPace, FullTextRepository
 from worldsignal.repo.stories import StoryRepository
@@ -223,33 +223,12 @@ def test_auto_candidates_respect_score_and_per_story_limit(world):
 
 
 # -- worker ------------------------------------------------------------------------------------------
-class FakeSession:
-    instances: list["FakeSession"] = []
-
-    def __init__(self, browser, profile, visible):
-        self.profile, self.visible, self.closed, self.urls = profile, visible, False, []
-        FakeSession.instances.append(self)
-
-    async def fetch(self, url):
-        self.urls.append(url)
-        return Page(200, article_page(), url)
-
-    async def close(self):
-        self.closed = True
-
-
-def make_ft_worker(world, tmp_path, *, http=None, in_use=lambda p: False, browser=True):
-    FakeSession.instances = []
-    fake_browser = BrowserInfo("Brave", Path("brave.exe"), tmp_path / "main")
-
+def make_ft_worker(world, tmp_path, *, http=None):
     async def default_http(url):
         return Page(200, article_page(), url)
 
     return FullTextWorker(
-        world["repo"], world["settings"], tmp_path / "own",
-        http_fetch=http or default_http, session_factory=FakeSession,
-        find_browser=(lambda p: fake_browser) if browser else (lambda p: None),
-        in_use=in_use, clock=lambda: NOW, today=lambda: "2026-09-27",
+        world["repo"], world["settings"], http_fetch=http or default_http, clock=lambda: NOW, today=lambda: "2026-09-27",
     )
 
 
@@ -263,7 +242,6 @@ def test_worker_fetches_over_http_and_the_ai_uses_the_full_text(world, tmp_path)
     assert 6 <= delay <= 15  # human pace for plain downloads
     ft = repo.get(ids["a2"])
     assert ft["status"] == "done" and ft["method"] == "http" and "Hürmüz" in ft["text"]
-    assert FakeSession.instances == []
 
     ai = AiRepository(world["db"])
     ai.request(ids["a2"])
@@ -307,48 +285,6 @@ def test_the_full_text_is_translated_too_only_when_asked_for(world, tmp_path):
     assert repo.get(ids["a3"])["translate_status"] is None  # without the AI nothing is queued
 
 
-def test_worker_uses_the_browser_for_paid_sites_and_the_chosen_profile(world, tmp_path):
-    repo, ids, settings = world["repo"], world["ids"], world["settings"]
-    world["sources"].update_source(source_of(world, "a1"), {"fulltext_mode": "browser"})
-    repo.request(ids["a1"])
-    worker = make_ft_worker(world, tmp_path)
-    delay = run(worker.step())
-    assert 60 <= delay <= 180  # a person's pace in the browser
-    session = FakeSession.instances[0]
-    assert session.profile == tmp_path / "own" and session.visible is False
-    assert repo.get(ids["a1"])["method"] == "browser"
-
-    settings.set("fulltext.profile", "main")
-    repo.request(ids["b1"])  # another site: the same one waits a few minutes between pages
-    world["sources"].update_source(source_of(world, "b1"), {"fulltext_mode": "browser"})
-    run(worker.step())
-    assert FakeSession.instances[0].closed and FakeSession.instances[1].profile == tmp_path / "main"
-
-
-def test_a_page_is_read_before_its_text_is_taken():
-    import random
-
-    wheel, waits = [], []
-
-    class Mouse:
-        async def wheel(self, dx, dy):
-            wheel.append(dy)
-
-    class FakePage:
-        mouse = Mouse()
-
-    async def sleep(seconds):
-        waits.append(seconds)
-
-    for seed in range(20):
-        wheel.clear()
-        waits.clear()
-        run(read_like_a_person(FakePage(), sleep, random.Random(seed)))
-        assert 4 <= len(wheel) <= 9 and all(250 <= dy <= 700 for dy in wheel)  # scrolled down in uneven steps
-        assert len(waits) == len(wheel) + 1 and 3 <= waits[0] <= 8
-        assert 13 <= sum(waits) <= 71  # about 20-60 seconds on the page
-
-
 def test_subscription_sites_rest_at_night_unless_the_user_asks(world, tmp_path):
     repo, ids = world["repo"], world["ids"]
     world["sources"].update_source(source_of(world, "a1"), {"fulltext_mode": "browser"})
@@ -358,10 +294,7 @@ def test_subscription_sites_rest_at_night_unless_the_user_asks(world, tmp_path):
     worker.clock = lambda: datetime(2026, 9, 28, 0, 30, tzinfo=UTC)  # 03:30 local
     assert worker.browser_pace(world["settings"].get_preferences(), worker.clock()).resting
     run(worker.step())
-    assert worker.status()["state"] == "idle" and FakeSession.instances == []
-    repo.request(ids["a1"])  # the user is awake and asks for it
-    run(worker.step())
-    assert repo.get(ids["a1"])["status"] == "done"
+    assert worker.status()["state"] == "idle"
 
     world["settings"].set("fulltext.browser_night_rest", False)
     assert not worker.browser_pace(world["settings"].get_preferences(), worker.clock()).resting
@@ -386,99 +319,19 @@ def test_old_google_news_links_are_not_opened(world, tmp_path):
     assert opened == [] and ft["status"] == "failed" and ft["error_code"] == "aggregator_link"
 
 
-def test_worker_waits_while_the_profile_is_open_elsewhere(world, tmp_path):
+def test_the_worker_never_reads_a_subscription_site_itself(world, tmp_path):
+    """Sources read "in the browser" belong to the extension (fulltext/bridge.py): the worker leaves them in the queue."""
     repo, ids = world["repo"], world["ids"]
     world["sources"].update_source(source_of(world, "a1"), {"fulltext_mode": "browser"})
     repo.request(ids["a1"])
-    worker = make_ft_worker(world, tmp_path, in_use=lambda p: True)
-    assert run(worker.step()) == 60
-    assert worker.status()["state"] == "profile_in_use" and repo.get(ids["a1"])["status"] == "pending"
-    assert FakeSession.instances == []
+    opened: list[str] = []
 
+    async def http(url):
+        opened.append(url)
+        return Page(200, article_page(), url)
 
-def test_login_closes_the_hidden_browser_and_keeps_it_closed(world, tmp_path):
-    """Opening a site to sign in must not land in the hidden automated browser (same profile)."""
-    repo, ids = world["repo"], world["ids"]
-    world["sources"].update_source(source_of(world, "a1"), {"fulltext_mode": "browser"})
-    world["sources"].update_source(source_of(world, "b1"), {"fulltext_mode": "browser"})
-    repo.request(ids["a1"])
-    worker = make_ft_worker(world, tmp_path)
-
-    async def scenario():
-        worker._loop = asyncio.get_running_loop()
-        await worker.step()  # the hidden browser is now open
-        assert worker.browser_open
-        await asyncio.to_thread(worker.make_room_for_login)  # called from an API thread
-        assert not worker.browser_open and FakeSession.instances[0].closed
-        repo.request(ids["b1"])
-        assert await worker.step() == 60  # held: the login window is starting
-        assert worker.status()["state"] == "profile_in_use" and len(FakeSession.instances) == 1
-
-    run(scenario())
-
-
-def test_a_browser_that_does_not_start_costs_the_article_nothing(world, tmp_path):
-    """Brave crashing while it starts (seen during its updates) is not the site's refusal: the article keeps its
-    attempts, the site is not paused or slowed, and the next try waits longer each time until one works."""
-    repo, ids = world["repo"], world["ids"]
-    world["sources"].update_source(source_of(world, "a1"), {"fulltext_mode": "browser"})
-    repo.request(ids["a1"])
-    starts = {"fail": 3}
-
-    class CrashingSession(FakeSession):
-        async def fetch(self, url):
-            if starts["fail"]:
-                starts["fail"] -= 1
-                raise FetchFailed("browser_failed", "TargetClosedError('Browser has been closed')", local=True)
-            return await super().fetch(url)
-
-    worker = make_ft_worker(world, tmp_path)
-    worker.session_factory = CrashingSession
-    assert [run(worker.step()) for _ in range(3)] == [60, 120, 240]  # 1, 2, 4 minutes
-    ft = repo.get(ids["a1"])
-    assert ft["status"] == "pending" and ft["attempts"] == 0 and ft["attempted_at"] is None
-    assert worker.status()["last_error"] == "browser_failed" and worker.status()["paused_sources"] == []
-    run(worker.step())  # the browser starts this time
-    assert repo.get(ids["a1"])["status"] == "done" and worker._browser_failures == 0
-    assert len(CrashingSession.instances) == 4  # a failed session is never reused
-
-
-def test_browser_retries_stop_growing_at_half_an_hour(world, tmp_path):
-    world["sources"].update_source(source_of(world, "a1"), {"fulltext_mode": "browser"})
-    world["repo"].request(world["ids"]["a1"])
-
-    class DeadSession(FakeSession):
-        async def fetch(self, url):
-            raise FetchFailed("browser_failed", "crash", local=True)
-
-    worker = make_ft_worker(world, tmp_path)
-    worker.session_factory = DeadSession
-    delays = [run(worker.step()) for _ in range(8)]
-    assert delays[-1] == 30 * 60 and max(delays) == 30 * 60
-
-
-def test_a_page_that_breaks_the_browser_still_counts(world, tmp_path):
-    """Only a browser that never started is free; a failure while a page loads is an attempt as before."""
-    repo, ids = world["repo"], world["ids"]
-    world["sources"].update_source(source_of(world, "a1"), {"fulltext_mode": "browser"})
-    repo.request(ids["a1"])
-
-    class BrokenPage(FakeSession):
-        async def fetch(self, url):
-            raise FetchFailed("browser_failed", "page crashed")
-
-    worker = make_ft_worker(world, tmp_path)
-    worker.session_factory = BrokenPage
-    assert run(worker.step()) == 60
-    assert repo.get(ids["a1"])["attempts"] == 1 and not FetchFailed("x").local
-
-
-def test_worker_without_a_browser_says_so(world, tmp_path):
-    world["sources"].update_source(source_of(world, "a1"), {"fulltext_mode": "browser"})
-    world["repo"].request(world["ids"]["a1"])
-    worker = make_ft_worker(world, tmp_path, browser=False)
-    run(worker.step())
-    assert worker.status()["state"] == "no_browser"
+    run(make_ft_worker(world, tmp_path, http=http).step())
+    assert opened == [] and repo.get(ids["a1"])["status"] == "pending"
 
 
 def test_worker_records_blocks_and_pauses_the_site(world, tmp_path):

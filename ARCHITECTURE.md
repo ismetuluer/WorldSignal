@@ -358,6 +358,16 @@ articles ─► StoryWorker: gömme (Ollama /api/embed, işlemcide) ─► artic
   diline çeviri yapılmaz.
 
 ### Tarayıcı eklentisi (0.14.0)
+**0.16.0 (2026-10-05): programın otomasyon tarayıcısı (patchright) kaldırıldı.** Ürün sahibinin kararıyla, hiç kullanılmadığı
+(eklentiden sonra `method = browser` ile tek bir tam metin alınmadı) ve sitelerin onu reddettiği için: `fetch.BrowserSession`,
+`read_like_a_person`, işçideki tarayıcı oturumu, `fulltext.reader` / `fulltext.profile` / `fulltext.visible` ayarları, patchright
+bağımlılığı ve paketteki tarayıcı sürücüsü (~100 MB) gitti; `browser` yöntemli kaynakları yalnızca eklenti okur, işçi (`fulltext/
+worker.py`) yalnızca düz indirmeyi yapar. Yerine yeni ayar `extension.profile` (`daily` | `own`): `own`'da eklenti, programın veri
+klasöründeki `browser-profile` içinde, normal (otomasyonsuz) bir tarayıcı profilinde durur; program o profili
+`--user-data-dir=… --no-startup-window` ile başlatır (`launcher.start_hidden`) ve "çalışıyor mu" sorusu tarayıcıya değil profilin
+kilit dosyasına sorulur (`profile_in_use`). Eklenti o profile bir kez elle yüklenir (`POST /api/extension/profile/open`
+`chrome://extensions` sayfasını o profilde açar). Aşağıdaki 2026-10-01 kararının `fulltext.reader` ile ilgili cümleleri tarihîdir.
+
 Karar (2026-10-01): abonelik sitelerini programın otomasyon tarayıcısı yerine kullanıcının **kendi tarayıcısı** okur (Chrome
 ve Brave; paketlenmemiş öğe olarak yüklenir, mağazada yayımlanmaz). Tasarım: `docs/superpowers/specs/2026-10-01-tarayici-eklentisi-design.md`.
 Eklenti "ince istemci"dir: ne zaman neyin okunacağına program karar verir (aynı kuyruk, aynı `BrowserPace`); eklenti

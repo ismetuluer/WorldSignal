@@ -24,7 +24,7 @@ def clock():
 
 @pytest.fixture
 def bridge(world, clock):
-    world["settings"].set_many({"fulltext.reader": "extension", "fulltext.browser_night_rest": False})
+    world["settings"].set_many({"fulltext.browser_night_rest": False})
     world["sources"].update_source(source_of(world, "a1"), {"fulltext_mode": "browser"})
     world["repo"].request(world["ids"]["a1"])
     return ExtensionBridge(world["repo"], world["settings"], resting=lambda: False, clock=clock)
@@ -165,7 +165,7 @@ def test_links_the_extension_must_not_open_are_never_handed_out(bridge, world, u
 def test_a_lease_is_dropped_when_the_extension_stops_being_the_reader(bridge, world):
     job = bridge.next()
     assert bridge.status()["reading"]
-    world["settings"].set("fulltext.reader", "automation")
+    world["settings"].set("fulltext.enabled", False)
     assert bridge.next()["reason"] == "disabled"
     assert bridge.status()["reading"] is None
     with pytest.raises(UnknownLease):
@@ -192,10 +192,10 @@ def test_clear_cooldown_ends_a_sites_rest(bridge, world):
 
 
 def test_waits_while_off_resting_or_at_night(world):
-    world["settings"].set("fulltext.reader", "automation")
+    world["settings"].set("fulltext.enabled", False)
     b = ExtensionBridge(world["repo"], world["settings"], resting=lambda: True)
     assert b.next()["reason"] == "disabled"
-    world["settings"].set("fulltext.reader", "extension")
+    world["settings"].set("fulltext.enabled", True)
     assert b.next()["reason"] == "resting"
     assert b.next()["wait_seconds"] >= 60
 
@@ -345,7 +345,7 @@ def test_connected_while_the_extension_keeps_to_the_wait_it_was_handed(bridge, w
     assert bridge.status()["connected"] and not bridge.status()["warn"]
     clock.now += timedelta(seconds=2)
     assert not bridge.status()["connected"] and not bridge.status()["warn"]  # late, not yet worth a warning
-    clock.now += timedelta(minutes=5)
+    clock.now += timedelta(minutes=11)  # switching on starts the grace afresh (see the "fresh grace" tests)
     assert bridge.status()["warn"]  # silent for more than ten minutes
 
 
@@ -379,11 +379,11 @@ def test_no_warning_at_start_up_until_ten_minutes_have_passed(bridge, clock):
 
 
 def test_switching_to_the_extension_later_gets_a_fresh_grace(world, clock):
-    world["settings"].set("fulltext.reader", "automation")
+    world["settings"].set("fulltext.enabled", False)
     b = ExtensionBridge(world["repo"], world["settings"], resting=lambda: False, clock=clock)
     clock.now += timedelta(hours=3)
     assert not b.status()["warn"]  # not the reader: no warning, and the grace starts over
-    world["settings"].set("fulltext.reader", "extension")
+    world["settings"].set("fulltext.enabled", True)
     assert not b.status()["warn"]  # the interface polls the status: the switch is seen now
     clock.now += timedelta(minutes=9)
     assert not b.status()["warn"]  # nine minutes after switching, not three hours after start-up
@@ -393,18 +393,18 @@ def test_switching_to_the_extension_later_gets_a_fresh_grace(world, clock):
 
 def test_switching_back_after_the_extension_was_seen_gets_a_fresh_grace_too(bridge, world, clock):
     bridge.next()
-    world["settings"].set("fulltext.reader", "automation")
+    world["settings"].set("fulltext.enabled", False)
     clock.now += timedelta(hours=3)
     assert bridge.next()["reason"] == "disabled"  # the extension notices; the grace starts over
     clock.now += timedelta(hours=1)  # the browser was then closed
-    world["settings"].set("fulltext.reader", "extension")
+    world["settings"].set("fulltext.enabled", True)
     assert not bridge.status()["warn"]
     clock.now += timedelta(minutes=11)
     assert bridge.status()["warn"]
 
 
 def test_no_warning_when_the_extension_is_not_the_reader(bridge, world, clock):
-    world["settings"].set("fulltext.reader", "automation")
+    world["settings"].set("fulltext.enabled", False)
     clock.now += timedelta(hours=2)
     assert not bridge.status()["connected"] and not bridge.status()["warn"]
 

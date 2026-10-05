@@ -2,7 +2,7 @@ import { act, fireEvent, render, screen, waitFor, within } from "@testing-librar
 import userEvent from "@testing-library/user-event";
 import type { ReactNode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { AiStatus, MeetingItem, Meta, NotebookDay, Settings, Status, Story } from "../api/types";
+import type { AiStatus, Article, MeetingItem, Meta, NotebookDay, Settings, Status, Story } from "../api/types";
 
 vi.mock("../api/client", async (importOriginal) => {
   const original = await importOriginal<typeof import("../api/client")>();
@@ -19,6 +19,8 @@ vi.mock("../api/client", async (importOriginal) => {
       saveStoryNote: vi.fn(),
       meeting: vi.fn(),
       addToMeeting: vi.fn(),
+      addArticleToMeeting: vi.fn(),
+      articles: vi.fn(),
       removeMeetingItem: vi.fn(),
       updateMeetingItem: vi.fn(),
       reorderMeeting: vi.fn(),
@@ -63,7 +65,7 @@ const STATUS: Status = {
 
 function item(id: number, extra: Partial<MeetingItem> = {}): MeetingItem {
   return {
-    id, day: TODAY, story_id: id * 10, position: id - 1, comment: "", title: `Öneri ${id}`, texts: { tr: { title: `Öneri ${id}`, summary: `Özet ${id}`, why: `Gerekçe ${id}` } },
+    id, day: TODAY, story_id: id * 10, article_id: null, position: id - 1, comment: "", title: `Öneri ${id}`, texts: { tr: { title: `Öneri ${id}`, summary: `Özet ${id}`, why: `Gerekçe ${id}` } },
     category: "politics", sources: [{ name: "AA", url: "https://aa.example/1" }], created_at: TODAY, updated_at: TODAY, ...extra,
   };
 }
@@ -239,6 +241,52 @@ describe("Feed shortcut", () => {
     mocked.removeMeetingItem.mockResolvedValue(undefined);
     await userEvent.keyboard("t");
     expect(mocked.removeMeetingItem).toHaveBeenCalledWith(1);
+  });
+});
+
+describe("A single report on the meeting list", () => {
+  it("is added from the reports view with the button and with T, and taken off again", async () => {
+    const now = new Date().toISOString();
+    const report = {
+      id: 31, title: "Tek haber başlığı", url: "https://x.example/31", summary: "", author: null, published_at: now, first_seen_at: now,
+      sort_at: now, language: "tr", source_id: 1, source_name: "AA", region: "turkey" as const, catalog_group: "turkey", paywalled: false,
+      exclusive: false, breaking: false, ai_status: null, ai_texts: {}, category: null, countries: [], turkey_relevance: null,
+      turkey_links: [], ai_issues: [], ai_model: null, ai_error: null,
+    } as unknown as Article;
+    mocked.meeting.mockResolvedValue({ day: TODAY, today: TODAY, items: [] });
+    mocked.articles.mockResolvedValue({ items: [report], next: null, total: 1 });
+    mocked.addArticleToMeeting.mockImplementation(async (id) => item(1, { story_id: null, article_id: id }));
+    render(
+      <AppStateProvider initialSettings={{ ...SETTINGS, "feed.view": "articles" }} initialMeta={META}>
+        <I18nProvider lang="tr">
+          <ToastProvider>
+            <MeetingProvider>
+              <FeedPage />
+            </MeetingProvider>
+          </ToastProvider>
+        </I18nProvider>
+      </AppStateProvider>,
+    );
+    await screen.findByText("Tek haber başlığı");
+    await userEvent.click(screen.getByRole("button", { name: /Toplantıya ekle/ }));
+    expect(mocked.addArticleToMeeting).toHaveBeenCalledWith(31);
+    expect(await screen.findByRole("button", { name: /Toplantıda/ })).toHaveAttribute("aria-pressed", "true");
+    mocked.removeMeetingItem.mockResolvedValue(undefined);
+    await userEvent.click(screen.getByRole("button", { name: /Toplantıda/ }));
+    expect(mocked.removeMeetingItem).toHaveBeenCalledWith(1);
+    await userEvent.keyboard("jt"); // the key works here too
+    expect(mocked.addArticleToMeeting).toHaveBeenCalledTimes(2);
+  });
+
+  it("shows a listed report as a link to its source, not as a vanished story", async () => {
+    mocked.meeting.mockResolvedValue({
+      day: TODAY, today: TODAY,
+      items: [item(1, { story_id: null, article_id: 31, title: "Tek haber başlığı", texts: {}, sources: [{ name: "AA", url: "https://aa.example/31" }] })],
+    });
+    wrap(<MeetingPage />);
+    const link = await screen.findByRole("link", { name: "Tek haber başlığı" });
+    expect(link).toHaveAttribute("href", expect.stringContaining("aa.example/31"));
+    expect(screen.queryByText(/Hikâye artık yok/)).not.toBeInTheDocument();
   });
 });
 

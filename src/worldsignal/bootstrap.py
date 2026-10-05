@@ -51,7 +51,7 @@ def build_context(paths: DataPaths, token: str, ui_dir: Path | None, run_collect
     history = HistoryRepository(db, stories)
     backups = BackupManager(db, paths.backups, paths.root)
     keys = SecretStore(paths.root / "secrets.json")  # outside the database: backups never carry API keys
-    bridge = ExtensionBridge(fulltext, settings, resting=work.resting)
+    bridge = ExtensionBridge(fulltext, settings, resting=work.resting, own_profile=paths.browser_profile)
     return AppContext(
         keys=keys, bridge=bridge,
         db=db, paths=paths, token=token, settings=settings, sources=sources, articles=articles,
@@ -59,7 +59,7 @@ def build_context(paths: DataPaths, token: str, ui_dir: Path | None, run_collect
         ai_worker=AiWorker(ai, settings, stories=stories, fulltext=fulltext, home=home.profile, keys=keys,
                            resting=work.resting),
         stories=stories, story_worker=StoryWorker(stories, settings), notebook=NotebookRepository(db, stories),
-        fulltext=fulltext, fulltext_worker=FullTextWorker(fulltext, settings, paths.browser_profile, resting=work.resting,
+        fulltext=fulltext, fulltext_worker=FullTextWorker(fulltext, settings, resting=work.resting,
                                                           leased=bridge.leased_article),
         history=history, maintenance=Maintenance(history, settings, backups, fulltext), backups=backups,
         notifier=Notifier(db, settings),

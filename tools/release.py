@@ -76,7 +76,6 @@ def verify(package: Path, version: str) -> None:
         names = set(zf.namelist())
         checks = {label: path in names for label, path in REQUIRED.items()}
         checks["veritabanı göçleri"] = any(n.startswith(f"{TOP}/_internal/worldsignal/db/migrations/0") for n in names)
-        checks["tarayıcı sürücüsü"] = any(n.startswith(f"{TOP}/_internal/patchright/driver/") for n in names)
         checks["tek üst klasör"] = all(PurePosixPath(n).parts[0] == TOP for n in names)
         stamp = zf.read(f"{TOP}/version.txt").decode("utf-8").strip() if checks["sürüm bilgisi"] else None
         checks[f"sürüm {version}"] = stamp == version

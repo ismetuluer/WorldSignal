@@ -70,16 +70,14 @@ DEFAULTS: dict[str, Any] = {
     "interest.keywords": [],
     "interest.categories": [],
     "interest.regions": [],
-    # Full text (phase 5). Browser mode uses patchright with a Chromium browser on this computer.
+    # Full text (phase 5). Subscription sites are read by the browser extension (fulltext/bridge.py).
     "fulltext.enabled": True,
     # Also translate every full text that arrives into the user's languages (a lot of AI work). Off: the summary
     # only; a full text is translated when the user asks in the reader.
     "fulltext.translate": False,
     "fulltext.browser_path": "",  # empty: the first of Brave, Chrome, Edge that is installed
-    "fulltext.profile": "own",  # own: World Signal's profile | main: the browser's everyday profile
-    "fulltext.visible": False,  # show the browser window while it reads pages
-    "fulltext.reader": "automation",  # automation: World Signal's own browser | extension: the user's browser (0.14)
-    "fulltext.launch_browser": True,  # extension mode: start the user's browser (no window) when it is closed
+    "extension.profile": "daily",  # daily: the extension sits in the user's everyday browser | own: in a profile of its own
+    "fulltext.launch_browser": True,  # start the browser (no window) when it is closed
     "fulltext.per_site_hour": 4,  # human pace: pages per site per hour
     # Subscription sites (read in the browser) at a person's pace (repo.fulltext.BrowserPace):
     "fulltext.browser_gap_min": 20,  # at least this many minutes between two pages of one site

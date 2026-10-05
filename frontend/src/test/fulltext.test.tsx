@@ -23,6 +23,7 @@ vi.mock("../api/client", async (importOriginal) => {
       fulltextSites: vi.fn(),
       testSite: vi.fn(),
       resumeFulltextSource: vi.fn(),
+      extension: vi.fn(),
     },
   };
 });
@@ -142,6 +143,7 @@ const SITES: FullTextSite[] = [
 
 beforeEach(() => {
   vi.resetAllMocks();
+  mocked.extension.mockResolvedValue({ code: "abc", port: 47821, fixed_port: true, status: { connected: true, warn: false, last_seen: null, read_today: 0, reading: null, last_source: null, last_error: null, version: "0.16.0", outdated: false } });
   mocked.status.mockResolvedValue(STATUS);
   mocked.updateSettings.mockImplementation(async (p) => ({ ...SETTINGS, ...p }));
   mocked.browsers.mockResolvedValue(BROWSERS);
@@ -231,16 +233,6 @@ describe("Full-text settings", () => {
     wrap(<SubscriptionSitesSection />);
     await userEvent.click(await screen.findByRole("button", { name: "Le Monde için tam metni dene" }));
     expect(await screen.findByText("Bu kaynaktan henüz haber toplanmadı.")).toBeInTheDocument();
-  });
-
-  it("warns that the main profile is locked while the browser is open", async () => {
-    const { unmount } = wrap(<FullTextSettings />, { ...SETTINGS, "fulltext.profile": "main" });
-    expect(await screen.findByText(/Tarayıcınız şu an açık/)).toBeInTheDocument();
-    unmount();
-    wrap(<SubscriptionSitesSection />, { ...SETTINGS, "fulltext.profile": "main" });
-    await screen.findByRole("list", { name: "Abonelik siteleri" });
-    expect(screen.queryByRole("button", { name: /giriş için aç/ })).not.toBeInTheDocument();
-    expect(screen.getByText(/Kendi tarayıcınızda sitelere giriş yapın/)).toBeInTheDocument();
   });
 
   it("turns on the browser for every enabled paid source", async () => {

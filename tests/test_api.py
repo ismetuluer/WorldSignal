@@ -43,7 +43,7 @@ def ctx(db, data_paths, settings, sources, articles, home, tmp_path):
         story_worker=StoryWorker(StoryRepository(db), settings),
         notebook=NotebookRepository(db, StoryRepository(db), today=lambda: TODAY),
         fulltext=FullTextRepository(db),
-        fulltext_worker=FullTextWorker(FullTextRepository(db), settings, data_paths.browser_profile),
+        fulltext_worker=FullTextWorker(FullTextRepository(db), settings),
         history=HistoryRepository(db, StoryRepository(db)), maintenance=Maintenance(HistoryRepository(db, StoryRepository(db)), settings),
         backups=BackupManager(db, data_paths.backups, data_paths.root), notifier=Notifier(db, settings),
         home=home, home_sync=HomeSync(home, articles, StoryRepository(db), settings),
@@ -454,8 +454,8 @@ def test_fulltext_endpoints(client, ctx, monkeypatch):
     assert client.patch(f"/api/sources/{src['id']}", headers=H, json={"fulltext_mode": "browser"}).json()["fulltext_mode"] == "browser"
     assert client.patch(f"/api/sources/{src['id']}", headers=H, json={"fulltext_mode": "stealth"}).status_code == 422
 
-    ok = client.patch("/api/settings", headers=H, json={"fulltext.profile": "main", "fulltext.per_site_hour": 3}).json()
-    assert ok["fulltext.profile"] == "main" and ok["fulltext.per_site_hour"] == 3
+    ok = client.patch("/api/settings", headers=H, json={"extension.profile": "own", "fulltext.per_site_hour": 3}).json()
+    assert ok["extension.profile"] == "own" and ok["fulltext.per_site_hour"] == 3
     assert client.patch("/api/settings", headers=H, json={"fulltext.profile": "other"}).status_code == 422
     assert client.patch("/api/settings", headers=H, json={"fulltext.per_site_hour": 100}).status_code == 422
 
@@ -494,13 +494,13 @@ def test_subscription_sites_login_and_test(client, ctx, monkeypatch):
     empty = next(s for s in sources if s["articles_24h"] == 0)
     assert client.post(f"/api/fulltext/sites/{empty['id']}/test", headers=H).json()["detail"]["code"] == "no_articles"
 
-    # "Open site": the site's home page in World Signal's profile; the hidden browser makes room first.
-    opened, made_room = [], []
+    # "Open site": the site's home page in World Signal's own profile (where the extension is, extension.profile = own).
+    opened = []
     monkeypatch.setattr(app_module, "browser_for", lambda path: BrowserInfo("Brave", Path("brave.exe"), Path("main")))
     monkeypatch.setattr(app_module, "open_login_window", lambda b, profile, url: opened.append(url))
-    monkeypatch.setattr(ctx.fulltext_worker, "make_room_for_login", lambda: made_room.append(True))
+    ctx.settings.set("extension.profile", "own")
     assert client.post("/api/fulltext/login", headers=H, json={"source_id": site["id"]}).json() == {"status": "opened"}
-    assert opened == [site["homepage"]] and made_room == [True]
+    assert opened == [site["homepage"]]
     assert client.post("/api/fulltext/login", headers=H, json={}).json() == {"status": "opened"}
     assert opened[-1] == "about:blank"
     assert client.post("/api/fulltext/login", headers=H, json={"source_id": 99999}).status_code == 404
