@@ -5,6 +5,7 @@ import { aiLanguages, storyLanguages, storySummaryText, storyConflict, storyTitl
 import { useAppState } from "../state";
 import { textDirection } from "../lib/hooks";
 import { Icon } from "./Icon";
+import { ExpandableSummary } from "./ExpandableSummary";
 import { useMeeting } from "./meeting";
 import { BreakingBadge, ExclusiveBadge } from "./Badges";
 import { CardFullText } from "./FullText";
@@ -206,7 +207,7 @@ export function StoryCard({
         </button>
       </h2>
       {summary && summary !== headline.text ? (
-        <p className="article-summary story-summary" dir={headline.translated ? "ltr" : dir}>{summary}</p>
+        <ExpandableSummary text={summary} className="story-summary" dir={headline.translated ? "ltr" : dir} />
       ) : null}
       {why ? (
         <p className="story-why">

@@ -3,6 +3,17 @@
 English version of [CHANGELOG.md](CHANGELOG.md), from 0.10.0 on. Version numbers follow
 [Semantic Versioning](https://semver.org/).
 
+## [0.16.1] — 2026-10-05 — Press a summary to open it; no extension reload needed
+
+### Added
+- **Pressing a summary on a report or story card shows all of it**, pressing again shortens it (mouse, or Enter/Space).
+  Below it the Read full text, Go to source and Show original links remain.
+
+### Changed
+- **The extension's version no longer follows the program's.** The program knows which extension version it expects; the
+  number rises only when the extension itself changes. The extension did not change in this release: **you do not need
+  to press Reload.**
+
 ## [0.16.0] — 2026-10-05 — Single reports on the meeting list; own browser profile for the extension; automation browser removed
 
 ### Added

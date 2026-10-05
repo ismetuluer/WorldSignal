@@ -80,6 +80,8 @@ export const tr = {
   "feed.yesterday": "Dün",
   "feed.paywalled": "Ücretli",
   "feed.openOriginal": "Orijinali aç",
+  "feed.summaryMore": "Özetin tamamını göster",
+  "feed.summaryLess": "Özeti kısalt",
   "feed.goToSource": "Kaynağa git",
   "feed.language": "Dil: {lang}",
   "feed.empty.first.title": "İlk haberler toplanıyor",

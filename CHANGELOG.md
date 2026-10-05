@@ -3,6 +3,16 @@
 Sürüm numaraları [Anlamsal Sürümleme](https://semver.org/lang/tr/) izler. 1.0'a kadar her faz bir ara sürümdür.
 İngilizcesi (0.10.0'dan itibaren): [CHANGELOG.en.md](CHANGELOG.en.md).
 
+## [0.16.1] — 2026-10-05 — Özeti açmak için basın; eklenti yeniden yükleme istemez
+
+### Eklendi
+- **Haber ve hikâye kartlarında özetin üstüne basınca tamamı açılır**, tekrar basınca kısalır (fare ya da Enter/Boşluk).
+  Altında Tam metni oku, Kaynağa git ve Orijinal metni göster bağlantıları durur.
+
+### Değişti
+- **Eklenti sürümü artık program sürümünü izlemez.** Program, beklediği eklenti sürümünü kendi bilir; yalnızca eklentinin
+  kendisi değişince bu sayı yükselir. Bu sürümde eklenti değişmedi: **Yeniden yükle'ye basmanız gerekmez.**
+
 ## [0.16.0] — 2026-10-05 — Haberi toplantıya ekleme; eklenti için ayrı tarayıcı profili; otomasyon tarayıcısı kalktı
 
 ### Eklendi

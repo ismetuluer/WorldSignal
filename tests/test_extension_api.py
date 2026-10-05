@@ -315,7 +315,7 @@ def test_sign_in_in_extension_mode_refuses_a_stored_homepage_that_is_not_a_web_p
 
 
 def test_the_extension_reports_its_version_and_an_old_copy_is_flagged(client, ctx):
-    from worldsignal import __version__
+    from worldsignal.fulltext.bridge import EXTENSION_VERSION as __version__
     keyed = pair(client)
     assert client.get("/api/extension", headers=H).json()["status"]["outdated"] is False  # never seen: no warning
     client.post("/api/ext/next", headers=keyed)  # an old copy says nothing

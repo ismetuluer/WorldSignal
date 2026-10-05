@@ -9,6 +9,7 @@ import { LangToggle } from "./StoryCard";
 import { openableUrl } from "../lib/links";
 import { BreakingBadge, ExclusiveBadge } from "./Badges";
 import { CardFullText, FullTextReader } from "./FullText";
+import { ExpandableSummary } from "./ExpandableSummary";
 import { useMeeting } from "./meeting";
 
 /** One article in the feed. AI output is labelled and the original is always one click away. */
@@ -107,7 +108,7 @@ export function ArticleCard({
           <span>{t("ai.original")}:</span> <span dir={textDirection(a.language)}>{a.title}</span>
         </p>
       ) : null}
-      {summary && summary !== headline ? <p className="article-summary">{summary}</p> : null}
+      {summary && summary !== headline ? <ExpandableSummary text={summary} /> : null}
 
       {numbers && useAi ? (
         <p className="article-warning" role="note">

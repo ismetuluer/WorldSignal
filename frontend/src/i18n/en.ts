@@ -78,6 +78,8 @@ export const en: Record<MessageKey, string> = {
   "feed.yesterday": "Yesterday",
   "feed.paywalled": "Paywalled",
   "feed.openOriginal": "Open original",
+  "feed.summaryMore": "Show the whole summary",
+  "feed.summaryLess": "Shorten the summary",
   "feed.goToSource": "Go to source",
   "feed.language": "Language: {lang}",
   "feed.empty.first.title": "Collecting the first articles",

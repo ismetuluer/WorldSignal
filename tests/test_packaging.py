@@ -88,12 +88,12 @@ def test_the_real_changelog_has_this_versions_notes():
     assert release.release_notes(__version__).strip()
 
 
-def test_extension_version_follows_the_program():
+def test_extension_version_is_the_one_the_program_expects():
     sys.path.insert(0, str(ROOT / "src"))
-    from worldsignal import __version__
+    from worldsignal.fulltext.bridge import EXTENSION_VERSION
 
     manifest = json.loads((ROOT / "extension" / "manifest.json").read_text(encoding="utf-8"))
-    assert manifest["version"] == __version__
+    assert manifest["version"] == EXTENSION_VERSION  # raised together, and only when the extension changes
 
 
 # -- public export -------------------------------------------------------------------------------------------

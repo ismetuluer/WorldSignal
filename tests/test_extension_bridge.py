@@ -415,3 +415,13 @@ def test_while_resting_the_answer_is_resting_even_if_a_site_is_cooling(bridge, w
     bridge.resting = lambda: True
     rest = bridge.next()
     assert rest["reason"] == "resting" and rest["wait_seconds"] >= 60
+
+
+def test_the_expected_extension_version_is_the_one_in_the_shipped_manifest():
+    import json
+    from pathlib import Path
+
+    from worldsignal.fulltext.bridge import EXTENSION_VERSION
+
+    manifest = json.loads((Path(__file__).parent.parent / "extension" / "manifest.json").read_text(encoding="utf-8"))
+    assert manifest["version"] == EXTENSION_VERSION  # change both together, and only when the extension changes

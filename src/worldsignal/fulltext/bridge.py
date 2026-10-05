@@ -22,7 +22,6 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import urlsplit
 
-from .. import __version__
 from ..db import utc_now_iso
 from ..repo.fulltext import FullTextJob, FullTextRepository
 from ..repo.settings import SettingsRepository
@@ -33,6 +32,9 @@ from .worker import AGGREGATOR_HOSTS, browser_pace
 log = logging.getLogger(__name__)
 
 LEASE = timedelta(minutes=5)
+# The version of the shipped extension (extension/manifest.json). Bumped only when the extension itself changes, so a
+# program update that leaves the extension alone does not ask the user to press Reload.
+EXTENSION_VERSION = "0.16.0"
 METHOD = "extension"  # article_fulltext.method for everything this reader stores, text or failure
 # The extension counts as connected while it keeps to the wait it was handed (plus this much slack: alarms are not
 # exact); the user is warned only after a longer silence, and not before the program has run this long.
@@ -316,5 +318,5 @@ class ExtensionBridge:
             "reading": reading, "last_source": self.last_source, "last_error": self.last_error,
             # The browser still runs another copy than the one in the program folder: press Reload once.
             "version": self.extension_version,
-            "outdated": self.last_seen is not None and self.extension_version != __version__,
+            "outdated": self.last_seen is not None and self.extension_version != EXTENSION_VERSION,
         }
