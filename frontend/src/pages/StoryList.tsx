@@ -19,7 +19,10 @@ export function StoryList({
   filtersActive,
   onClearFilters,
   onTotal,
+  defaultSort = "score",
 }: {
+  /** The breaking-news page lists the newest first. */
+  defaultSort?: "score" | "recent";
   /** The feed passes its hours and filters; the history passes a search over all days. */
   query: Omit<StoryQuery, "sort" | "min_sources" | "limit" | "offset">;
   filtersActive: boolean;
@@ -30,7 +33,7 @@ export function StoryList({
   const { t, plural } = i18n;
   const { status } = useAppState();
 
-  const [sort, setSort] = useState<"score" | "recent">("score");
+  const [sort, setSort] = useState<"score" | "recent">(defaultSort);
   const [multiOnly, setMultiOnly] = useState(false);
   const [items, setItems] = useState<Story[]>([]);
   const [total, setTotal] = useState(0);

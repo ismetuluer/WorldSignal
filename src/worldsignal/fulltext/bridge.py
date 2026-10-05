@@ -84,7 +84,8 @@ class Lease:
 class ExtensionBridge:
     def __init__(self, repo: FullTextRepository, settings: SettingsRepository, *, resting: Callable[[], bool],
                  clock: Callable[[], datetime] = lambda: datetime.now(UTC), local_zone: tzinfo | None = None,
-                 own_profile: Path | None = None) -> None:
+                 own_profile: Path | None = None, debug_dir: Path | None = None) -> None:
+        self.debug_dir = debug_dir  # where pages are kept while debug.save_pages is on
         self.own_profile = own_profile  # the browser profile World Signal keeps for the extension (setting extension.profile)
         self.repo = repo
         self.settings = settings
@@ -239,7 +240,8 @@ class ExtensionBridge:
                 return {"status": self._failed(job, code, now), "error": code}
         try:
             outcome = record_page(self.repo, job, Page(status, html, final_url or job.url),
-                                  self.settings.get_preferences(), now, self.on_translation_queued, method=METHOD)
+                                  self.settings.get_preferences(), now, self.on_translation_queued, method=METHOD,
+                                  debug_dir=self.debug_dir)
         except Exception:
             # Our own failure, not the site's: nothing was stored, the article stays as it was and the site rests.
             self.repo.release_attempt(job.article_id, held.previous)

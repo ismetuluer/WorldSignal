@@ -114,6 +114,8 @@ export interface Settings {
   "extension.profile": "daily" | "own";
   /** Who reads the subscription sites: World Signal's own browser, or the extension in the user's browser. */
   /** Extension reader: start the user's browser without a window when it is closed. */
+  /** Keep the HTML of the pages that are read (local, last 40) to see where a publisher puts a label. */
+  "debug.save_pages": boolean;
   "fulltext.launch_browser": boolean;
   "fulltext.per_site_hour": number;
   "fulltext.browser_gap_min": number;
@@ -128,6 +130,8 @@ export interface Settings {
   "notify.enabled": boolean;
   "notify.min_score": number;
   "notify.min_sources": number;
+  "notify.breaking": boolean;
+  "notify.breaking_min_sources": number;
   /** Working hours: off = the background work runs all day and night. */
   "work.limited": boolean;
   "work.start": number;
@@ -520,6 +524,8 @@ export interface StoryQuery {
   lang?: string[];
   category?: string[];
   turkey?: boolean;
+  /** Stories with a report the publisher labelled as breaking news (last 24 h, or `hours`). */
+  breaking?: boolean;
   min_sources?: number;
   q?: string;
   /** Translations of q (api.searchTranslations): a report matching any of them is found too. */
@@ -538,6 +544,8 @@ export interface Status {
   maintenance: MaintenanceStatus;
   notify: NotifyStatus;
   articles: { total: number; recent: number };
+  /** Stories with a breaking-news label in the last three hours (the sidebar badge). */
+  breaking?: number;
   /** The browser extension's reader; null when this program has no extension bridge. */
   extension: (ExtensionStatus & { active: boolean }) | null;
 }

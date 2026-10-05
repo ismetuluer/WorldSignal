@@ -15,11 +15,13 @@ import { NotebookPage } from "./pages/NotebookPage";
 import { SettingsPage } from "./pages/SettingsPage";
 import { SourcesPage } from "./pages/SourcesPage";
 import { StatsPage } from "./pages/StatsPage";
+import { BreakingPage } from "./pages/BreakingPage";
 import { navigate, useLinkedStory, useRoute, type Route } from "./router";
 import { AppStateProvider, useAppState } from "./state";
 
 const NAV: { route: Route; icon: IconName; label: MessageKey }[] = [
   { route: "feed", icon: "feed", label: "nav.feed" },
+  { route: "breaking", icon: "bolt", label: "nav.breaking" },
   { route: "meeting", icon: "meeting", label: "nav.meeting" },
   { route: "notebook", icon: "notebook", label: "nav.notebook" },
   { route: "history", icon: "history", label: "nav.history" },
@@ -98,7 +100,8 @@ function LocalizedShell() {
 function Shell() {
   const route = useRoute();
   const { t } = useI18n();
-  const { connectionError } = useAppState();
+  const { connectionError, status } = useAppState();
+  const breakingCount = status?.breaking ?? 0;
   const [linkedStory, clearLinkedStory] = useLinkedStory();
 
   useEffect(() => {
@@ -124,6 +127,9 @@ function Shell() {
           >
             <Icon name={item.icon} />
             <span>{t(item.label)}</span>
+            {item.route === "breaking" && breakingCount > 0 && route !== "breaking" ? (
+              <span className="nav-badge" aria-label={t("breaking.badge", { n: breakingCount })}>{breakingCount}</span>
+            ) : null}
           </button>
         ))}
         <CollectorFooter />
@@ -132,6 +138,7 @@ function Shell() {
         {connectionError ? <ConnectionLost code={connectionError} /> : null}
         <UpdateBanner />
         {route === "feed" ? <FeedPage />
+          : route === "breaking" ? <BreakingPage />
           : route === "meeting" ? <MeetingPage />
           : route === "notebook" ? <NotebookPage />
           : route === "history" ? <HistoryPage />

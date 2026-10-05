@@ -574,6 +574,20 @@
       "feed_language": "en",
       "final_url": "https://moxie.foxnews.com/google-publisher/world.xml"
      }
+    },
+    {
+     "url": "https://www.bing.com/news/search?q=%22Exclusive%22+site%3Afoxnews.com&format=rss&qft=sortbydate%3d%221%22",
+     "label": "Bing Haberler: \"Exclusive\" site:foxnews.com",
+     "keep_only": "exclusive",
+     "verified": true,
+     "check": {
+      "ok": true,
+      "items": 12,
+      "dated_items": 12,
+      "newest_age_h": 2.3,
+      "feed_language": null,
+      "final_url": "https://www.bing.com/news/search?q=%22Exclusive%22+site%3Afoxnews.com&format=rss&qft=sortbydate%3d%221%22"
+     }
     }
    ]
   },
@@ -729,6 +743,20 @@
       "newest_age_h": 0.3,
       "feed_language": "en",
       "final_url": "https://api.axios.com/feed/"
+     }
+    },
+    {
+     "url": "https://www.bing.com/news/search?q=%22Exclusive%22+site%3Aaxios.com&format=rss&qft=sortbydate%3d%221%22",
+     "label": "Bing Haberler: \"Exclusive\" site:axios.com",
+     "keep_only": "exclusive",
+     "verified": true,
+     "check": {
+      "ok": true,
+      "items": 11,
+      "dated_items": 11,
+      "newest_age_h": 1.3,
+      "feed_language": null,
+      "final_url": "https://www.bing.com/news/search?q=%22Exclusive%22+site%3Aaxios.com&format=rss&qft=sortbydate%3d%221%22"
      }
     }
    ]
@@ -1086,6 +1114,133 @@
    ]
   },
   {
+   "slug": "reuters-exclusive",
+   "name": "Reuters (Exclusive)",
+   "homepage": "https://www.reuters.com",
+   "group": "agency",
+   "owner": "Thomson Reuters",
+   "region": "global",
+   "language": "en",
+   "paywalled": false,
+   "fulltext_mode": "http",
+   "note": "Reuters'ın \"Exclusive\" etiketli haberleri. Reuters kendi sitesini otomatik okuyuculara kapattığı için etiket oradan okunmaz; Bing Haberler'in herkese açık RSS aramasının döndürdüğü, Reuters'ın kendi \"Exclusive-\" başlığını taşıyan kopyalardan (MSN, Yahoo, U.S. News vb.) gelir. Aramalar başka haberler de döndürür; yalnızca başlığı Reuters'ın \"Exclusive-\" biçimini taşıyanlar saklanır. Aynı haber Reuters kaynağında etiketsiz de bulunur; ikisi aynı hikâyede birleşir ve bağımsız kaynak olarak bir kez sayılır. Bağlantılar yayıncının kopyasına gider. Tam metin istenince o kopyadan alınır; Reuters'ın kopyalarını tam gösteren siteler (The Print, Yahoo, BNN Bloomberg, The Star) okunur, MSN gibi betikle çizilen ve engelleyen sitelerde okunamaz (o zaman Kaynağa git ile tarayıcınızda açın).",
+   "verified": true,
+   "feeds": [
+    {
+     "url": "https://www.bing.com/news/search?q=%22Exclusive+-%22+Reuters&format=rss&qft=sortbydate%3d%221%22",
+     "label": "Bing Haberler: \"Exclusive -\" Reuters",
+     "keep_only": "reuters_exclusive",
+     "verified": true,
+     "check": {
+      "ok": true,
+      "items": 11,
+      "dated_items": 11,
+      "newest_age_h": 0.5,
+      "feed_language": null,
+      "final_url": "https://www.bing.com/news/search?q=%22Exclusive+-%22+Reuters&format=rss&qft=sortbydate%3d%221%22"
+     }
+    },
+    {
+     "url": "https://www.bing.com/news/search?q=Exclusive+Reuters+sources+say&format=rss&qft=sortbydate%3d%221%22",
+     "label": "Bing Haberler: Exclusive Reuters sources say",
+     "keep_only": "reuters_exclusive",
+     "verified": true,
+     "check": {
+      "ok": true,
+      "items": 6,
+      "dated_items": 6,
+      "newest_age_h": 0.5,
+      "feed_language": null,
+      "final_url": "https://www.bing.com/news/search?q=Exclusive+Reuters+sources+say&format=rss&qft=sortbydate%3d%221%22"
+     }
+    },
+    {
+     "url": "https://www.bing.com/news/search?q=%22Exclusive%22+Reuters+oil&format=rss&qft=sortbydate%3d%221%22",
+     "label": "Bing Haberler: \"Exclusive\" Reuters oil",
+     "keep_only": "reuters_exclusive",
+     "verified": true,
+     "check": {
+      "ok": true,
+      "items": 9,
+      "dated_items": 9,
+      "newest_age_h": 7.5,
+      "feed_language": null,
+      "final_url": "https://www.bing.com/news/search?q=%22Exclusive%22+Reuters+oil&format=rss&qft=sortbydate%3d%221%22"
+     }
+    },
+    {
+     "url": "https://www.bing.com/news/search?q=%22Exclusive%22+Reuters+Iran&format=rss&qft=sortbydate%3d%221%22",
+     "label": "Bing Haberler: \"Exclusive\" Reuters Iran",
+     "keep_only": "reuters_exclusive",
+     "verified": true,
+     "check": {
+      "ok": true,
+      "items": 7,
+      "dated_items": 7,
+      "newest_age_h": 64.1,
+      "feed_language": null,
+      "final_url": "https://www.bing.com/news/search?q=%22Exclusive%22+Reuters+Iran&format=rss&qft=sortbydate%3d%221%22"
+     }
+    },
+    {
+     "url": "https://www.bing.com/news/search?q=%22Exclusive%22+Reuters+Ukraine&format=rss&qft=sortbydate%3d%221%22",
+     "label": "Bing Haberler: \"Exclusive\" Reuters Ukraine",
+     "keep_only": "reuters_exclusive",
+     "verified": true,
+     "check": {
+      "ok": true,
+      "items": 11,
+      "dated_items": 11,
+      "newest_age_h": 37.1,
+      "feed_language": null,
+      "final_url": "https://www.bing.com/news/search?q=%22Exclusive%22+Reuters+Ukraine&format=rss&qft=sortbydate%3d%221%22"
+     }
+    },
+    {
+     "url": "https://www.bing.com/news/search?q=%22Exclusive%22+Reuters+China&format=rss&qft=sortbydate%3d%221%22",
+     "label": "Bing Haberler: \"Exclusive\" Reuters China",
+     "keep_only": "reuters_exclusive",
+     "verified": true,
+     "check": {
+      "ok": true,
+      "items": 4,
+      "dated_items": 4,
+      "newest_age_h": 5.0,
+      "feed_language": null,
+      "final_url": "https://www.bing.com/news/search?q=%22Exclusive%22+Reuters+China&format=rss&qft=sortbydate%3d%221%22"
+     }
+    },
+    {
+     "url": "https://www.bing.com/news/search?q=%22Exclusive%22+Reuters+deal&format=rss&qft=sortbydate%3d%221%22",
+     "label": "Bing Haberler: \"Exclusive\" Reuters deal",
+     "keep_only": "reuters_exclusive",
+     "verified": true,
+     "check": {
+      "ok": true,
+      "items": 7,
+      "dated_items": 7,
+      "newest_age_h": 74.9,
+      "feed_language": null,
+      "final_url": "https://www.bing.com/news/search?q=%22Exclusive%22+Reuters+deal&format=rss&qft=sortbydate%3d%221%22"
+     }
+    },
+    {
+     "url": "https://www.bing.com/news/search?q=%22Exclusive%22+Reuters+Trump&format=rss&qft=sortbydate%3d%221%22",
+     "label": "Bing Haberler: \"Exclusive\" Reuters Trump",
+     "keep_only": "reuters_exclusive",
+     "verified": true,
+     "check": {
+      "ok": true,
+      "items": 8,
+      "dated_items": 8,
+      "newest_age_h": 8.4,
+      "feed_language": null,
+      "final_url": "https://www.bing.com/news/search?q=%22Exclusive%22+Reuters+Trump&format=rss&qft=sortbydate%3d%221%22"
+     }
+    }
+   ]
+  },
+  {
    "slug": "ap",
    "name": "Associated Press",
    "homepage": "https://apnews.com",
@@ -1303,6 +1458,20 @@
       "newest_age_h": 6.6,
       "feed_language": null,
       "final_url": "https://www.bing.com/news/search?q=site%3Aapnews.com%20Latin%20America&format=rss&qft=sortbydate%3d%221%22"
+     }
+    },
+    {
+     "url": "https://www.bing.com/news/search?q=%22Exclusive%22+site%3Aapnews.com&format=rss&qft=sortbydate%3d%221%22",
+     "label": "Bing Haberler: \"Exclusive\" site:apnews.com",
+     "keep_only": "exclusive",
+     "verified": true,
+     "check": {
+      "ok": true,
+      "items": 11,
+      "dated_items": 11,
+      "newest_age_h": 0.8,
+      "feed_language": null,
+      "final_url": "https://www.bing.com/news/search?q=%22Exclusive%22+site%3Aapnews.com&format=rss&qft=sortbydate%3d%221%22"
      }
     }
    ]
@@ -1621,6 +1790,20 @@
       "feed_language": null,
       "final_url": "https://www.bing.com/news/search?q=site%3Aal-monitor.com&format=rss&qft=sortbydate%3d%221%22"
      }
+    },
+    {
+     "url": "https://www.bing.com/news/search?q=%22Exclusive%22+site%3Aal-monitor.com&format=rss&qft=sortbydate%3d%221%22",
+     "label": "Bing Haberler: \"Exclusive\" site:al-monitor.com",
+     "keep_only": "exclusive",
+     "verified": true,
+     "check": {
+      "ok": true,
+      "items": 12,
+      "dated_items": 12,
+      "newest_age_h": 2.4,
+      "feed_language": null,
+      "final_url": "https://www.bing.com/news/search?q=%22Exclusive%22+site%3Aal-monitor.com&format=rss&qft=sortbydate%3d%221%22"
+     }
     }
    ]
   },
@@ -1844,6 +2027,20 @@
       "feed_language": "en",
       "final_url": "https://www.middleeasteye.net/rss"
      }
+    },
+    {
+     "url": "https://www.bing.com/news/search?q=%22Exclusive%22+site%3Amiddleeasteye.net&format=rss&qft=sortbydate%3d%221%22",
+     "label": "Bing Haberler: \"Exclusive\" site:middleeasteye.net",
+     "keep_only": "exclusive",
+     "verified": true,
+     "check": {
+      "ok": true,
+      "items": 11,
+      "dated_items": 11,
+      "newest_age_h": 36.3,
+      "feed_language": null,
+      "final_url": "https://www.bing.com/news/search?q=%22Exclusive%22+site%3Amiddleeasteye.net&format=rss&qft=sortbydate%3d%221%22"
+     }
     }
    ]
   },
@@ -1922,6 +2119,20 @@
       "newest_age_h": 0.5,
       "feed_language": "en",
       "final_url": "https://en.irna.ir/rss"
+     }
+    },
+    {
+     "url": "https://www.bing.com/news/search?q=%22Exclusive%22+site%3Aen.irna.ir&format=rss&qft=sortbydate%3d%221%22",
+     "label": "Bing Haberler: \"Exclusive\" site:en.irna.ir",
+     "keep_only": "exclusive",
+     "verified": true,
+     "check": {
+      "ok": true,
+      "items": 6,
+      "dated_items": 6,
+      "newest_age_h": 144.6,
+      "feed_language": null,
+      "final_url": "https://www.bing.com/news/search?q=%22Exclusive%22+site%3Aen.irna.ir&format=rss&qft=sortbydate%3d%221%22"
      }
     }
    ]
@@ -2263,6 +2474,20 @@
       "feed_language": null,
       "final_url": "https://kyivindependent.com/news-archive/rss/"
      }
+    },
+    {
+     "url": "https://www.bing.com/news/search?q=%22Exclusive%22+site%3Akyivindependent.com&format=rss&qft=sortbydate%3d%221%22",
+     "label": "Bing Haberler: \"Exclusive\" site:kyivindependent.com",
+     "keep_only": "exclusive",
+     "verified": true,
+     "check": {
+      "ok": true,
+      "items": 11,
+      "dated_items": 11,
+      "newest_age_h": 108.7,
+      "feed_language": null,
+      "final_url": "https://www.bing.com/news/search?q=%22Exclusive%22+site%3Akyivindependent.com&format=rss&qft=sortbydate%3d%221%22"
+     }
     }
    ]
   },
@@ -2510,6 +2735,20 @@
       "feed_language": "en",
       "final_url": "https://timesofindia.indiatimes.com/rssfeeds/296589292.cms"
      }
+    },
+    {
+     "url": "https://www.bing.com/news/search?q=%22Exclusive%22+site%3Atimesofindia.indiatimes.com&format=rss&qft=sortbydate%3d%221%22",
+     "label": "Bing Haberler: \"Exclusive\" site:timesofindia.indiatimes.com",
+     "keep_only": "exclusive",
+     "verified": true,
+     "check": {
+      "ok": true,
+      "items": 12,
+      "dated_items": 12,
+      "newest_age_h": 9.7,
+      "feed_language": null,
+      "final_url": "https://www.bing.com/news/search?q=%22Exclusive%22+site%3Atimesofindia.indiatimes.com&format=rss&qft=sortbydate%3d%221%22"
+     }
     }
    ]
   },
@@ -2535,6 +2774,20 @@
       "newest_age_h": 0.2,
       "feed_language": "en",
       "final_url": "https://www.hindustantimes.com/feeds/rss/world-news/rssfeed.xml"
+     }
+    },
+    {
+     "url": "https://www.bing.com/news/search?q=%22Exclusive%22+site%3Ahindustantimes.com&format=rss&qft=sortbydate%3d%221%22",
+     "label": "Bing Haberler: \"Exclusive\" site:hindustantimes.com",
+     "keep_only": "exclusive",
+     "verified": true,
+     "check": {
+      "ok": true,
+      "items": 11,
+      "dated_items": 11,
+      "newest_age_h": 0.8,
+      "feed_language": null,
+      "final_url": "https://www.bing.com/news/search?q=%22Exclusive%22+site%3Ahindustantimes.com&format=rss&qft=sortbydate%3d%221%22"
      }
     }
    ]
@@ -2613,6 +2866,20 @@
       "newest_age_h": 1.4,
       "feed_language": null,
       "final_url": "https://www.channelnewsasia.com/api/v1/rss-outbound-feed?_format=xml&category=6311"
+     }
+    },
+    {
+     "url": "https://www.bing.com/news/search?q=%22Exclusive%22+site%3Achannelnewsasia.com&format=rss&qft=sortbydate%3d%221%22",
+     "label": "Bing Haberler: \"Exclusive\" site:channelnewsasia.com",
+     "keep_only": "exclusive",
+     "verified": true,
+     "check": {
+      "ok": true,
+      "items": 11,
+      "dated_items": 11,
+      "newest_age_h": 11.0,
+      "feed_language": null,
+      "final_url": "https://www.bing.com/news/search?q=%22Exclusive%22+site%3Achannelnewsasia.com&format=rss&qft=sortbydate%3d%221%22"
      }
     }
    ]
@@ -2694,6 +2961,20 @@
       "feed_language": null,
       "final_url": "https://www.bing.com/news/search?q=site%3Aglobaltimes.cn&format=rss&qft=sortbydate%3d%221%22"
      }
+    },
+    {
+     "url": "https://www.bing.com/news/search?q=%22Exclusive%22+site%3Aglobaltimes.cn&format=rss&qft=sortbydate%3d%221%22",
+     "label": "Bing Haberler: \"Exclusive\" site:globaltimes.cn",
+     "keep_only": "exclusive",
+     "verified": true,
+     "check": {
+      "ok": true,
+      "items": 9,
+      "dated_items": 9,
+      "newest_age_h": 86.7,
+      "feed_language": null,
+      "final_url": "https://www.bing.com/news/search?q=%22Exclusive%22+site%3Aglobaltimes.cn&format=rss&qft=sortbydate%3d%221%22"
+     }
     }
    ]
   },
@@ -2719,6 +3000,20 @@
       "newest_age_h": 3.2,
       "feed_language": "the korea herald",
       "final_url": "https://www.koreaherald.com/rss/newsAll"
+     }
+    },
+    {
+     "url": "https://www.bing.com/news/search?q=%22Exclusive%22+site%3Akoreaherald.com&format=rss&qft=sortbydate%3d%221%22",
+     "label": "Bing Haberler: \"Exclusive\" site:koreaherald.com",
+     "keep_only": "exclusive",
+     "verified": true,
+     "check": {
+      "ok": true,
+      "items": 9,
+      "dated_items": 9,
+      "newest_age_h": 149.8,
+      "feed_language": null,
+      "final_url": "https://www.bing.com/news/search?q=%22Exclusive%22+site%3Akoreaherald.com&format=rss&qft=sortbydate%3d%221%22"
      }
     }
    ]

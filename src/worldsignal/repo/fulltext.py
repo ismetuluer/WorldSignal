@@ -204,6 +204,11 @@ class FullTextRepository:
             c.execute("UPDATE article_fulltext SET attempted_at = ? WHERE article_id = ?", (previous, article_id))
 
     # -- results ----------------------------------------------------------------------------------
+    def mark_exclusive(self, article_id: int) -> None:
+        """The article's page carries the publisher's "Exclusive" label (fulltext/labels.py)."""
+        with self.db.transaction() as c:
+            c.execute("UPDATE articles SET page_exclusive = 1 WHERE id = ?", (article_id,))
+
     def store_text(self, article_id: int, text: str, method: str, now: datetime) -> None:
         with self.db.transaction() as c:
             c.execute(
@@ -429,7 +434,7 @@ class FullTextRepository:
             from ..flags import is_exclusive  # flags imports nothing from repo
 
             rows = self.db.conn.execute(
-                """SELECT a.id, a.title FROM articles a JOIN sources s ON s.id = a.source_id
+                """SELECT a.id, a.title, a.summary, a.page_exclusive FROM articles a JOIN sources s ON s.id = a.source_id
                    WHERE s.enabled = 1 AND s.fulltext_mode = 'browser' AND a.sort_at >= ?
                      AND NOT EXISTS (SELECT 1 FROM article_fulltext f WHERE f.article_id = a.id)
                    ORDER BY a.sort_at DESC LIMIT 300""",
@@ -438,5 +443,5 @@ class FullTextRepository:
             taken = set(out["notebook"]) | set(out["auto"])
             for r in rows:
                 if r["id"] not in taken:
-                    out["exclusive" if is_exclusive(r["title"]) else "paid"].append(r["id"])
+                    out["exclusive" if r["page_exclusive"] or is_exclusive(r["title"], r["summary"]) else "paid"].append(r["id"])
         return out

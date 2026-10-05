@@ -191,3 +191,50 @@ def test_last_cycle_time_survives_restart(db, sources, articles):
 
     asyncio.run(start_and_stop())
     assert fresh.status()["last_cycle_at"] == "2026-09-27T08:00:00Z"
+
+
+RSS_MIXED = b"""<?xml version="1.0"?><rss version="2.0"><channel><title>Search</title>
+<item><title>Exclusive - Honda to rework India strategy, sources say</title><link>https://msn.example/1</link>
+<pubDate>Sun, 27 Sep 2026 07:50:00 GMT</pubDate></item>
+<item><title>Exclusive-OPEC+ delays review, sources say</title><link>https://usnews.example/2</link>
+<pubDate>Sun, 27 Sep 2026 07:40:00 GMT</pubDate></item>
+<item><title>Reuters exclusive: Ford production down at Michigan plant</title><link>https://bnn.example/3</link>
+<pubDate>Sun, 27 Sep 2026 07:30:00 GMT</pubDate></item>
+<item><title>Weekend Reads: an exclusive look at mining</title><link>https://reuters.example/4</link>
+<pubDate>Sun, 27 Sep 2026 07:20:00 GMT</pubDate></item>
+<item><title>Christa Pike's execution drug may have leaked</title><link>https://people.example/5</link>
+<description>Exclusive: an expert says</description><pubDate>Sun, 27 Sep 2026 07:10:00 GMT</pubDate></item>
+<item><title>Exclusive: Houthis embedded across Iraq</title><link>https://alhurra.example/6</link>
+<pubDate>Sun, 27 Sep 2026 07:05:00 GMT</pubDate></item>
+</channel></rss>"""
+
+
+def test_a_feed_that_keeps_only_exclusives_stores_just_the_labelled_reports(db, sources, articles):
+    catalog = {"sources": [{
+        "slug": "rx", "name": "Reuters (Exclusive)", "group": "agency", "owner": "Reuters Group", "region": "global",
+        "language": "en", "verified": True, "paywalled": False, "fulltext_mode": "off",
+        "feeds": [{"url": "https://search.example/rss", "label": "search", "verified": True, "keep_only": "reuters_exclusive"}],
+    }]}
+    sources.seed_from_catalog(catalog)
+    assert sources.list_sources()[0]["fulltext_mode"] == "off"  # syndicated copies are not fetched as pages
+    collector = Collector(db, sources, articles, clock=Clock(),
+                          client_factory=mock_client_factory(lambda request: httpx.Response(200, content=RSS_MIXED)))
+    assert cycle(collector) == 3  # Reuters' own exclusive headlines; not "an exclusive look", not another outlet's label
+    titles = {r["title"] for r in db.conn.execute("SELECT title FROM articles")}
+    assert titles == {"Exclusive - Honda to rework India strategy, sources say", "Exclusive-OPEC+ delays review, sources say",
+                      "Reuters exclusive: Ford production down at Michigan plant"}
+    assert feed_row(db, "https://search.example/rss")["last_item_count"] == 6  # the health figure counts what the feed returned
+
+
+def test_a_sources_own_exclusive_search_adds_only_its_labelled_reports(db, sources, articles):
+    catalog = {"sources": [{
+        "slug": "ap", "name": "Associated Press", "group": "agency", "owner": "AP", "region": "global", "language": "en",
+        "verified": True, "paywalled": False,
+        "feeds": [{"url": "https://search.example/rss", "label": "Exclusive site:apnews.com", "verified": True, "keep_only": "exclusive"}],
+    }]}
+    sources.seed_from_catalog(catalog)
+    collector = Collector(db, sources, articles, clock=Clock(),
+                          client_factory=mock_client_factory(lambda request: httpx.Response(200, content=RSS_MIXED)))
+    assert cycle(collector) == 5  # every label the publisher itself wrote (headline or summary), not "an exclusive look"
+    names = {r["name"] for r in db.conn.execute("SELECT s.name FROM articles a JOIN sources s ON s.id = a.source_id")}
+    assert names == {"Associated Press"}  # filed under the real source: its name, owner and links

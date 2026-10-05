@@ -7,7 +7,7 @@ import sqlite3
 from collections import Counter
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 import numpy as np
@@ -81,6 +81,7 @@ class StoryFilter:
     min_sources: int = 1
     query: str | None = None
     alternatives: Sequence[str] = field(default_factory=tuple)  # translations of the query (ai/query.py)
+    breaking: bool = False  # a report of the window (``since``, else 24 h) carries the publisher's breaking-news label
     sort: str = "score"  # score | recent
     limit: int = 50
     offset: int = 0
@@ -428,6 +429,12 @@ class StoryRepository:
             params.append(f.since)
         if f.turkey_only:
             where.append("st.turkey_relevance IN ('direct', 'indirect')")
+        if f.breaking:
+            where.append(
+                """EXISTS (SELECT 1 FROM story_articles sb JOIN articles ab ON ab.id = sb.article_id
+                          WHERE sb.story_id = st.id AND ab.sort_at >= ? AND ws_breaking(ab.title))"""
+            )
+            params.append(f.since or utc_now_iso(datetime.now(UTC) - timedelta(hours=24)))
         if f.categories:
             where.append(f"st.category IN ({','.join('?' * len(f.categories))})")
             params.extend(f.categories)
@@ -468,6 +475,12 @@ class StoryRepository:
         ).fetchall()
         return [self.get(r["id"], member_limit=6) for r in rows], total  # type: ignore[misc]
 
+    def breaking_count(self, since_iso: str) -> int:
+        """Stories with a report labelled as breaking news since ``since_iso`` (the sidebar's badge)."""
+        return int(self.db.conn.execute(
+            """SELECT COUNT(DISTINCT sb.story_id) FROM story_articles sb JOIN articles ab ON ab.id = sb.article_id
+               WHERE ab.sort_at >= ? AND ws_breaking(ab.title)""", (since_iso,)).fetchone()[0])
+
     def get(self, story_id: int, member_limit: int | None = None) -> dict[str, Any] | None:
         row = self.db.conn.execute("SELECT * FROM stories WHERE id = ?", (story_id,)).fetchone()
         if row is None:
@@ -480,7 +493,7 @@ class StoryRepository:
             story.pop(old, None)  # before 0.11: replaced by ai_texts
         members = self.db.conn.execute(
             """SELECT a.id, a.url, a.title, a.summary, a.sort_at, COALESCE(a.language, s.language) AS language,
-                      s.id AS source_id, s.name AS source_name, s.paywalled, s.region,
+                      s.id AS source_id, s.name AS source_name, s.paywalled, s.region, a.page_exclusive,
                       COALESCE(NULLIF(s.owner, ''), s.slug) AS owner_key,
                       sa.similarity, sa.assigned_by,
                       CASE WHEN x.status = 'done' THEN x.texts END AS ai_texts,
@@ -499,7 +512,7 @@ class StoryRepository:
         for m in items:
             m["paywalled"] = bool(m["paywalled"])
             m["ai_texts"] = json.loads(m["ai_texts"] or "{}")
-            m["exclusive"] = is_exclusive(m["title"])
+            m["exclusive"] = bool(m.pop("page_exclusive")) or is_exclusive(m["title"], m["summary"])
         story["exclusive"] = any(m["exclusive"] for m in items)
         story["breaking"] = is_breaking(((m["owner_key"], parse_iso(m["sort_at"]), m["title"]) for m in items),
                                         datetime.now(UTC))

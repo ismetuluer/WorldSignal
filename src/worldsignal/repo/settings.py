@@ -78,6 +78,7 @@ DEFAULTS: dict[str, Any] = {
     "fulltext.browser_path": "",  # empty: the first of Brave, Chrome, Edge that is installed
     "extension.profile": "daily",  # daily: the extension sits in the user's everyday browser | own: in a profile of its own
     "fulltext.launch_browser": True,  # start the browser (no window) when it is closed
+    "debug.save_pages": False,  # keep the HTML of the pages that are read (last 40), to see why a label was not found
     "fulltext.per_site_hour": 4,  # human pace: pages per site per hour
     # Subscription sites (read in the browser) at a person's pace (repo.fulltext.BrowserPace):
     "fulltext.browser_gap_min": 20,  # at least this many minutes between two pages of one site
@@ -93,6 +94,8 @@ DEFAULTS: dict[str, Any] = {
     "app.close_to_tray": True,  # closing the window keeps World Signal collecting in the system tray
     "notify.enabled": True,
     "notify.min_score": 60,  # only important stories ...
+    "notify.breaking": True,  # breaking news (the publisher's label + several sources) is announced at once
+    "notify.breaking_min_sources": 3,  # independent sources within the last hour that make a labelled report an alert
     "notify.min_sources": 5,  # ... reported by this many independent sources within three hours
     # Working hours (worktime.py): off = the background work runs all day and night.
     "work.limited": False,

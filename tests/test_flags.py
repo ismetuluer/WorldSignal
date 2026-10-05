@@ -11,7 +11,8 @@ from worldsignal.flags import article_kind, group_condition, has_breaking_marker
     "Exclusive: Tesla plans new factory", "EXCLUSIVE-Tesla plans", "[Exclusive] The deal", "(Exclusive) Talks",
     "ÖZEL HABER | Ankara'da kritik toplantı", "Özel: Bakan açıkladı", "Özel haber - Yeni gelişme",
     "Exclusif : l'Élysée prépare", "Exklusiv: Gespräch", "Exclusiva: el plan", "Esclusiva: il piano",
-    "Эксклюзив: интервью", "حصري: وثائق", "Reuters EXCLUSIVE shows",
+    "Эксклюзив: интервью", "حصري: وثائق", "Reuters EXCLUSIVE shows", "Scoop: Senate forecast rattles retreat",
+    "Exclusive - Cost pressures force Honda to rework India strategy", "Reuters exclusive: Ford production down", "CNN Exclusive: the plan",
     # Trend News Agency marks it at the end.
     "JAC Motors supplies vehicles to Kyrgyzstan (Exclusive)", "Caspian priorities [exclusive] ",
 ])
@@ -21,7 +22,8 @@ def test_exclusive_markers(title):
 
 @pytest.mark.parametrize("title", [
     "Exclusive rights deal signed", "Özel sektör kredisi arttı", "Özel harekât polisi", "The most exclusive club",
-    "Talks on exclusive (rights)", "Club goes exclusive",
+    "Talks on exclusive (rights)", "Club goes exclusive", "Ice cream scoop prices rise", "Weekend Reads: an exclusive look at mining",
+    "Why exclusive: the club's rules",
     "", None,
 ])
 def test_everyday_words_are_not_exclusive(title):
@@ -104,5 +106,25 @@ def test_group_condition_mixes_catalog_groups_and_kinds():
     assert group_condition([]) is None
     sql, params = group_condition(["western", "opinion", "western"])
     assert params == ["western", "opinion"]
-    assert sql == "(s.catalog_group IN (?) OR ws_kind(a.title, a.url) IN (?))"
-    assert group_condition(["exclusive"]) == ("(ws_kind(a.title, a.url) IN (?))", ["exclusive"])
+    assert sql == "(s.catalog_group IN (?) OR ws_kind(a.title, a.url, a.summary, a.page_exclusive) IN (?))"
+    assert group_condition(["exclusive"]) == ("(ws_kind(a.title, a.url, a.summary, a.page_exclusive) IN (?))", ["exclusive"])
+
+
+def test_the_summary_can_carry_the_marker_when_the_headline_does_not():
+    # The Guardian and The Independent open the standfirst with it.
+    assert is_exclusive("Cash grab: candidates asked for money", "Exclusive: Many applicants left feeling used")
+    assert is_exclusive("Couples out of pocket", "Exclusive : Couples left devastated by the collapse")
+    assert not is_exclusive("Cover story", "An exclusive look at how we designed our cover")  # in the middle: not a label
+    assert not is_exclusive("Speaking exclusively to the Post", "Speaking exclusively to the Post, the leader says")
+    assert article_kind("Plain headline", "https://x.example/a", "Exclusive: the plan") == "exclusive"
+
+
+@pytest.mark.parametrize(("title", "summary", "source"), [
+    # Ordinary sourcing and "we have the documents" wording are not the publisher's label; they are never guessed into one.
+    ("Cost pressures and deadlock force Honda to rework India strategy, sources say", "", "Reuters"),
+    ("Schneider Said to Near Deal", "The deal, people familiar with the matter said, could be announced", "Bloomberg"),
+    ("How Cornell Punished Each of the 7 Men", "Summaries obtained by The New York Times offer a detailed look", "The New York Times"),
+    ("Virologist tells CNN about infection at Russian lab", "", "CNN"),
+])
+def test_the_wording_of_a_story_is_never_taken_for_the_publishers_label(title, summary, source):
+    assert not is_exclusive(title, summary)

@@ -6,6 +6,7 @@ import { describeError, useI18n } from "../i18n";
 import { useAppState } from "../state";
 
 const MIN_SOURCES = [3, 5, 8, 12];
+const BREAKING_SOURCES = [2, 3, 4, 5];
 const MIN_SCORES = [50, 60, 75];
 const HOURS = Array.from({ length: 24 }, (_, h) => h);
 
@@ -87,6 +88,31 @@ export function BackgroundSettings() {
 
         {enabled ? (
           <>
+            <div className="settings-row">
+              <div className="settings-row-text">
+                <div className="settings-row-title">{t("settings.notify.breaking")}</div>
+                <div className="settings-row-hint">{t("settings.notify.breakingHint")}</div>
+              </div>
+              <div className="segment-stack">
+                <Switch
+                  checked={settings["notify.breaking"]}
+                  label={t("settings.notify.breaking")}
+                  onChange={(v) => void change({ "notify.breaking": v })}
+                />
+                {settings["notify.breaking"] ? (
+                  <>
+                    <span>{t("settings.notify.breakingSources")}</span>
+                    <Segmented
+                      label={t("settings.notify.breakingSources")}
+                      value={settings["notify.breaking_min_sources"]}
+                      onChange={(v) => void change({ "notify.breaking_min_sources": v })}
+                      options={BREAKING_SOURCES.map((n) => ({ value: n, label: t("settings.notify.breakingN", { n }) }))}
+                    />
+                  </>
+                ) : null}
+              </div>
+            </div>
+
             <div className="settings-row">
               <div className="settings-row-text">
                 <div className="settings-row-title">{t("settings.notify.when")}</div>

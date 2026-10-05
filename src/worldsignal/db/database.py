@@ -29,7 +29,7 @@ from datetime import UTC, datetime
 from importlib import resources
 from pathlib import Path
 
-from ..flags import article_kind
+from ..flags import article_kind, has_breaking_marker
 
 log =logging.getLogger(__name__)
 
@@ -105,7 +105,8 @@ class Database:
         conn.execute("PRAGMA foreign_keys = ON")
         conn.execute("PRAGMA busy_timeout = 10000")
         # The feed's "exclusive" / "opinion" groups are read from the headline and address (flags.py).
-        conn.create_function("ws_kind", 2, article_kind, deterministic=True)
+        conn.create_function("ws_kind", 4, article_kind, deterministic=True)
+        conn.create_function("ws_breaking", 1, lambda title: int(has_breaking_marker(title)), deterministic=True)
         return conn
 
     @property

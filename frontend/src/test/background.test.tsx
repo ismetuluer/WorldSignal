@@ -91,6 +91,15 @@ describe("Background and notifications", () => {
     expect(mocked.updateSettings).toHaveBeenCalledWith({ "notify.quiet_end": 8 });
   });
 
+  it("announces breaking news at once, with its own source threshold", async () => {
+    wrap(<BackgroundSettings />);
+    const group = screen.getByRole("group", { name: "Son 1 saatte en az" });
+    await userEvent.click(within(group).getByRole("button", { name: "2 kaynak" }));
+    expect(mocked.updateSettings).toHaveBeenCalledWith({ "notify.breaking_min_sources": 2 });
+    await userEvent.click(screen.getByRole("switch", { name: "Son dakika haberlerini hemen bildir" }));
+    expect(mocked.updateSettings).toHaveBeenCalledWith({ "notify.breaking": false });
+  });
+
   it("works all day by default and limits the working hours on request", async () => {
     wrap(<BackgroundSettings />);
     expect(screen.getByText(/gece gündüz sürekli çalışıyor/)).toBeInTheDocument();

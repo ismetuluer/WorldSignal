@@ -73,6 +73,7 @@ class DueFeed:
     fetch_interval_min: int
     consecutive_failures: int
     language: str
+    keep_only: str | None = None  # "exclusive": store only the reports labelled exclusive by their publisher
 
 
 def _slugify(name: str) -> str:
@@ -133,7 +134,7 @@ class SourceRepository:
                         (
                             s["slug"], s["name"], s.get("homepage"), s["group"], s.get("owner"), s["region"],
                             s["language"], 1 if s["verified"] else 0, 1 if s.get("paywalled") else 0,
-                            s.get("note"), now, now, "off" if s.get("paywalled") else "http",
+                            s.get("note"), now, now, s.get("fulltext_mode") or ("off" if s.get("paywalled") else "http"),
                         ),
                     )
                     source_id = cur.lastrowid
@@ -147,9 +148,10 @@ class SourceRepository:
                     continue
                 for f in s["feeds"]:
                     cur = c.execute(
-                        """INSERT OR IGNORE INTO feeds (source_id, url, label, enabled, verified, created_at)
-                           VALUES (?, ?, ?, ?, ?, ?)""",
-                        (source_id, f["url"], f.get("label"), 1 if f["verified"] else 0, 1 if f["verified"] else 0, now),
+                        """INSERT OR IGNORE INTO feeds (source_id, url, label, enabled, verified, created_at, keep_only)
+                           VALUES (?, ?, ?, ?, ?, ?, ?)""",
+                        (source_id, f["url"], f.get("label"), 1 if f["verified"] else 0, 1 if f["verified"] else 0, now,
+                         f.get("keep_only")),
                     )
                     added += cur.rowcount
         if added:
@@ -280,7 +282,7 @@ class SourceRepository:
     def due_feeds(self, now_iso: str) -> list[DueFeed]:
         rows = self.db.conn.execute(
             """SELECT f.id, f.source_id, f.url, f.etag, f.last_modified, f.fetch_interval_min,
-                      f.consecutive_failures, s.language
+                      f.consecutive_failures, s.language, f.keep_only
                FROM feeds f JOIN sources s ON s.id = f.source_id
                WHERE f.enabled = 1 AND s.enabled = 1 AND (f.next_fetch_at IS NULL OR f.next_fetch_at <= ?)
                ORDER BY f.next_fetch_at IS NOT NULL, f.next_fetch_at""",

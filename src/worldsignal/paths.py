@@ -76,6 +76,11 @@ class DataPaths:
         return self.root / "backups"
 
     @property
+    def debug_pages(self) -> Path:
+        """Pages kept for diagnosis while the setting ``debug.save_pages`` is on (never in a backup or a release)."""
+        return self.root / "debug-pages"
+
+    @property
     def browser_profile(self) -> Path:
         """World Signal's own browser profile (subscription logins for full text)."""
         return self.root / "browser-profile"

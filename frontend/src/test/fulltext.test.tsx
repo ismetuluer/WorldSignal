@@ -235,6 +235,12 @@ describe("Full-text settings", () => {
     expect(await screen.findByText("Bu kaynaktan henüz haber toplanmadı.")).toBeInTheDocument();
   });
 
+  it("can keep the pages that are read, to diagnose a missing label", async () => {
+    wrap(<FullTextSettings />);
+    await userEvent.click(await screen.findByRole("switch", { name: "Tanılama: okunan sayfaları sakla" }));
+    expect(mocked.updateSettings).toHaveBeenCalledWith({ "debug.save_pages": true });
+  });
+
   it("turns on the browser for every enabled paid source", async () => {
     mocked.sources.mockResolvedValue([
       source(1, "NYT", { paywalled: true, fulltext_mode: "off" }),

@@ -212,6 +212,18 @@ export function FullTextSettings() {
           </div>
         </div>
 
+        <div className="settings-row">
+          <div className="settings-row-text">
+            <div className="settings-row-title">{t("settings.fulltext.debug")}</div>
+            <div className="settings-row-hint">{t("settings.fulltext.debugHint")}</div>
+          </div>
+          <Switch
+            checked={settings["debug.save_pages"]}
+            label={t("settings.fulltext.debug")}
+            onChange={(v) => void change({ "debug.save_pages": v })}
+          />
+        </div>
+
         {ft ? (
           <div className="settings-row">
             <div className="settings-row-text">

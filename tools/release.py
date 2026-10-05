@@ -27,7 +27,7 @@ RELEASES = ROOT / "release"
 KEEP = 2
 TOP = "WorldSignal"
 # Never shipped: a database, logs, backups, the browser profile, the instance file.
-FORBIDDEN = re.compile(r"(\.db|\.db-wal|\.db-shm|\.log|instance\.json|instance\.lock)$|/(browser-profile|backups|logs)/",
+FORBIDDEN = re.compile(r"(\.db|\.db-wal|\.db-shm|\.log|instance\.json|instance\.lock)$|/(browser-profile|backups|logs|debug-pages)/",
                        re.IGNORECASE)
 REQUIRED = {
     "program (WorldSignal.exe)": f"{TOP}/WorldSignal.exe",

@@ -32,6 +32,7 @@ vi.mock("../api/client", async (importOriginal) => {
 import { api, ApiError } from "../api/client";
 import { ToastProvider } from "../components/Toasts";
 import { I18nProvider } from "../i18n";
+import { BreakingPage } from "../pages/BreakingPage";
 import { FeedPage } from "../pages/FeedPage";
 import { parseKeywords } from "../pages/StorySettings";
 import { AppStateProvider } from "../state";
@@ -352,5 +353,17 @@ describe("Turkish and English", () => {
     expect(await screen.findByText("Story one")).toBeInTheDocument();
     expect(screen.getByText("Hikâye 2")).toBeInTheDocument(); // no English text: the Turkish one is shown
     expect(screen.getAllByRole("button", { name: "Show: Turkish" })).toHaveLength(1);
+  });
+});
+
+describe("Breaking news page", () => {
+  it("lists the labelled stories newest first and offers the shorter windows", async () => {
+    mocked.stories.mockResolvedValue({ items: [story(5, { breaking: true })], total: 1 });
+    mocked.meeting.mockResolvedValue({ day: "2026-10-05", today: "2026-10-05", items: [] });
+    wrap(<BreakingPage />);
+    expect(await screen.findByText("Hikâye 5")).toBeInTheDocument();
+    expect(mocked.stories).toHaveBeenCalledWith(expect.objectContaining({ breaking: true, hours: 12, sort: "recent" }));
+    await userEvent.click(screen.getByRole("button", { name: "3 saat" }));
+    await waitFor(() => expect(mocked.stories).toHaveBeenLastCalledWith(expect.objectContaining({ breaking: true, hours: 3 })));
   });
 });

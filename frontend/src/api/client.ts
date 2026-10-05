@@ -141,7 +141,7 @@ export const api = {
   retryAi: () => request<{ requeued: number }>("POST", "/ai/retry"),
 
   stories: (q: StoryQuery) =>
-    request<StoryPage>("GET", `/stories${query({ ...q, turkey: q.turkey ? "true" : undefined })}`),
+    request<StoryPage>("GET", `/stories${query({ ...q, turkey: q.turkey ? "true" : undefined, breaking: q.breaking ? "true" : undefined })}`),
   story: (id: number) => request<Story>("GET", `/stories/${id}`),
   detachArticle: (articleId: number) =>
     request<{ story_id: number; previous_story_id: number | null }>("POST", `/articles/${articleId}/detach`),

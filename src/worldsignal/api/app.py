@@ -267,6 +267,7 @@ class SettingsPatch(BaseModel):
     fulltext_translate: bool | None = Field(None, alias="fulltext.translate")
     fulltext_browser_path: str | None = Field(None, alias="fulltext.browser_path", max_length=400)
     extension_profile: Literal["daily", "own"] | None = Field(None, alias="extension.profile")
+    debug_save_pages: bool | None = Field(None, alias="debug.save_pages")
     fulltext_launch_browser: bool | None = Field(None, alias="fulltext.launch_browser")
     fulltext_per_site_hour: int | None = Field(None, alias="fulltext.per_site_hour", ge=1, le=20)
     fulltext_browser_gap_min: int | None = Field(None, alias="fulltext.browser_gap_min", ge=5, le=240)
@@ -281,6 +282,8 @@ class SettingsPatch(BaseModel):
     notify_enabled: bool | None = Field(None, alias="notify.enabled")
     notify_min_score: float | None = Field(None, alias="notify.min_score", ge=0, le=100)
     notify_min_sources: int | None = Field(None, alias="notify.min_sources", ge=2, le=30)
+    notify_breaking: bool | None = Field(None, alias="notify.breaking")
+    notify_breaking_min_sources: int | None = Field(None, alias="notify.breaking_min_sources", ge=1, le=10)
     work_limited: bool | None = Field(None, alias="work.limited")
     work_start: int | None = Field(None, alias="work.start", ge=0, le=23)
     work_end: int | None = Field(None, alias="work.end", ge=0, le=23)
@@ -464,6 +467,7 @@ def create_app(ctx: AppContext) -> FastAPI:
             "maintenance": ctx.maintenance.status(),
             "notify": ctx.notifier.status(),
             "articles": ctx.articles.counts(since),
+            "breaking": ctx.stories.breaking_count(utc_now_iso(datetime.now(UTC) - timedelta(hours=3))),
             "extension": None if ctx.bridge is None else {
                 **ctx.bridge.status(), "active": bool(ctx.settings.get_preferences()["fulltext.enabled"]),
             },
@@ -665,6 +669,7 @@ def create_app(ctx: AppContext) -> FastAPI:
         category: Annotated[list[str] | None, Query()] = None,
         turkey: bool = False,
         min_sources: Annotated[int, Query(ge=1, le=50)] = 1,
+        breaking: bool = False,
         q: Annotated[str | None, Query(max_length=200)] = None,
         qx: Annotated[list[str] | None, Query(max_length=MAX_ALTERNATIVES, description="translations of q")] = None,
         sort: Literal["score", "recent"] = "score",
@@ -674,7 +679,7 @@ def create_app(ctx: AppContext) -> FastAPI:
         since = utc_now_iso(datetime.now(UTC) - timedelta(hours=hours)) if hours else None
         items, total = ctx.stories.list(StoryFilter(
             since=since, source_ids=source or (), regions=region or (), groups=group or (), languages=lang or (),
-            categories=category or (), turkey_only=turkey, min_sources=min_sources, query=(q or "").strip() or None,
+            categories=category or (), turkey_only=turkey, breaking=breaking, min_sources=min_sources, query=(q or "").strip() or None,
             alternatives=search_alternatives(qx), sort=sort, limit=limit, offset=offset,
         ))
         return {"items": items, "total": total}

@@ -15,6 +15,7 @@ import logging
 import random
 from collections.abc import Callable
 from datetime import UTC, datetime, timedelta, tzinfo
+from pathlib import Path
 from typing import Any
 from urllib.parse import urlsplit
 
@@ -64,7 +65,9 @@ class FullTextWorker:
         local_zone: tzinfo | None = None,
         resting: Callable[[], bool] = lambda: False,
         leased: Callable[[], int | None] = lambda: None,
+        debug_dir: Path | None = None,
     ) -> None:
+        self.debug_dir = debug_dir
         self.resting = resting  # outside the working hours only the user's own requests are read (worktime.py)
         self.leased = leased  # the article the browser extension is reading (ExtensionBridge.leased_article)
         self.on_translation_queued: Callable[[], None] = lambda: None  # wakes the AI worker (set by the API)
@@ -154,7 +157,7 @@ class FullTextWorker:
             log.warning("Full text of article %s (%s) failed: %s -> %s", job.article_id, job.source_name, exc.code, status)
             return random.uniform(*PACE)
         outcome = await asyncio.to_thread(record_page, self.repo, job, page, prefs, self.clock(),
-                                          self.on_translation_queued)
+                                          self.on_translation_queued, None, self.debug_dir)
         if outcome.ok:
             self._state.update(state="ok", last_error=None, last_done_at=utc_now_iso(self.clock()), current_article_id=None)
             log.info("Full text of article %s (%s, %s)", job.article_id, job.source_name, job.mode)

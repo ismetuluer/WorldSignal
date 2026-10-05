@@ -282,6 +282,77 @@ def test_a_failing_display_does_not_break_the_check(db, sources, articles, notif
     assert notifier.check() is not None
 
 
+
+def make_breaking(db, sources, articles, label: str, owners: list[str], minutes_ago: int = 10, marker: bool = True):
+    """One story whose reports come from the given sources (slugs); the first carries the publisher's label."""
+    specs = [(slug, f"{label}-{i}", (f"SON DAKİKA | {label}" if marker and i == 0 else label), minutes_ago - i)
+             for i, slug in enumerate(owners)]
+    ids = seed_articles(db, sources, articles, specs)
+    stories = StoryRepository(db)
+    sid = stories.assign(ids[f"{label}-0"], None, similarity=1.0)
+    for i in range(1, len(owners)):
+        stories.assign(ids[f"{label}-{i}"], sid, similarity=0.9)
+    with db.transaction() as c:
+        c.execute("UPDATE stories SET last_seen_at = ? WHERE id = ?",
+                  ((NOW - timedelta(minutes=minutes_ago - len(owners) + 1)).strftime("%Y-%m-%dT%H:%M:%SZ"), sid))
+    return sid
+
+
+def test_breaking_news_is_announced_at_once_with_the_label_removed(db, sources, articles, notifier):
+    spain = make_breaking(db, sources, articles, "İspanya'da erken seçim kararı", ["alpha", "beta", "gamma-live"])
+    make_breaking(db, sources, articles, "Tek kaynak", ["alpha"])  # labelled, but only one source: not an alert
+    make_breaking(db, sources, articles, "Etiketsiz", ["alpha", "beta", "gamma-live"], marker=False)  # no label
+    alert = notifier.check()
+    assert (alert.title, alert.body, alert.story_id) == ("Son dakika", "İspanya'da erken seçim kararı", spain)
+    assert notifier.shown == [("Son dakika", "İspanya'da erken seçim kararı", spain)]
+    notifier._last_shown = notifier._last_breaking = None
+    assert notifier.check() is None  # once only, and not again as "spreading fast"
+
+
+def test_breaking_news_does_not_wait_for_the_ten_minute_gap_but_for_two(db, sources, articles, notifier):
+    make_story(db, sources, articles, "big", 75, 6)
+    assert notifier.check() is not None  # a normal alert has just been shown ...
+    make_breaking(db, sources, articles, "Yeni gelişme", ["alpha", "beta", "gamma-live"])
+    assert notifier.check().title == "Son dakika"  # ... breaking news comes through
+    make_breaking(db, sources, articles, "Bir daha", ["alpha", "beta", "gamma-live"])
+    assert notifier.check() is None  # but not twice within two minutes
+    notifier._last_breaking = NOW - timedelta(minutes=3)
+    assert notifier.check().body == "Bir daha"
+
+
+def test_breaking_alerts_can_be_switched_off_or_made_stricter(db, sources, articles, notifier, settings):
+    make_breaking(db, sources, articles, "Deprem", ["alpha", "beta"])
+    settings.set("notify.breaking_min_sources", 3)
+    assert notifier.check() is None  # two sources are not enough now
+    settings.set("notify.breaking_min_sources", 2)
+    settings.set("notify.breaking", False)
+    assert notifier.check() is None
+    settings.set("notify.breaking", True)
+    assert notifier.check().body == "Deprem"
+
+
+def test_several_breaking_stories_become_one_notification(db, sources, articles, notifier, settings):
+    a = make_breaking(db, sources, articles, "Birinci", ["alpha", "beta", "gamma-live"], minutes_ago=5)
+    make_breaking(db, sources, articles, "İkinci", ["alpha", "beta", "gamma-live"], minutes_ago=20)
+    alert = notifier.check()
+    assert alert.title == "Son dakika · 2 haber" and alert.story_id == a and alert.body.endswith("ve 1 haber daha")
+
+
+def test_the_breaking_filter_lists_labelled_stories_newest_first(db, sources, articles):
+    old = make_breaking(db, sources, articles, "Eski", ["alpha", "beta"], minutes_ago=300)
+    new = make_breaking(db, sources, articles, "Yeni", ["alpha", "beta"], minutes_ago=10)
+    make_breaking(db, sources, articles, "Etiketsiz", ["alpha", "beta"], marker=False)
+    from worldsignal.repo.stories import StoryFilter
+
+    with db.transaction() as c:  # the lists only show stories that have been counted (recompute does that in the app)
+        c.execute("UPDATE stories SET article_count = 2, source_count = 2")
+    day = (NOW - timedelta(hours=24)).strftime("%Y-%m-%dT%H:%M:%SZ")
+    items, total = StoryRepository(db).list(StoryFilter(breaking=True, since=day, sort="recent"))
+    assert [i["id"] for i in items] == [new, old] and total == 2
+    since = (NOW - timedelta(hours=2)).strftime("%Y-%m-%dT%H:%M:%SZ")
+    assert [i["id"] for i in StoryRepository(db).list(StoryFilter(breaking=True, since=since))[0]] == [new]
+
+
 # -- API ----------------------------------------------------------------------------------------------
 def client_for(c):  # noqa: F811
     return TestClient(create_app(c), headers={"X-WorldSignal-Token": TOKEN})
@@ -315,6 +386,10 @@ def test_backup_and_notification_api(ctx):  # noqa: F811
         assert (prefs["notify.min_sources"], prefs["app.close_to_tray"], prefs["backup.keep_daily"]) == (3, False, 7)
         assert c.patch("/api/settings", json={"notify.quiet_start": 24}).status_code == 422
         assert c.patch("/api/settings", json={"notify.min_sources": 1}).status_code == 422
+        ok = c.patch("/api/settings", json={"notify.breaking": False, "notify.breaking_min_sources": 2}).json()
+        assert ok["notify.breaking"] is False and ok["notify.breaking_min_sources"] == 2
+        assert c.patch("/api/settings", json={"notify.breaking_min_sources": 0}).status_code == 422
+        assert c.get("/api/stories?breaking=true&sort=recent").json()["total"] == 0
 
 
 def test_restore_waits_for_a_file_still_held_by_the_old_process(data_paths, monkeypatch):

@@ -29,6 +29,7 @@ from urllib.parse import urlsplit
 import httpx
 
 from ..db import Database, utc_now_iso
+from ..flags import is_exclusive, is_reuters_exclusive
 from ..repo.articles import ArticleRepository
 from ..repo.sources import DueFeed, SourceRepository
 from .rss import FetchError, FetchResult, fetch_feed, make_client
@@ -194,10 +195,17 @@ class Collector:
                 new = 0
                 item_count = None
                 if o.result.feed is not None:
-                    item_count = len(o.result.feed.entries)
+                    entries = o.result.feed.entries
+                    item_count = len(entries)
+                    if feed.keep_only == "reuters_exclusive":
+                        # A news search that also returns other things: keep Reuters' own exclusive headlines.
+                        entries = [e for e in entries if is_reuters_exclusive(e.title)]
+                    elif feed.keep_only == "exclusive":
+                        # The source's own search for "Exclusive": keep what the publisher itself labelled so.
+                        entries = [e for e in entries if is_exclusive(e.title, e.summary)]
                     new = self.articles.insert_entries(
                         c, source_id=feed.source_id, feed_id=feed.id, language=feed.language,
-                        entries=o.result.feed.entries, now=now,
+                        entries=entries, now=now,
                     )
                 self.sources.record_success(
                     c, feed.id, now=now_iso, next_at=next_at, etag=o.result.etag,

@@ -161,7 +161,7 @@ class ArticleRepository:
         sql = f"""
             SELECT a.id, a.url, a.title, a.summary, a.author, a.published_at, a.first_seen_at, a.sort_at,
                    COALESCE(a.language, s.language) AS language,
-                   s.id AS source_id, s.name AS source_name, s.region, s.catalog_group, s.paywalled,
+                   s.id AS source_id, s.name AS source_name, s.region, s.catalog_group, s.paywalled, a.page_exclusive,
                    x.status AS ai_status, x.texts AS ai_texts, x.brief AS ai_brief, x.category, x.countries,
                    a.home_relevance AS turkey_relevance, a.home_links AS turkey_links, x.issues AS ai_issues, x.model AS ai_model, x.error_code AS ai_error,
                    ft.status AS fulltext_status, ft.error_code AS fulltext_error, ft.chars AS fulltext_chars,
@@ -178,7 +178,7 @@ class ArticleRepository:
         now = datetime.now(UTC)
         for item in items:
             item["paywalled"] = bool(item["paywalled"])
-            item["exclusive"] = is_exclusive(item["title"])
+            item["exclusive"] = bool(item.pop("page_exclusive")) or is_exclusive(item["title"], item["summary"])
             at = datetime.fromisoformat(item["sort_at"].replace("Z", "+00:00"))
             item["breaking"] = has_breaking_marker(item["title"]) and now - at <= MARKER_WINDOW
             for key in ("ai_issues", "countries", "turkey_links"):
