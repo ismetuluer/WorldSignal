@@ -72,14 +72,15 @@ durur; çıktıda da öyle.
 |---|---|
 | **Haber toplama** | 140'a yakın kaynak hazır gelir (Batı basını, ajanslar, Orta Doğu, Rusya/Ukrayna, Asya, Avrupa, Türk basını, spor). Her kaynağın akışı çalışıp çalışmadığı denenerek kataloğa girer. Kendi RSS adreslerinizi de ekleyebilirsiniz. |
 | **Hikâyeler** | Aynı olayı anlatan haberler, farklı dillerde olsalar da tek kartta birleşir. Yanlış birleşeni ayırabilir, ayrı kalanları birleştirebilirsiniz. |
-| **Önem sırası** | Bağımsız kaynak sayısı, tazelik, **ülkenizle bağlantısı** ve sizin ilgi alanlarınıza göre. Her kartta skorun **neden** yüksek olduğu yazar; yayıncının "Özel" dediği haberler ve hızla yayılan **Son dakika** hikâyeleri rozetle işaretlenir. |
+| **Önem sırası** | Bağımsız kaynak sayısı, tazelik, **ülkenizle bağlantısı** ve sizin ilgi alanlarınıza göre. Her kartta skorun **neden** yüksek olduğu yazar; yayıncının "Özel" dediği haberler ve **Son dakika** hikâyeleri rozetle işaretlenir. |
+| **Son dakika ve özel haber** | Bir yayıncı haberi "Son dakika" / "BREAKING" diye etiketlediyse ve son bir saatte en az 3 bağımsız kaynak aynı olayı yazdıysa Windows bildirimi hemen gelir; kenar çubuğunda ayrı bir **Son dakika** sayfası vardır. "Özel" rozeti **yalnızca yayıncının kendi etiketine** dayanır (başlık, özetin başı, makale sayfasındaki etiket); üslup tahmini yapılmaz. Etiketi RSS'ine koymayan kaynaklar için Bing Haberler aramaları ve (eklentiyle okunan haberlerde) makale sayfası kullanılır. |
 | **Özet** | Seçtiğiniz 1–4 dilde (Türkçe, İngilizce, Portekizce, Arapça…) başlık, 3–5 cümlelik özet, kategori, "neden önemli". Bilgisayarınızdaki Ollama ya da kendi anahtarınızla bir bulut hizmeti yazar. Yalnızca kaynak metne dayanır; orijinal başlık ve bağlantı her zaman bir tık uzakta. |
-| **Toplantı ve notlar** | Tek tuşla toplantı listesine ekleme, sürükleyerek sıralama, hikâyeye not, günlere göre not defteri. |
+| **Toplantı ve notlar** | Hikâyeyi ya da tek bir haberi tek tuşla toplantı listesine ekleme, sürükleyerek sıralama, her öneriye (çok satırlı) not, hikâyeye not, günlere göre not defteri. |
 | **Çıktılar** | Toplantı listesi, haber detayı, sabah bülteni ve notlar: biçimli kopyala (Word/Outlook), düz metin (WhatsApp), yazdır/PDF, **e-postayla gönder**. |
 | **Geçmiş** | Takvimden bir gün seçip o sabahki sıralamayı görme, tüm günlerde arama, bir hikâyenin gün gün gelişimi. |
 | **İstatistik** | Bir konunun saat saat / gün gün izi ve gündemdeki payı, kategori ve bölgelere göre dağılım, yükselen hikâyeler, kaynak ve ülke sayıları. |
 | **Tam metin** | Açık siteler ve **sizin aboneliğiniz olan** siteler için makalenin tamamını program içinde okuma ve çevirme; abonelik siteleri isterseniz kendi tarayıcınızdaki bir [eklentiyle](#abonelik-siteleri-tarayıcı-eklentisi) okunur. |
-| **Arka planda** | Pencere kapansa da sistem tepsisinde taramaya devam eder; önemli bir hikâye hızla yayılırsa Windows bildirimi. |
+| **Arka planda** | Pencere kapansa da sistem tepsisinde taramaya devam eder; önemli bir hikâye hızla yayılırsa ya da son dakika haberi gelirse Windows bildirimi. İsterseniz program çökünce kendiliğinden yeniden açılır (**çökme koruması**, varsayılan kapalı). |
 
 ## Kurulum
 
@@ -217,7 +218,7 @@ bir sayı varsa "Dikkat" uyarısı gösterilir.
 - **Akış** — *Hikâyeler* görünümü aynı olayın haberlerini tek kartta, önem sırasıyla gösterir; kartın altındaki
   etiketler nedenini söyler ("5 kaynak", "3 saatte 4 kaynak", "Türkiye bağlantısı"). *Haberler* görünümü tek tek en
   yeni haberlerdir. Üstte arama, zaman aralığı ve filtreler var (bölge, kaynak grubu, dil, kategori, kaynak,
-  "Türkiye bağlantılı"). Bölge filtresinde **Yerel dışı**, Türkiye dışındaki tüm kaynaklardır. **Seçtiğiniz filtreler hatırlanır.** Kaynak grubu filtresinde iki özel seçenek daha var:
+  "Türkiye bağlantılı"). Bölge filtresinde **Yerel dışı**, Türkiye dışındaki tüm kaynaklardır. **Seçtiğiniz filtreler hatırlanır.** Kartlarda özet birkaç satırdır; özete basınca tamamı açılır. Kaynak grubu filtresinde iki özel seçenek daha var:
   **Özel haberler** (yayıncının "Özel haber" / "Exclusive" diye işaretledikleri) ve **Makaleler** (görüş, analiz,
   köşe yazısı); ikisi de her kaynaktan toplanır.
 - **Ülkem** — "(Ülkeniz) bağlantılı" filtresi ve etiketleri Ayarlar → **Ülkem**'de seçtiğiniz ülkeye göre çalışır
@@ -237,8 +238,12 @@ bir sayı varsa "Dikkat" uyarısı gösterilir.
   **İlk veren** olayı ilk yayımlayan kaynağı gösterir; kaynaklar bir olguda birbirini yalanlıyorsa yapay zekâ
   **Kaynaklar çelişiyor** notuyla farkı yazar (yalnızca yeni yazılan özetlerde).
   Yanlış gruplanmış haberi **Bu hikâyeden ayır**, aynı olayı anlatan iki hikâyeyi **Başka hikâyeyle birleştir**.
-- **Toplantı** — bugünün öneri listesi. Hikâyeyi **Toplantıya ekle** (ya da `T`), sürükleyerek sırala, her öneriye kısa
-  gerekçe yaz.
+- **Son dakika** — kenar çubuğundaki sayfa, yayıncının "Son dakika" diye etiketlediği hikâyeleri en yeniden eskiye
+  gösterir (3 / 12 / 24 saat). Bildirim için etiket ve son bir saatte en az 3 bağımsız kaynak (2–5 arası ayarlanır)
+  gerekir; Ayarlar → Sistem → Windows bildirimleri'nden kapatılır.
+- **Toplantı** — bugünün öneri listesi. Hikâyeyi ya da Haberler görünümünde tek bir haberi **Toplantıya ekle** (ya da
+  `T`), sürükleyerek sırala, her öneriye not yaz. Not kutusu yazdıkça büyür (3000 karaktere kadar; Enter yeni satır,
+  Ctrl+Enter kayıt ve çıkış, kayıt zaten otomatik); özet de basınca tamamı açılır.
 - **Not Defteri** — takvimden bir gün seçin: o günün serbest notu, toplantı listesi ve hikâye notları.
 - **Çıktılar** — her çıktı penceresinde:
   - **Biçimli kopyala**: Word ve Outlook'a düzgün yapışır;
@@ -266,9 +271,12 @@ bir sayı varsa "Dikkat" uyarısı gösterilir.
   kaynak sayılır), **Kaynak ekle** ile kendi RSS adresinizi deneyip ekleyin. RSS adresini bilmiyorsanız sitenin
   adresini yazın: program sitenin RSS bağlantılarını ve izin verilen haber site haritalarını önerir. Çalışmayan
   akışlar kırmızıyla ve nedeniyle görünür.
-- **Ayarlar** — tema (sistem / açık / koyu), arayüz dili, yapay zekâ, hikâye ve skor ayarları, ilgi profiliniz
+- **Ayarlar** — iki sütunlu: solda altı kategori, üstte **Ayar ara**. Tema (sistem / açık / koyu), yazı tipi ve boyutu,
+  klavye kısayolları, arayüz dili, yapay zekâ, hikâye ve skor ayarları, ilgi profiliniz
   (anahtar kelime, kategori, bölge), ülkem, tam metin, saklama süresi, bildirimler ve sessiz saatler, yedekler,
-  güncellemeler.
+  güncellemeler, **çökme koruması**.
+  Hikâye eşiğini değiştirdiyseniz Ayarlar → Haber toplama'daki **Son 3 günün hikâyelerini bu eşiğe göre düzenle**
+  eski hikâyeleri yeni eşiğe göre ayırır (önce Denetle, sonra Uygula).
 
 **Klavye kısayolları:** `J` / `K` sonraki / önceki, `Enter` ya da `O` aç, `T` toplantıya ekle, `/` arama.
 
@@ -310,7 +318,8 @@ başlatmanızı söylerse söylediğini yapın). Bilmeniz gerekenler:
   eklentiler sayfasında bir kez **Yenile**'ye basın.
 - **Ayrı profil (önerilen):** eklentiyi günlük tarayıcınıza değil, World Signal'e özel bir tarayıcı profiline yükleyebilirsiniz
   (Ayarlar → Tam metin → **Eklenti hangi tarayıcı profilinde çalışsın?** → *Ayrı profil*). Eklenti ve abonelik girişleri o
-  profilde durur, program onu pencere açmadan başlatır; günlük tarayıcınızın sekmelerine, oturumuna ve odağına dokunulmaz.
+  profilde durur, program onu pencere açmadan başlatır; günlük tarayıcınızın sekmelerine, oturumuna ve odağına dokunulmaz. **Eklentiyi günlük profilinize de yüklediyseniz
+  kaldırın:** ikisi de programa bağlanır ve işi hangisi önce alırsa sayfayı o açar.
   Bu bir otomasyon değildir: normal bir tarayıcı profilidir, hiçbir robot sürücüsü bağlanmaz. (0.16.0'dan önce bulunan ve
   programın kendi sürücüsüyle çalışan "Programın tarayıcısı" yolu kaldırıldı.)
 
@@ -339,16 +348,15 @@ World Signal kimsenin içeriğini yeniden yayımlamaz; yalnızca **sizin** ekran
 - RSS'i olmayan bazı siteler, arama motorları için yayımladıkları **haber site haritasından** okunur; bu yalnızca
   sitenin robots.txt dosyası otomatik okuyuculara izin veriyorsa yapılır.
 - **Ücretli siteler:** Bir makalenin tamamını ancak **sizin** o sitede aboneliğiniz varsa okuyabilirsiniz. Bunun için
-  **Kaynaklar → Abonelik siteleri**'nden siteyi açıp kendi hesabınızla bir kez giriş yaparsınız. Okuyucu **Eklenti**
-  ise ([tarayıcı eklentisi](#abonelik-siteleri-tarayıcı-eklentisi)) oturum kendi tarayıcınızda durur; **Programın
-  tarayıcısı** ise yalnızca bu bilgisayarda, World Signal'e ait ayrı bir tarayıcı profilinde saklanır. Aboneliğiniz yoksa
-  o sitenin yalnızca başlığını, kısa özetini ve bağlantısını görürsünüz.
+  siteye [tarayıcı eklentisinin](#abonelik-siteleri-tarayıcı-eklentisi) çalıştığı tarayıcıda (günlük ya da World Signal'e
+  özel ayrı profil) bir kez kendi hesabınızla giriş yaparsınız; oturum yalnızca bu bilgisayarda, o tarayıcıda durur.
+  Aboneliğiniz yoksa o sitenin yalnızca başlığını, kısa özetini ve bağlantısını görürsünüz.
 - Program abonelik duvarlarını aşmaz, robot doğrulamalarını (CAPTCHA) çözmez, arşiv/paywall atlatma sitelerini
-  kullanmaz. Sayfaları insan temposunda açar: aynı anda tek sayfa, site başına saatte birkaç sayfa. Abonelik
-  sitelerinde (tarayıcıyla okunanlar) daha da yavaş: aynı siteden iki sayfa arasında en az 20 dakika (sizin
-  istediğiniz sayfalarda 3 dakika), site başına günde en çok 15 sayfa, gece 00:00–07:00 arası kendiliğinden sayfa
-  açılmaz, her sayfa açıldıktan sonra 20–60 saniye okunup aşağı kaydırılır. Bunlar Ayarlar → Tam metin'den
-  değiştirilebilir.
+  kullanmaz. Sayfaları insan temposunda açar: bütün siteler için **aynı anda tek sayfa** (siteler paralel gezilmez). Abonelik
+  sitelerinde (eklentiyle okunanlar) ayrıca site başına saatte en çok 4 sayfa (ayarlanabilir), aynı siteden iki sayfa
+  arasında en az 20 dakika (sizin istediğiniz sayfalarda 3 dakika), günde en çok 15 sayfa, gece 00:00–07:00 arası
+  kendiliğinden sayfa açılmaz. Eklenti her sayfada 3–8 saniye bakar, sonra düzensiz aralıklarla 4–10 adımda aşağı
+  kaydırır. Bunlar Ayarlar → Tam metin'den değiştirilebilir (varsayılanlar düşüktür; gevşetmek sizin riskinizdir).
 - **Tam metinler hiçbir çıktıya konmaz.** Kopyalama, yazdırma, PDF ve e-posta yalnızca özetleri, kaynak adlarını ve
   bağlantıları içerir.
 - Bir [bulut yapay zekâ](#bulut-yapay-zekâ) hizmeti seçerseniz, özetlenmek üzere o hizmete gönderilen metinlerin
@@ -387,6 +395,8 @@ aynı klasörde, Windows'un kullanıcı hesabınıza bağlı şifrelemesiyle (`s
 | Bir kaynak kırmızı görünüyor | Kaynaklar ekranında nedeni yazar (site kapalı, adres değişmiş, otomatik okuyuculara kapalı…). |
 | Tam metin "abonelik duvarı" diyor | O siteye giriş yapın (eklenti kullanıyorsanız kendi tarayıcınızda, değilse Kaynaklar → Abonelik siteleri'nden); aboneliğiniz yoksa tam metin alınamaz. |
 | "Eklenti bağlı değil" | Tarayıcı kapalı, eklenti yüklenmemiş ya da duraklatılmış olabilir; eklentinin simgesi durumu söyler. Eşleşme kodunu Ayarlar → Tam metin → Eklenti'den yeniden yapıştırın. Program yeniden başladıysa ve Ayarlar söylüyorsa programı bir kez yeniden başlatın. |
+| Program geceleri kendiliğinden kapanıyor | Windows olay günlüğünde (Uygulama) `WorldSignal.exe` için `c0000005` kaydı varsa program çökmüştür. Ayarlar → Sistem → **Çökerse kendiliğinden yeniden aç**'ı açın: program çökünce birkaç saniye sonra yeniden açılır (10 dakikada 3'ten fazla çökerse vazgeçer). Günlük: `%LOCALAPPDATA%\WorldSignal\logs\watchdog.log`. |
+| Sayfalar günlük tarayıcımda açılıyor | Eklenti günlük tarayıcınızda da yüklü. Orada `brave://extensions` / `chrome://extensions` sayfasından kaldırın; ayrı profildeki kalsın. |
 | "Güncelleme yapılamadı" | Program klasöründe bir dosya açıktı; bir sonraki denemede yeniden yapılır. Olmazsa yeni zip'i indirip ayıklayın. |
 | Bir şey ters gitti | Ayarlar → **Yedekler**'den önceki bir günün yedeğini geri yükleyin; program yeniden başlar. |
 

@@ -70,14 +70,15 @@ too.
 |---|---|
 | **News gathering** | About 140 sources come ready: Western press, agencies, Middle East, Russia/Ukraine, Asia, Europe, Turkish press and sports. Every feed enters the catalogue only after it was tested and worked. You can add your own RSS addresses. |
 | **Stories** | Reports of the same event are merged into one card, even across languages. You can split off a wrongly merged report or merge two stories. |
-| **Importance** | The ranking weighs independent sources, freshness, **links to your country** and your own interests. Every card says **why** its score is high. Reports the publisher marks as "Exclusive" get a badge, and so do fast-spreading **Breaking** stories. |
+| **Importance** | The ranking weighs independent sources, freshness, **links to your country** and your own interests. Every card says **why** its score is high. Reports the publisher marks as "Exclusive" get a badge, and so do **Breaking** stories. |
+| **Breaking and exclusive** | If a publisher labels a report "Breaking" and at least 3 independent sources covered the event within the last hour, a Windows notification comes at once; the sidebar has a **Breaking** page of its own. The "Exclusive" badge rests **only on the publisher's own label** (headline, start of the summary, the label on the article page); no guessing from style. For sources that keep the label out of their RSS, Bing News searches and (for reports read by the extension) the article page are used. |
 | **Summaries** | In 1–4 languages you choose, the AI writes a headline, a 3–5 sentence summary, a category and a "why it matters" line. It can run in Ollama on your computer or in a cloud service with your own key. Summaries rely only on the source text, and the original headline and link are always one click away. |
-| **Meeting and notes** | Add a story to the meeting list with one key, reorder it by dragging, add notes to stories and keep a notebook by day. |
+| **Meeting and notes** | Add a story, or a single report, to the meeting list with one key, reorder it by dragging, write a (multi-line) note on each proposal, add notes to stories and keep a notebook by day. |
 | **Outputs** | Meeting list, story detail, morning briefing and notes. Copy formatted (Word/Outlook), copy plain text (WhatsApp), print/PDF or **send by e-mail**. |
 | **History** | Pick a day in the calendar to see that morning's ranking, search all days, and follow a story day by day. |
 | **Statistics** | A topic hour by hour or day by day and its share of the news, the spread over categories and regions, rising stories, and counts per source and country. |
 | **Full text** | Read and translate whole articles inside the app, from open sites and from sites **you subscribe to**; subscription sites can be read by [an extension](#subscription-sites-the-browser-extension) in your own browser. |
-| **In the background** | The app keeps scanning from the system tray after the window closes. If an important story spreads fast, it sends a Windows notification. |
+| **In the background** | The app keeps scanning from the system tray after the window closes. If an important story spreads fast, or breaking news arrives, it sends a Windows notification. If you wish, the program reopens by itself after a crash (**crash protection**, off by default). |
 
 ## Installation
 
@@ -217,7 +218,7 @@ checked against the source. If a number does not appear in the source, a "Check"
 - **Feed.** The *Stories* view shows reports of the same event on one card, in order of importance. The labels under
   each card say why ("5 sources", "4 sources in 3 hours", "Related to Brazil"). The *Articles* view lists single
   reports, newest first. At the top are search, a time range and filters: region, source group, language, category,
-  source and "Related to (your country)". **Outside my region** in the region filter means every source outside Türkiye. **Your filters are remembered.** The source-group filter has two more
+  source and "Related to (your country)". **Outside my region** in the region filter means every source outside Türkiye. **Your filters are remembered.** A card's summary is a few lines; press it to see all of it. The source-group filter has two more
   choices: **Exclusives** (reports the publisher marks "Exclusive") and **Articles** (opinion, analysis, columns),
   both gathered from every source.
 - **My country.** The "Related to (your country)" filter and labels follow the country chosen under Settings → **My
@@ -242,8 +243,13 @@ checked against the source. If a number does not appear in the source, a "Check"
   the AI writes the difference as an **Outlets disagree** note (in newly written summaries only).
   Use **Remove from this story** for a wrongly grouped report and **Merge with another story** for two stories about
   the same event.
-- **Meeting.** Today's list of proposals. Use **Add to meeting** (or `T`) on a story, reorder by dragging, and write a
-  short reason for each proposal.
+- **Breaking.** The page in the sidebar lists the stories a publisher labelled "Breaking", newest first (3 / 12 / 24
+  hours). A notification needs the label and at least 3 independent sources within the last hour (adjustable, 2–5);
+  switch it off under Settings → System → Windows notifications.
+- **Meeting.** Today's list of proposals. Use **Add to meeting** (or `T`) on a story, or on a single report in the
+  Articles view, reorder by dragging, and write a note for each proposal. The note box grows as you type (up to 3000
+  characters; Enter starts a new line, Ctrl+Enter saves and leaves, saving is automatic); the summary opens in full
+  when pressed.
 - **Notebook.** Pick a day in the calendar to see that day's free note, meeting list and story notes.
 - **Outputs.** Every output window offers:
   - **Copy formatted**: pastes cleanly into Word and Outlook;
@@ -273,9 +279,11 @@ checked against the source. If a number does not appear in the source, a "Check"
   count as one. Use **Add source** to test and add your own RSS address. If you do not know the RSS address, type the
   site's address: the app suggests the site's RSS links and the news sitemaps it is allowed to read. Broken feeds are
   shown in red with the reason.
-- **Settings.** Theme (system / light / dark), interface language, AI, story and score settings, your interest
+- **Settings.** Two columns: six categories on the left and **Search settings** at the top. Theme (system / light / dark),
+  font and size, keyboard shortcuts, interface language, AI, story and score settings, your interest
   profile (keywords, categories, regions), my country, full text, retention, notifications and quiet hours, backups
-  and updates.
+  updates and **crash protection**. After changing the story threshold, Settings → Collecting → **Rearrange the last 3
+  days' stories to this threshold** splits old stories by the new threshold (Check first, then Apply).
 
 **Keyboard shortcuts:** `J` / `K` next / previous, `Enter` or `O` open, `T` add to meeting, `/` search.
 
@@ -320,7 +328,8 @@ restart the program once, do so). What you need to know:
 - **Own profile (recommended):** you can put the extension not in your everyday browser but in a browser profile of
   World Signal's own (Settings → Full text → **Which browser profile does the extension run in?** → *Own profile*). The
   extension and your subscription sign-ins live in that profile and the program starts it without a window; your everyday
-  browser's tabs, session and focus are left alone. This is not automation: it is an ordinary browser profile, no robot
+  browser's tabs, session and focus are left alone. **If you also loaded the extension into your everyday profile, remove
+  it there:** both connect to the program, and whichever takes the job first opens the page. This is not automation: it is an ordinary browser profile, no robot
   driver is attached. (The "program's browser" way, driven by the program's own driver, existed before 0.16.0 and was removed.)
 
 ## Copyright and subscriptions
@@ -347,16 +356,17 @@ World Signal republishes nobody's content; it shows it only on **your** screen.
   closed to automated readers, so these agencies are followed section by section through Bing search.
 - Some sites without RSS are read from the **news sitemap** they publish for search engines. This is done only if the
   site's robots.txt allows automated readers.
-- **Paid sites:** you can read a whole article only if **you** subscribe to that site. Open the site from
-  **Sources → Subscription sites** and sign in once with your own account. With the browser extension (see
-  [the browser extension](#subscription-sites-the-browser-extension)) the session stays in your own browser or in the
-  separate browser profile that belongs to World Signal; it is kept only on this computer. Without a subscription you see only the headline, the short summary and the link.
+- **Paid sites:** you can read a whole article only if **you** subscribe to that site. Sign in once with your own
+  account in the browser where the [browser extension](#subscription-sites-the-browser-extension) runs (your everyday
+  one or the separate profile that belongs to World Signal); the session stays only on this computer, in that browser.
+  Without a subscription you see only the headline, the short summary and the link.
 - The app does not get around paywalls, does not solve robot checks (CAPTCHAs), and does not use archive or
-  paywall-bypass sites. It opens pages at a human pace: one page at a time, a few pages per site per hour.
-  Subscription sites (read in the browser) go slower still: at least 20 minutes between two pages of one site
-  (3 minutes for pages you ask for), at most 15 pages per site per day, no pages opened by themselves between 00:00
-  and 07:00, and each page is read and scrolled for 20-60 seconds after it opens. These can be changed under
-  Settings → Full text.
+  paywall-bypass sites. It opens pages at a human pace: **one page at a time across all sites** (sites are not visited in parallel).
+  Subscription sites (read by the extension) also get at most 4 pages per site per hour (adjustable), at least 20
+  minutes between two pages of one site (3 minutes for pages you ask for), at most 15 pages per site per day, and no
+  pages opened by themselves between 00:00 and 07:00. On each page the extension looks for 3–8 seconds, then scrolls
+  down in 4–10 uneven steps. These can be changed under Settings → Full text (the defaults are low; loosening them is
+  your risk).
 - **Full texts never go into any output.** Copies, prints, PDFs and e-mails contain only the summaries, source names
   and links.
 - If you choose a [cloud AI](#cloud-ai) service, you are responsible for the texts sent to it for summarising,
@@ -396,6 +406,8 @@ into backups.
 | A source is shown in red | The Sources page gives the reason: site down, address changed, closed to automated readers… |
 | Full text says "paywall" | Sign in to that site (in your own browser if you use the extension, otherwise under Sources → Subscription sites). Without a subscription, no full text can be fetched. |
 | "Extension not connected" | The browser may be closed, the extension not loaded or paused; the extension's icon shows its state. Paste the pairing code again from Settings → Full text → Extension. If the app was restarted and Settings says so, restart the app once. |
+| The program closes by itself at night | If the Windows event log (Application) has a `c0000005` entry for `WorldSignal.exe`, the program crashed. Switch on Settings → System → **Reopen by itself after a crash**: after a crash the program opens again in a few seconds (it gives up after more than 3 crashes in 10 minutes). Log: `%LOCALAPPDATA%\WorldSignal\logs\watchdog.log`. |
+| Pages open in my everyday browser | The extension is also loaded there. Remove it on `brave://extensions` / `chrome://extensions`; keep the one in the separate profile. |
 | "The update failed" | A file in the program folder was in use, and the next attempt will try again. If it keeps failing, download the new zip and extract it. |
 | Something went wrong | Under Settings → **Backups**, restore the backup of an earlier day; the app restarts. |
 
