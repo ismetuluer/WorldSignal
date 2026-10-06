@@ -90,6 +90,16 @@ class DataPaths:
         return self.root / "instance.json"
 
     @property
+    def running_flag(self) -> Path:
+        """Present while the program runs; still there after it ended = it crashed (watchdog.py)."""
+        return self.root / "running.flag"
+
+    @property
+    def watchdog_file(self) -> Path:
+        """The process id of the crash-protection watcher."""
+        return self.root / "watchdog.pid"
+
+    @property
     def lock_file(self) -> Path:
         return self.root / "instance.lock"
 

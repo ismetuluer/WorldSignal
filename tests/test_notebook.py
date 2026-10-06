@@ -61,7 +61,7 @@ def test_meeting_list_add_order_comment_remove(world):
         nb.reorder(TODAY, [c["id"], a["id"], b["id"], b["id"]])
 
     assert nb.update_item(a["id"], "  Açılışta verilmeli  ")["comment"] == "Açılışta verilmeli"
-    assert len(nb.update_item(a["id"], "x" * 1000)["comment"]) == MAX_COMMENT
+    assert len(nb.update_item(a["id"], "x" * (MAX_COMMENT + 500))["comment"]) == MAX_COMMENT
     nb.remove_item(c["id"])
     assert [(i["id"], i["position"]) for i in nb.meeting(TODAY)] == [(a["id"], 0), (b["id"], 1)]
     assert sorted(nb.meeting_story_ids(TODAY)) == sorted([world["hormuz"], world["swiss"]])

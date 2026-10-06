@@ -81,6 +81,8 @@ describe("Background and notifications", () => {
     wrap(<BackgroundSettings />);
     await userEvent.click(screen.getByRole("switch", { name: "Pencereyi kapatınca arka planda çalışsın" }));
     expect(mocked.updateSettings).toHaveBeenCalledWith({ "app.close_to_tray": false });
+    await userEvent.click(screen.getByRole("switch", { name: "Çökerse kendiliğinden yeniden aç" }));
+    expect(mocked.updateSettings).toHaveBeenCalledWith({ "system.restart_on_crash": true });
     await userEvent.click(screen.getByRole("button", { name: "8 kaynak" }));
     expect(mocked.updateSettings).toHaveBeenCalledWith({ "notify.min_sources": 8 });
     await userEvent.click(screen.getByRole("button", { name: "Skor 75+" }));

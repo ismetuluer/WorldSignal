@@ -3,6 +3,15 @@
 Sürüm numaraları [Anlamsal Sürümleme](https://semver.org/lang/tr/) izler. 1.0'a kadar her faz bir ara sürümdür.
 İngilizcesi (0.10.0'dan itibaren): [CHANGELOG.en.md](CHANGELOG.en.md).
 
+## [0.17.1] — 2026-10-06 — Çökme koruması; toplantı listesinde özet ve not tam görünür
+
+### Eklendi
+- **Çökme koruması** (Ayarlar → Sistem → "Çökerse kendiliğinden yeniden aç"; varsayılan **kapalı**). Açıkken küçük bir izleyici işlem (aynı program, `--watch-pid`) World Signal'i bekler; program çalışırken `running.flag` dosyası bulunur, düzgün kapanınca (Çıkış, güncelleme, yeniden başlatma) silinir. Dosya kalmışsa program çökmüştür ve izleyici 5 saniye sonra programı yeniden açar. 10 dakikada 3'ten fazla çökerse denemeyi bırakır (açılamayan programı sonsuza dek açmaya çalışmaz); Görev Yöneticisi'nden elle kapatmak da çökme sayılır. Ayar kapatılırsa izleyici yeniden açmaz. Günlük: `logs\watchdog.log`. Sahada denenen: bu bilgisayarda program gece boyunca `c0000005` (erişim ihlali) ile çöktü; Windows olay günlüğünde 03:40, 07:08, 09:15 kayıtları var. Çökmenin kendisinin nedeni bulunamadı (kod hatası mı, ortam mı belli değil); bu koruma nedeni gidermez, yalnızca programı ayakta tutar. Birim testleri sahte işlemlerle yazıldı; gerçek WorldSignal.exe'nin çökmesi sonrası yeniden açılması otomatik testte denenmedi.
+
+### Düzeltildi
+- **Toplantı listesindeki özet yarım görünmüyor.** Özete basınca tamamı açılır, tekrar basınca kısalır (akıştaki kartlarla aynı).
+- **Not kutusu uzun metni gösteriyor.** Tek satırlık kutu, yazdıkça büyüyen çok satırlı alana döndü; yapıştırılan uzun not tam görünür. Not sınırı 300 karakterden 3000'e çıktı. Enter yeni satır açar; kutudan çıkmak için Ctrl+Enter ya da kutunun dışına tıklamak yeterli (kayıt otomatik).
+
 ## [0.17.0] — 2026-10-05 — Son dakika: anında bildirim ve ayrı sayfa
 
 ### Eklendi

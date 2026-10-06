@@ -92,6 +92,7 @@ DEFAULTS: dict[str, Any] = {
     # Background and delivery (phase 7).
     "backup.keep_daily": 14,  # daily database copies kept
     "app.close_to_tray": True,  # closing the window keeps World Signal collecting in the system tray
+    "system.restart_on_crash": False,  # start the program again when it ended without stopping properly (watchdog.py)
     "notify.enabled": True,
     "notify.min_score": 60,  # only important stories ...
     "notify.breaking": True,  # breaking news (the publisher's label + several sources) is announced at once

@@ -25,6 +25,7 @@ from .backup import apply_pending_restore
 from .bootstrap import build_context
 from .logging_setup import setup_logging
 from .paths import DataPaths, default_data_dir, ui_dist_dir
+from . import watchdog
 from .single_instance import InstanceLock, activate_running_instance
 
 log = logging.getLogger("worldsignal")
@@ -42,6 +43,7 @@ def parse_args(argv: list[str] | None) -> argparse.Namespace:
     p.add_argument("--data-dir", type=Path, default=None, help="Veri klasörü (varsayılan: %%LOCALAPPDATA%%\\WorldSignal)")
     p.add_argument("--no-collector", action="store_true", help="Arka planda haber toplamayı başlatma")
     p.add_argument("--debug", action="store_true", help="Ayrıntılı günlük")
+    p.add_argument("--watch-pid", type=int, default=None, help=argparse.SUPPRESS)  # watchdog.py: the crash watcher
     p.add_argument("--after-pid", type=int, default=None, help=argparse.SUPPRESS)  # restart: wait for the old process
     p.add_argument("--apply-update", type=Path, default=None, help=argparse.SUPPRESS)  # updater.py: replace this folder
     return p.parse_args(argv)
@@ -123,6 +125,11 @@ class ServerThread:
 def main(argv: list[str] | None = None) -> int:
     args = parse_args(argv)
     paths = DataPaths((args.data_dir or default_data_dir()).resolve()).ensure()
+    if args.watch_pid:
+        # The watcher is not the program: it has its own small log and touches nothing else.
+        logging.basicConfig(filename=paths.logs / "watchdog.log", level=logging.INFO,
+                            format="%(asctime)s %(levelname)-7s %(name)s: %(message)s")
+        return watchdog.watch(paths, args.watch_pid)
     setup_logging(paths.logs, logging.DEBUG if args.debug else logging.INFO, console=args.server_only)
     log.info("World Signal %s starting (data: %s)", __version__, paths.root)
     # Leave the program folder (Explorer makes it the current directory): otherwise this process and its browser
@@ -149,6 +156,11 @@ def main(argv: list[str] | None = None) -> int:
             log.info("Pending restore handled: %s", restored)
         token = args.token or secrets.token_urlsafe(32)
         ctx = build_context(paths, token, ui_dist_dir(), run_collector=not args.no_collector)
+        watchdog.mark_running(paths)
+        if not args.server_only:
+            ctx.arm_watchdog = lambda: watchdog.arm(paths)
+            if ctx.settings.get("system.restart_on_crash"):
+                ctx.arm_watchdog()
         app = create_app(ctx)
         server = ServerThread(app, server_ports(args.port))
         ctx.port = server.port  # known once the socket is bound; the extension endpoints need it from the first request
@@ -180,6 +192,7 @@ def main(argv: list[str] | None = None) -> int:
     finally:
         if server is not None:
             server.stop()
+        watchdog.mark_stopped(paths)  # a stop that got this far is a proper one; a crash never reaches here
         lock.release()
         log.info("World Signal stopped")
         if restart:

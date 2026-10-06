@@ -423,7 +423,7 @@ def test_notebook_endpoints(client, ctx):
     assert client.put("/api/meeting/order", headers=H, json={"day": TODAY, "ids": [b["id"]]}).status_code == 409
     assert client.put("/api/meeting/order", headers=H, json={"day": "yesterday", "ids": []}).status_code == 422
     assert client.patch(f"/api/meeting/{b['id']}", headers=H, json={"comment": "Kısa gerekçe"}).json()["comment"] == "Kısa gerekçe"
-    assert client.patch(f"/api/meeting/{b['id']}", headers=H, json={"comment": "x" * 301}).status_code == 422
+    assert client.patch(f"/api/meeting/{b['id']}", headers=H, json={"comment": "x" * 3001}).status_code == 422
     assert client.delete(f"/api/meeting/{b['id']}", headers=H).status_code == 204
     assert client.delete(f"/api/meeting/{b['id']}", headers=H).status_code == 404
 

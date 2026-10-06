@@ -43,6 +43,7 @@ export const STORY_SETTINGS = {
   "retention.fulltext_days": 30,
   "backup.keep_daily": 14,
   "app.close_to_tray": true,
+  "system.restart_on_crash": false,
   "notify.enabled": true,
   "notify.min_score": 60,
   "notify.min_sources": 5,

@@ -879,6 +879,8 @@ export const tr = {
   "settings.shortcut.meeting": "Seçili hikâyeyi toplantı listesine ekle / çıkar",
   "settings.background": "Arka plan ve bildirimler",
   "settings.background.tray": "Pencereyi kapatınca arka planda çalışsın",
+  "settings.background.restart": "Çökerse kendiliğinden yeniden aç",
+  "settings.background.restartHint": "Açıkken program beklenmedik biçimde kapanırsa (çökerse) birkaç saniye sonra kendiliğinden yeniden açılır. Çıkış'tan, güncellemeden ya da yeniden başlatmadan sonra açılmaz. Program 10 dakika içinde 3'ten fazla çökerse denemeyi bırakır. Görev Yöneticisi'nden elle kapatmak da çökme sayılır.",
   "settings.background.trayHint": "Açıkken pencereyi kapatmak programı kapatmaz; haberler toplanmaya devam eder ve World Signal sağ alttaki simge tepsisinde durur. Tamamen kapatmak için simgeye sağ tıklayıp Çıkış'ı seçin.",
   "settings.notify": "Windows bildirimleri",
   "settings.notify.hint": "Önemli bir hikâye kısa sürede çok sayıda bağımsız kaynakta yayılırsa bildirim gelir. Tıklayınca hikâye açılır. Her hikâye yalnızca bir kez bildirilir.",

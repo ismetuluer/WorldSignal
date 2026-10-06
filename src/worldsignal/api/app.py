@@ -108,6 +108,7 @@ class AppContext:
     home_sync: HomeSync | None = None
     keys: SecretStore | None = None  # API keys of cloud AI services, and the extension's pairing key
     bridge: ExtensionBridge | None = None  # the browser extension's side of the full-text queue
+    arm_watchdog: Callable[[], None] | None = None  # set by the entry point: start the crash watcher (watchdog.py)
     port: int = 0  # the port the server listens on (set once it is bound); the extension looks for it
     extra: dict[str, Any] = field(default_factory=dict)
 
@@ -279,6 +280,7 @@ class SettingsPatch(BaseModel):
     retention_fulltext_days: int | None = Field(None, alias="retention.fulltext_days", ge=0, le=3650)
     backup_keep_daily: int | None = Field(None, alias="backup.keep_daily", ge=1, le=90)
     app_close_to_tray: bool | None = Field(None, alias="app.close_to_tray")
+    system_restart_on_crash: bool | None = Field(None, alias="system.restart_on_crash")
     notify_enabled: bool | None = Field(None, alias="notify.enabled")
     notify_min_score: float | None = Field(None, alias="notify.min_score", ge=0, le=100)
     notify_min_sources: int | None = Field(None, alias="notify.min_sources", ge=2, le=30)
@@ -558,6 +560,8 @@ def create_app(ctx: AppContext) -> FastAPI:
         if "home.keywords" in values:
             values["home.keywords"] = list(dict.fromkeys(k.strip() for k in values["home.keywords"] if k.strip()))
         ctx.settings.set_many(values)
+        if values.get("system.restart_on_crash") and ctx.arm_watchdog:
+            ctx.arm_watchdog()
         if any(k.startswith("home.") for k in values) and ctx.home_sync is not None:
             ctx.home_sync.wake()
         if any(k.startswith("ai.") for k in values):

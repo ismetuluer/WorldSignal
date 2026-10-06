@@ -1,3 +1,4 @@
+import { ExpandableSummary } from "../components/ExpandableSummary";
 import { useEffect, useState } from "react";
 import type { MeetingItem } from "../api/types";
 import { Spinner, StateView } from "../components/controls";
@@ -163,7 +164,7 @@ function MeetingRow({ item, onOpen }: { item: MeetingItem; onOpen: (storyId: num
       ) : (
         <p className="meeting-title">{text.title}</p>
       )}
-      {text.summary ? <p className="article-summary">{text.summary}</p> : null}
+      {text.summary ? <ExpandableSummary text={text.summary} /> : null}
       {text.points.length ? (
         <ul className="meeting-points" aria-label={t("meeting.points")}>
           {text.points.map((p) => <li key={p}>{p}</li>)}
@@ -181,16 +182,23 @@ function CommentField({ item, save }: { item: MeetingItem; save: (comment: strin
   const { value, setValue, status, flush } = useAutosave(item.comment, save, `meeting-comment-${item.id}`);
   return (
     <div className="meeting-comment">
-      <input
-        className="input"
+      <textarea
+        className="input meeting-comment-input"
         value={value}
-        maxLength={300}
+        rows={1}
+        maxLength={3000}
+        ref={(el) => {
+          if (el) {
+            el.style.height = "auto";
+            el.style.height = `${el.scrollHeight}px`;
+          }
+        }}
         aria-label={t("meeting.comment")}
         placeholder={t("meeting.commentPlaceholder")}
         onChange={(e) => setValue(e.target.value)}
         onBlur={() => void flush()}
         onKeyDown={(e) => {
-          if (e.key === "Enter") e.currentTarget.blur();
+          if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) e.currentTarget.blur();
         }}
       />
       {status === "error" ? <span className="note-status" data-status="error">{t("notes.status.error")}</span> : null}

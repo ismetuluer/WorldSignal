@@ -2196,6 +2196,13 @@ a.member-title svg {
   margin-top: 4px;
 }
 
+.meeting-comment-input {
+  resize: none;
+  overflow: hidden;
+  line-height: 1.5;
+  font: inherit;
+}
+
 .meeting-actions {
   display: flex;
   gap: 2px;

@@ -877,6 +877,8 @@ export const en: Record<MessageKey, string> = {
   "settings.shortcut.meeting": "Add / remove the selected story to the meeting list",
   "settings.background": "Background and notifications",
   "settings.background.tray": "Keep running when the window is closed",
+  "settings.background.restart": "Reopen by itself after a crash",
+  "settings.background.restartHint": "When on, if the program ends unexpectedly (crashes) it opens again by itself after a few seconds. It does not reopen after Quit, an update or a restart. If it crashes more than 3 times in 10 minutes it stops trying. Ending it from Task Manager counts as a crash too.",
   "settings.background.trayHint": "When on, closing the window does not quit: news keeps being collected and World Signal stays in the system tray. Right-click the tray icon and choose Quit to exit.",
   "settings.notify": "Windows notifications",
   "settings.notify.hint": "You are notified when an important story spreads quickly across many independent sources. Clicking opens the story. Each story is announced once.",

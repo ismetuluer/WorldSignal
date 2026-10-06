@@ -19,7 +19,7 @@ from .stories import StoryRepository
 
 DAY_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 MAX_NOTE = 20_000
-MAX_COMMENT = 300
+MAX_COMMENT = 3000
 
 
 def local_today() -> str:

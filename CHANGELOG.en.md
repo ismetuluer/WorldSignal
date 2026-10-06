@@ -3,6 +3,15 @@
 English version of [CHANGELOG.md](CHANGELOG.md), from 0.10.0 on. Version numbers follow
 [Semantic Versioning](https://semver.org/).
 
+## [0.17.1] — 2026-10-06 — Crash protection; summary and note show in full on the meeting list
+
+### Added
+- **Crash protection** (Settings → System → "Reopen by itself after a crash"; **off** by default). When on, a small watcher process (the same program, `--watch-pid`) waits for World Signal; while the program runs a `running.flag` file exists, and a proper stop (Quit, an update, a restart) removes it. A file left behind means the program crashed, and the watcher opens the program again after 5 seconds. It gives up after more than 3 crashes in 10 minutes (it does not keep starting a program that cannot start); ending the program from Task Manager counts as a crash too. If the setting is switched off the watcher does not reopen. Log: `logs\watchdog.log`. In the field: on this computer the program crashed overnight with `c0000005` (access violation); the Windows event log has entries at 03:40, 07:08 and 09:15. The cause of the crash itself is not found (a code fault or the machine is not known); this protection does not fix it, it only keeps the program up. The unit tests use fake processes; the real WorldSignal.exe reopening after a crash was not tried in an automated test.
+
+### Fixed
+- **The summary on the meeting list no longer looks cut off.** Pressing it shows the whole text, and again shortens it (as on the cards in the feed).
+- **The note box shows long text.** The one-line box became a multi-line field that grows as you type; a long pasted note is fully visible. The note limit went from 300 to 3000 characters. Enter starts a new line; Ctrl+Enter or clicking outside the box leaves it (saving is automatic).
+
 ## [0.17.0] — 2026-10-05 — Breaking news: instant notification and a page of its own
 
 ### Added

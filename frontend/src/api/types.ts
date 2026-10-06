@@ -127,6 +127,7 @@ export interface Settings {
   "retention.fulltext_days": number;
   "backup.keep_daily": number;
   "app.close_to_tray": boolean;
+  "system.restart_on_crash": boolean;
   "notify.enabled": boolean;
   "notify.min_score": number;
   "notify.min_sources": number;

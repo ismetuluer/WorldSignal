@@ -389,6 +389,12 @@ def test_backup_and_notification_api(ctx):  # noqa: F811
         ok = c.patch("/api/settings", json={"notify.breaking": False, "notify.breaking_min_sources": 2}).json()
         assert ok["notify.breaking"] is False and ok["notify.breaking_min_sources"] == 2
         assert c.patch("/api/settings", json={"notify.breaking_min_sources": 0}).status_code == 422
+        armed = []
+        ctx.arm_watchdog = lambda: armed.append(True)
+        assert c.patch("/api/settings", json={"system.restart_on_crash": False}).json()["system.restart_on_crash"] is False
+        assert armed == []  # off: nothing watches
+        assert c.patch("/api/settings", json={"system.restart_on_crash": True}).json()["system.restart_on_crash"] is True
+        assert armed == [True]  # switched on while running: the watcher starts at once
         assert c.get("/api/stories?breaking=true&sort=recent").json()["total"] == 0
 
 

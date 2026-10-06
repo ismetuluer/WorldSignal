@@ -42,6 +42,18 @@ export function BackgroundSettings() {
 
         <div className="settings-row">
           <div className="settings-row-text">
+            <div className="settings-row-title">{t("settings.background.restart")}</div>
+            <div className="settings-row-hint">{t("settings.background.restartHint")}</div>
+          </div>
+          <Switch
+            checked={settings["system.restart_on_crash"]}
+            label={t("settings.background.restart")}
+            onChange={(v) => void change({ "system.restart_on_crash": v })}
+          />
+        </div>
+
+        <div className="settings-row">
+          <div className="settings-row-text">
             <div className="settings-row-title">{t("settings.work")}</div>
             <div className="settings-row-hint">{t(settings["work.limited"] ? "settings.work.limitedHint" : "settings.work.hint")}</div>
           </div>

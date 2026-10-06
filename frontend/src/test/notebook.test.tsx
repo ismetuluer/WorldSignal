@@ -180,7 +180,7 @@ describe("Meeting list", () => {
     wrap(<MeetingPage />);
     await screen.findByText("Öneri 1");
     const first = screen.getByText("Öneri 1").closest("li")!;
-    await userEvent.type(within(first).getByRole("textbox", { name: "Kısa not" }), "İlk sırada{Enter}");
+    await userEvent.type(within(first).getByRole("textbox", { name: "Kısa not" }), "İlk sırada{Control>}{Enter}{/Control}");
     await waitFor(() => expect(mocked.updateMeetingItem).toHaveBeenLastCalledWith(1, "İlk sırada"));
     await userEvent.click(within(first).getByRole("button", { name: "Listeden çıkar" }));
     expect(mocked.removeMeetingItem).toHaveBeenCalledWith(1);
