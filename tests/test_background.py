@@ -389,6 +389,8 @@ def test_backup_and_notification_api(ctx):  # noqa: F811
         ok = c.patch("/api/settings", json={"notify.breaking": False, "notify.breaking_min_sources": 2}).json()
         assert ok["notify.breaking"] is False and ok["notify.breaking_min_sources"] == 2
         assert c.patch("/api/settings", json={"notify.breaking_min_sources": 0}).status_code == 422
+        ctx.extra["open_story"] = 7  # a notification was clicked: the page is told once
+        assert c.get("/api/status").json()["open_story"] == 7 and c.get("/api/status").json()["open_story"] is None
         armed = []
         ctx.arm_watchdog = lambda: armed.append(True)
         assert c.patch("/api/settings", json={"system.restart_on_crash": False}).json()["system.restart_on_crash"] is False

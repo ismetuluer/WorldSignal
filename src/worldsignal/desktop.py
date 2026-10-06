@@ -45,6 +45,47 @@ TEXTS = {
 }
 
 
+def native_show(title: str = WINDOW_TITLE) -> bool:
+    """Bring the program's window to the front with plain Win32 calls. Returns False when there is no such window.
+
+    Not through pywebview: its calls from another thread (the tray's, the server's) set properties of the window's form
+    from that thread while it holds the interpreter lock, and when the window's own thread then needs the lock (a
+    Python callback) both wait for each other and the whole program hangs (seen with ``window.on_top``). ctypes lets
+    go of the lock during every call, so this cannot."""
+    if os.name != "nt":
+        return False
+    import ctypes
+    from ctypes import wintypes
+
+    user32 = ctypes.windll.user32
+    enum_proc = ctypes.WINFUNCTYPE(wintypes.BOOL, wintypes.HWND, wintypes.LPARAM)
+    found: list[int] = []
+    pid = os.getpid()
+
+    def visit(hwnd: int, _lparam: int) -> bool:
+        owner = wintypes.DWORD()
+        user32.GetWindowThreadProcessId(hwnd, ctypes.byref(owner))
+        if owner.value != pid:
+            return True
+        text = ctypes.create_unicode_buffer(256)
+        user32.GetWindowTextW(hwnd, text, 256)
+        cls = ctypes.create_unicode_buffer(256)
+        user32.GetClassNameW(hwnd, cls, 256)
+        if text.value == title and not cls.value.startswith("WorldSignalTray"):
+            found.append(hwnd)
+        return True
+
+    user32.EnumWindows(enum_proc(visit), 0)
+    if not found:
+        return False
+    hwnd = found[0]
+    sw_show, sw_restore = 5, 9
+    user32.ShowWindow(hwnd, sw_restore if user32.IsIconic(hwnd) else sw_show)
+    user32.BringWindowToTop(hwnd)
+    user32.SetForegroundWindow(hwnd)
+    return True
+
+
 def icon_path() -> Any:
     return resource_dir() / "assets" / "worldsignal.ico"
 
@@ -97,10 +138,8 @@ def run_window(ctx: AppContext, url: str) -> bool:
     state = {"quitting": False, "restart": False, "told_background": False}
 
     def show() -> None:
-        window.restore()
-        window.show()
-        window.on_top = True
-        window.on_top = False
+        if not native_show():
+            log.warning("The window to show was not found")
 
     def quit_app() -> None:
         state["quitting"] = True
@@ -111,9 +150,9 @@ def run_window(ctx: AppContext, url: str) -> bool:
         quit_app()
 
     def open_story(story_id: int | None) -> None:
-        show()
         if story_id:
-            window.evaluate_js(f"window.location.hash = '#/feed?story={int(story_id)}'")
+            ctx.extra["open_story"] = int(story_id)  # the page takes it with its next status poll (see /api/status)
+        show()
 
     tray = None
     if os.name == "nt":

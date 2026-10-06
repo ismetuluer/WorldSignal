@@ -469,6 +469,7 @@ def create_app(ctx: AppContext) -> FastAPI:
             "maintenance": ctx.maintenance.status(),
             "notify": ctx.notifier.status(),
             "articles": ctx.articles.counts(since),
+            "open_story": ctx.extra.pop("open_story", None),  # set when a notification was clicked: the page goes there
             "breaking": ctx.stories.breaking_count(utc_now_iso(datetime.now(UTC) - timedelta(hours=3))),
             "extension": None if ctx.bridge is None else {
                 **ctx.bridge.status(), "active": bool(ctx.settings.get_preferences()["fulltext.enabled"]),

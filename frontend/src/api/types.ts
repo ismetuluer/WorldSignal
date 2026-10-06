@@ -547,6 +547,8 @@ export interface Status {
   articles: { total: number; recent: number };
   /** Stories with a breaking-news label in the last three hours (the sidebar badge). */
   breaking?: number;
+  /** A story to open: a notification was clicked (given once). */
+  open_story?: number | null;
   /** The browser extension's reader; null when this program has no extension bridge. */
   extension: (ExtensionStatus & { active: boolean }) | null;
 }

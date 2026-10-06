@@ -80,6 +80,7 @@ export function AppStateProvider({
       const s = await api.status();
       setStatus(s);
       setConnectionError(null);
+      if (s.open_story) window.location.hash = `#/feed?story=${s.open_story}`;
       busy = s.collector.busy;
     } catch (e) {
       setConnectionError(e instanceof ApiError ? e.code : "server_unreachable");
@@ -89,7 +90,13 @@ export function AppStateProvider({
 
   useEffect(() => {
     void poll();
-    return () => window.clearTimeout(timer.current);
+    // The window is brought to the front by a notification click: ask for the story to open at once.
+    const onFocus = () => void poll();
+    window.addEventListener("focus", onFocus);
+    return () => {
+      window.clearTimeout(timer.current);
+      window.removeEventListener("focus", onFocus);
+    };
   }, [poll]);
 
   // The filter choices (languages seen so far) grow with the collection: on a fresh install they are empty at start.

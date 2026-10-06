@@ -3,6 +3,12 @@
 Sürüm numaraları [Anlamsal Sürümleme](https://semver.org/lang/tr/) izler. 1.0'a kadar her faz bir ara sürümdür.
 İngilizcesi (0.10.0'dan itibaren): [CHANGELOG.en.md](CHANGELOG.en.md).
 
+## [0.17.2] — 2026-10-06 — Bildirime tıklayınca program donuyordu: düzeltildi
+
+### Düzeltildi
+- **Bildirime ya da tepsi simgesine tıklayınca bütün program donabiliyordu** (pencere "yanıt vermiyor", sunucu da yanıtsız, günlük duruyor). Neden, donmuş süreç incelenerek bulundu: tepsi iş parçacığı pencereyi öne getirmek için `window.on_top` ayarını yapıyordu; bu çağrı pywebview'ın penceresine başka bir iş parçacığından, Python'un yorumlayıcı kilidi (GIL) elindeyken dokunuyor, pencerenin kendi iş parçacığı da aynı anda kilidi bekliyorsa ikisi birbirini bekleyip program kilitleniyordu (çökme değil, kilitlenme; bu yüzden çökme koruması devreye girmiyordu). Pencere artık doğrudan Windows çağrılarıyla (ctypes, kilidi bırakır) öne getiriliyor; bildirime tıklayınca açılacak hikâye pencereye sayfanın kendi durum sorgusuyla (en geç 5 saniye, pencere odak alınca hemen) iletiliyor.
+- Hâlâ pywebview üzerinden başka iş parçacığından yapılan tek çağrı Çıkış/yeniden başlatma sırasındaki pencere kapatması; aynı türden riski var ama yalnızca kapanırken. Çökme koruması **kilitlenmeleri** yakalamaz (program çalışıyor görünür); bunun için ayrı bir "yanıt vermiyorsa yeniden başlat" denetimi ileride eklenebilir.
+
 ## [0.17.1] — 2026-10-06 — Çökme koruması; toplantı listesinde özet ve not tam görünür
 
 ### Eklendi

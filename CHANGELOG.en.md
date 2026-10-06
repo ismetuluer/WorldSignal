@@ -3,6 +3,12 @@
 English version of [CHANGELOG.md](CHANGELOG.md), from 0.10.0 on. Version numbers follow
 [Semantic Versioning](https://semver.org/).
 
+## [0.17.2] — 2026-10-06 — Clicking a notification could freeze the program: fixed
+
+### Fixed
+- **Clicking a notification or the tray icon could freeze the whole program** (the window "not responding", the server not answering, the log stopped). The cause was found by examining a frozen process: the tray thread brought the window to the front by setting `window.on_top`; that call touches pywebview's window from another thread while holding Python's interpreter lock (the GIL), and if the window's own thread needs the lock at that moment (a Python callback) the two wait for each other and the program locks up (not a crash, which is why crash protection did not step in). The window is now brought to the front with plain Windows calls (ctypes, which lets go of the lock); the story to open after a notification click is handed to the page by its own status poll (within 5 seconds, at once when the window gets focus).
+- The only other call made through pywebview from another thread is closing the window on Quit/restart; it has the same kind of risk, but only while closing. Crash protection does **not** catch freezes (the program looks as if it is running); a separate "restart if it does not answer" check could be added later.
+
 ## [0.17.1] — 2026-10-06 — Crash protection; summary and note show in full on the meeting list
 
 ### Added
