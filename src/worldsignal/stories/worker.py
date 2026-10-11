@@ -29,7 +29,7 @@ from ..ai.ollama import OllamaClient, OllamaError
 from ..db import utc_now_iso
 from ..repo.settings import SettingsRepository
 from ..repo.stories import StoryRepository
-from .embedding import embed_text
+from .embedding import HEADING_RULE, embed_text
 from .score import Interest
 
 log = logging.getLogger(__name__)
@@ -110,10 +110,18 @@ class StoryWorker:
             dropped = await asyncio.to_thread(self.stories.drop_embeddings_of_other_models, model)
             log.info("Embedding model changed to %s; %d old vectors dropped", model, dropped)
 
+        retouched: set[int] = set()
+        if int(prefs.get("stories.heading_rule") or 0) < HEADING_RULE:
+            # Once after the rule came in: headings in the window are matched again (see refresh_headings).
+            retouched = await asyncio.to_thread(self.stories.refresh_headings, since, model)
+            await asyncio.to_thread(self.settings.set, "stories.heading_rule", HEADING_RULE)
+            log.info("Heading rule %d applied to the stories of the window", HEADING_RULE)
+
         batch = await asyncio.to_thread(self.stories.articles_needing_embedding, since, BATCH)
         if batch:
-            texts = [embed_text(model, a["title"], a["summary"], with_summary=bool(prefs.get("stories.embed_summary")))
-                     for a in batch]
+            kinds = await asyncio.to_thread(self.stories.heading_kinds, [a["id"] for a in batch])
+            texts = [embed_text(model, a["title"], a["summary"], with_summary=bool(prefs.get("stories.embed_summary")),
+                                kind=kinds.get(a["id"])) for a in batch]
             try:
                 vectors = await self.client_factory(prefs["ai.url"]).embed(model, texts, cpu_only=True)
             except OllamaError as exc:
@@ -122,7 +130,7 @@ class StoryWorker:
                 return PAUSED_SECONDS
             await asyncio.to_thread(self.stories.store_embeddings, [(a["id"], model, v) for a, v in zip(batch, vectors, strict=True)])
 
-        touched = await asyncio.to_thread(
+        touched = retouched | await asyncio.to_thread(
             self.cluster_pending, model, since, float(prefs["stories.threshold"]), float(prefs["stories.cohesion"])
         )
         rescore_all = self._last_rescore is None or now - self._last_rescore >= RESCORE_EVERY
@@ -141,9 +149,13 @@ class StoryWorker:
             return set()
         touched: set[int] = set()
         story_arr = np.array([s if s is not None else -1 for s in story_ids], dtype=np.int64)
+        solo = self.stories.heading_kinds([ids[i] for i in np.flatnonzero(story_arr < 0)])
         for i in np.flatnonzero(story_arr < 0):  # already in time order
             clustered = story_arr >= 0  # this excludes i itself
-            best_story, best_sim = choose_story(matrix[clustered] @ matrix[i], story_arr[clustered], threshold, cohesion)
+            if solo.get(ids[i]) == "solo":
+                best_story, best_sim = None, None  # a heading over a digest: nothing to match it by
+            else:
+                best_story, best_sim = choose_story(matrix[clustered] @ matrix[i], story_arr[clustered], threshold, cohesion)
             sid = self.stories.assign(ids[i], best_story, similarity=best_sim)
             story_arr[i] = sid
             touched.add(sid)

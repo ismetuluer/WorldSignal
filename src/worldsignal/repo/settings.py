@@ -57,6 +57,7 @@ DEFAULTS: dict[str, Any] = {
     "stories.embed_model": "bge-m3:latest",
     # Measured in docs/GOMME_KARSILASTIRMA.md: titles alone separate distinct events better.
     "stories.embed_summary": False,
+    "stories.heading_rule": 0,  # internal: the heading rule (stories/embedding.py) the stored stories were last brought to
     "stories.threshold": 0.55,
     "ai.inputs": {},  # the user's layout of a report in the request (ai/prompts.py); {} = the default
     "ai.limits": {},  # the user's amounts sent (characters, reports per request); {} = the defaults

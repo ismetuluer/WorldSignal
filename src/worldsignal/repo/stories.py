@@ -14,6 +14,7 @@ import numpy as np
 
 from ..db import Database, utc_now_iso
 from ..flags import group_condition, is_breaking, is_exclusive
+from ..stories.embedding import HEADING_DAYS, heading_kind
 from ..stories.score import Interest, Member, score_story
 from ..textnorm import build_fts_query
 from .ai import lacking_sql
@@ -101,6 +102,45 @@ class StoryRepository:
             (since_iso, limit),
         ).fetchall()
         return [dict(r) for r in rows]
+
+    def heading_kinds(self, article_ids: Sequence[int]) -> dict[int, str]:
+        """The reports among ``article_ids`` whose headline is a heading, not a headline (stories/embedding.py):
+        {article id: "lead" | "solo"}."""
+        kinds: dict[int, str] = {}
+        for start in range(0, len(article_ids), 400):
+            chunk = list(article_ids[start:start + 400])
+            rows = self.db.conn.execute(
+                f"""SELECT a.id, a.title, a.summary,
+                           (SELECT COUNT(*) FROM articles b WHERE b.source_id = a.source_id AND b.sort_at <= a.sort_at
+                              AND b.sort_at >= datetime(a.sort_at, '-{HEADING_DAYS} days') AND lower(b.title) = lower(a.title)) AS repeats
+                    FROM articles a WHERE a.id IN ({",".join("?" * len(chunk))})""", chunk).fetchall()
+            for r in rows:
+                kind = heading_kind(r["title"], r["summary"], r["repeats"])
+                if kind:
+                    kinds[r["id"]] = kind
+        return kinds
+
+    def refresh_headings(self, since_iso: str, model: str) -> set[int]:
+        """Once, after the heading rule came in: reports of the window that the rule treats differently are taken out of
+        their story and lose their vector, so they are embedded and matched again under the rule. Reports the user placed
+        by hand stay. Returns the ids of the stories that lost members (still existing)."""
+        ids = [r["id"] for r in self.db.conn.execute(
+            "SELECT a.id FROM articles a JOIN story_articles sa ON sa.article_id = a.id "
+            "WHERE a.sort_at >= ? AND sa.assigned_by != 'user'", (since_iso,))]
+        kinds = self.heading_kinds(ids)
+        old: set[int] = set()
+        with self.db.transaction() as c:
+            for aid in kinds:
+                row = c.execute("SELECT story_id FROM story_articles WHERE article_id = ?", (aid,)).fetchone()
+                if row is None:
+                    continue
+                old.add(row["story_id"])
+                c.execute("DELETE FROM story_articles WHERE article_id = ?", (aid,))
+                c.execute("DELETE FROM article_embeddings WHERE article_id = ?", (aid,))
+            for sid in old:
+                self._delete_if_empty(c, sid)
+                c.execute("UPDATE stories SET ai_status = NULL WHERE id = ? AND ai_status = 'done'", (sid,))
+        return {sid for sid in old if self.db.conn.execute("SELECT 1 FROM stories WHERE id = ?", (sid,)).fetchone()}
 
     def embedding_backlog(self, since_iso: str, cap: int = 10_000) -> int:
         """How many recent reports still wait to be matched into stories (counted up to ``cap``)."""

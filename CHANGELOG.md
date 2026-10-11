@@ -3,6 +3,13 @@
 Sürüm numaraları [Anlamsal Sürümleme](https://semver.org/lang/tr/) izler. 1.0'a kadar her faz bir ara sürümdür.
 İngilizcesi (0.10.0'dan itibaren): [CHANGELOG.en.md](CHANGELOG.en.md).
 
+## [0.17.3] — 2026-10-11 — Başlığı haber olmayan kayıtlar hikâyeleri bozmuyor
+
+### Düzeltildi
+- **"Flaş", "Kısa haberler", "Morning update" gibi başlıklar artık hikâyeleri çöp yığınına çevirmiyor.** Hikâye birleştirme yalnızca başlığa baktığı için başlığı haber taşımayan kayıtlar birbirine neredeyse aynı görünüyor ve zincirleniyor. Gerçek veride bir hikâyede (117) iki hafta boyunca 176 kayıt toplanmıştı; DHA'nın başlığı yalnızca "Flaş" olan flaş haberleri, Independent Türkçe "Kısa haberler", Middle East Eye "Morning update", NYT "Here's the latest." gibi bültenler hepsi ilgisiz haberlerle aynı hikâyedeydi. Yeni kural: **(1)** başlık yalnızca bir etiketse ("Flaş", "Son dakika //2//") haberin kendisi özetin başında olduğu için **özetin ilk cümlesi** (şehir/ajans satırı atılarak) gömülür ve haber gerçek hikâyesine katılır; **(2)** aynı kaynağın 30 günde en az 3 kez yazdığı, en çok 3 sözcüklü bir başlık uzun bir bülten özetinin üstündeyse ya da özetsizse (sabah özetleri, "Here's the latest.") **hiçbir hikâyeye katılmaz**. Yükseltmeden sonra son 72 saatin etkilenen kayıtları bir kez yeniden eşlenir; elle yerleştirdikleriniz yerinde kalır, daha eski hikâyeler değişmez.
+- Ölçüm (gerçek veri, son 72 saat): 16.688 kaydın yalnızca 35'i etkileniyor (25'i özetle eşlenir, 10'u tek başına kalır). DHA'nın 19 "Flaş" kaydından 17'si çöp hikâyedeydi; özetle eşlenince en yakın gerçek haber çoğunlukla doğru olaydı (Göktaş fon açıklaması, Güllü davası, Bahçeli–İmralı görüşmesi, Montella, TFF istifaları, Manisa kazası). Benzerlik 0,64–0,86 çıktı; 0,8 eşiğinde bir kısmı kendi hikâyesini açar (çöp hikâyeye girmekten iyidir). Bu bilgisayarda ölçüm yalnızca veritabanı kopyasında yapıldı; yeni kuralın sonucu kullanımda izlenmeli.
+- Bilinen sınır: kural, bir başlığın tekrarlandığını ilk 2 kez görünce bilemez; bir heading'in ilk iki kaydı eskisi gibi başlıkla eşlenir (üçüncüden itibaren kural çalışır). Başlıkları uzun olan gerçek haberler (yeniden yayımlanmış olsa da) kuraldan etkilenmez.
+
 ## [0.17.2] — 2026-10-06 — Bildirime tıklayınca program donuyordu: düzeltildi
 
 ### Düzeltildi

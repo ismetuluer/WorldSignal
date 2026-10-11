@@ -483,3 +483,74 @@ def test_splitting_leaves_a_story_the_user_corrected_alone(db, sources, articles
     repo.merge(repo.detach(ids["l4"]), story)  # the user says l4 belongs with the others
     repo.split_loose(utc_now_iso(NOW - timedelta(hours=72)), "bge-m3:latest", 0.8)
     assert {repo.story_of(ids[k]) for k in ("l1", "l2", "l3", "l4")} == {story}  # a story the user corrected is kept whole
+
+
+# -- headings that are not headlines ("Flaş", "Morning update") ----------------------------------------------------------
+def test_heading_kinds():
+    from worldsignal.stories.embedding import heading_kind, is_label_only, lead_text
+
+    assert all(is_label_only(t) for t in ("Flaş", "FLAŞ", "flaş //3//", "Son dakika", "BREAKING"))
+    assert not is_label_only("Flaş: Merkez Bankası faizi sabit tuttu")
+    assert lead_text("ANKARA, (DHA)- İçişleri Bakanlığı müfettiş görevlendirdi") == "İçişleri Bakanlığı müfettiş görevlendirdi"
+    assert lead_text("Good morning readers") == "Good morning readers"
+    long_digest = "x" * 900
+    assert heading_kind("Flaş", "ANKARA, (DHA)- Bir haber metni burada yer alıyor.", 1) == "lead"
+    assert heading_kind("Flaş", "", 1) == "solo"  # nothing to match it by
+    assert heading_kind("Morning update", long_digest, 3) == "solo"  # a round-up
+    assert heading_kind("Morning update", long_digest, 2) is None  # not yet seen often enough
+    assert heading_kind("Kısa haberler", "Kısa özet metni burada yer alıyor ve haber verir.", 5) == "lead"
+    assert heading_kind("Exclusive: US consumer watchdog adopts lighter touch amid pressure", long_digest, 9) is None  # a real headline, published again
+
+
+def seed_with_summary(db, sources, articles, specs):
+    """specs: (source slug, key, title, summary, minutes ago)."""
+    sources.seed_from_catalog(MINI_CATALOG)
+    by_slug = {s["slug"]: s for s in sources.list_sources()}
+    for slug, key, title, summary, minutes_ago in specs:
+        s = by_slug[slug]
+        with db.transaction() as c:
+            articles.insert_entries(c, source_id=s["id"], feed_id=s["feeds"][0]["id"], language=s["language"], now=NOW,
+                                    entries=[ParsedEntry(key, f"https://x.example/{key}", title, summary, None,
+                                                         NOW - timedelta(minutes=minutes_ago))])
+    return {r["url"].rsplit("/", 1)[1]: r["id"] for r in articles.list(__import__("worldsignal.repo.articles", fromlist=["ArticleFilter"]).ArticleFilter(limit=500))}
+
+
+HEADINGS = [
+    ("beta", "h0", "Hormuz drone incident", "", 60),
+    ("alpha", "f1", "Flaş", "ANKARA, (DHA)- Iran seized a drone in Hormuz", 50),
+    ("alpha", "f2", "FLAŞ", "ANKARA, (DHA)- Swiss neutrality vote result announced", 45),
+    ("alpha", "m1", "Morning update", "storm flood madrid " + "round-up of many things " * 40, 40),
+    ("alpha", "m2", "Morning update", "gaza football eviction " + "round-up of many things " * 40, 30),
+    ("alpha", "m3", "Morning update", "hormuz drone " + "round-up of many things " * 40, 20),
+]
+
+
+def test_a_label_headline_is_matched_by_its_summary_and_a_digest_heading_joins_nothing(db, sources, articles, settings):
+    ids = seed_with_summary(db, sources, articles, HEADINGS)
+    worker = make_worker(db, settings, FakeEmbedOllama())
+    settings.set("stories.heading_rule", 1)  # already brought to the rule: only the rule itself is tested
+    run(worker.step())
+    repo = StoryRepository(db)
+    assert story_members(repo, ids["f1"]) == {ids["h0"], ids["f1"]}  # "Flaş" about the Hormuz drone joins its story
+    assert story_members(repo, ids["f2"]) == {ids["f2"]}  # and the Swiss one does not join it
+    assert ids["m3"] not in story_members(repo, ids["h0"])  # the third round-up mentions Hormuz but joins nothing
+    assert story_members(repo, ids["m3"]) == {ids["m3"]}
+
+
+def test_the_heading_rule_is_applied_once_to_stories_that_were_built_without_it(db, sources, articles, settings):
+    ids = seed_with_summary(db, sources, articles, HEADINGS)
+    worker = make_worker(db, settings, FakeEmbedOllama())
+    settings.set("stories.heading_rule", 1)
+    run(worker.step())
+    repo = StoryRepository(db)
+    # What the older program did: everything labelled the same ("Flaş") was matched by that one word.
+    with db.transaction() as c:
+        c.execute("DELETE FROM story_articles WHERE article_id IN (?, ?)", (ids["f1"], ids["m3"]))
+        repo.assign(ids["f1"], repo.story_of(ids["h0"]), similarity=0.9)
+        repo.assign(ids["m3"], repo.story_of(ids["h0"]), similarity=0.9)
+    assert ids["m3"] in story_members(repo, ids["h0"])
+    settings.set("stories.heading_rule", 0)  # the program is updated: the rule is new to these stories
+    run(worker.step())
+    assert settings.get("stories.heading_rule") == 1
+    assert story_members(repo, ids["f1"]) == {ids["h0"], ids["f1"]}  # matched again, now by its summary
+    assert story_members(repo, ids["m3"]) == {ids["m3"]}  # and the round-up is out

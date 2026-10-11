@@ -3,6 +3,13 @@
 English version of [CHANGELOG.md](CHANGELOG.md), from 0.10.0 on. Version numbers follow
 [Semantic Versioning](https://semver.org/).
 
+## [0.17.3] — 2026-10-11 — Reports whose headline is not news no longer spoil stories
+
+### Fixed
+- **Headings such as "Flaş", "Kısa haberler" ("Short news") and "Morning update" no longer turn stories into a dumping ground.** Story matching looks at the headline only, so reports whose headline carries no news look almost identical to each other and chain together. On real data one story (117) had collected 176 reports over two weeks: DHA's flash reports headed only "Flaş", Independent Türkçe's "Kısa haberler", Middle East Eye's "Morning update", the NYT's "Here's the latest." and the like were all in one story with unrelated news. The new rule: **(1)** when the headline is only a label ("Flaş", "Son dakika //2//") the report itself is at the start of the summary, so **the first sentence of the summary** (the place/agency line removed) is embedded and the report joins its real story; **(2)** a heading of at most 3 words that the same source has written at least 3 times in 30 days, over a long round-up summary or none (morning round-ups, "Here's the latest."), **joins no story**. After the update the affected reports of the last 72 hours are matched again once; what you placed by hand stays, and older stories are not changed.
+- Measured (real data, last 72 hours): only 35 of 16,688 reports are affected (25 are matched by their summary, 10 stay on their own). Of DHA's 19 "Flaş" reports, 17 were in the dumping-ground story; matched by summary, the nearest real report was mostly the right event (the Göktaş fund statement, the Güllü case, the Bahçeli–İmralı meeting, Montella, the TFF resignations, the Manisa accident). Similarity came out 0.64–0.86; at the 0.8 threshold some start a story of their own (better than joining the dumping ground). The measurement was made on a copy of the database only; the new rule's result should be watched in use.
+- Known limit: the rule cannot tell that a heading repeats until it has seen it twice; the first two reports of a heading are matched by headline as before (from the third on the rule applies). Real news with longer headlines (even if published again) is not affected.
+
 ## [0.17.2] — 2026-10-06 — Clicking a notification could freeze the program: fixed
 
 ### Fixed
