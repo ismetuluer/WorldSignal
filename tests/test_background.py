@@ -462,3 +462,23 @@ def test_wait_for_exit_returns_when_the_process_ends():
     assert proc.poll() is not None or proc.wait(timeout=1) == 0
     assert time.monotonic() - t0 < 5
     wait_for_exit(999_999_999, timeout=1)  # unknown process: returns at once
+
+
+def test_a_breaking_report_headed_only_by_its_label_is_announced_by_its_summary(db, sources, articles, notifier):
+    from test_stories import seed_with_summary
+
+    seed_articles(db, sources, articles, [("alpha", "z0", "Unrelated", 900)])  # creates the third source
+    seed_with_summary(db, sources, articles, [
+        ("alpha", "d0", "Flaş", "ANKARA, (DHA)- İçişleri Bakanlığı Başakşehir için müfettiş görevlendirdi", 10),
+        ("beta", "d1", "Başakşehir'deki olay", "", 9),
+        ("gamma-live", "d2", "Müfettiş görevlendirildi", "", 8),
+    ])
+    stories = StoryRepository(db)
+    ids = {r["url"].rsplit("/", 1)[1]: r["id"] for r in db.conn.execute("SELECT id, url FROM articles")}
+    sid = stories.assign(ids["d0"], None, similarity=1.0)
+    stories.assign(ids["d1"], sid, similarity=0.9)
+    stories.assign(ids["d2"], sid, similarity=0.9)
+    with db.transaction() as c:
+        c.execute("UPDATE stories SET last_seen_at = ? WHERE id = ?", (NOW.strftime("%Y-%m-%dT%H:%M:%SZ"), sid))
+    alert = notifier.check()
+    assert alert.title == "Son dakika" and alert.body == "İçişleri Bakanlığı Başakşehir için müfettiş görevlendirdi"

@@ -3,6 +3,15 @@
 Sürüm numaraları [Anlamsal Sürümleme](https://semver.org/lang/tr/) izler. 1.0'a kadar her faz bir ara sürümdür.
 İngilizcesi (0.10.0'dan itibaren): [CHANGELOG.en.md](CHANGELOG.en.md).
 
+## [0.17.4] — 2026-10-13 — Eklenti kendi kendine iyileşir; son dakika bildirimi başlığı gösteriyor
+
+### Eklendi
+- **Eklenti sustuğunda ayrı profildeki tarayıcı yeniden başlatılır.** 12 Ekim'de eklenti 14:41'de sustu ve siz yenileyene kadar (yaklaşık 23 saat) hiçbir sayfa okunmadı; tarayıcı açıktı (program profilin açık olduğunu görüp başlatmadı) ama eklenti sorgulamayı bırakmıştı. Artık eklenti, kendisine söylenen bekleme süresinin çok ötesinde ve en az 30 dakika sessiz kalırsa ve ayrı profilin tarayıcısı açıksa program o tarayıcıyı kapatıp pencere açmadan yeniden başlatır (günde en çok saatte bir, eklenti geri gelmezse üç kez; sonrasında kenar çubuğundaki uyarı kalır). **Yalnızca World Signal'in kendi profili için** yapılır (günlük tarayıcınıza asla dokunulmaz) ve o profilde ekranda açık, küçültülmemiş bir pencere varsa (siz kullanıyorsanız) bırakılır. Ayar: Ayarlar → Tam metin → tarayıcıyı programın başlatması açıksa çalışır. Günlükte "restarting the browser" satırı görünür.
+- **Eklenti 0.16.1:** takılan bir tur 10 dakika sonra sıfırlanır (eskiden bir istek ya da sayfa hiç dönmezse eklenti sonsuza dek "meşgul" kalıp sonraki turları atlıyordu; bu, sessizliğin olası nedenlerinden biriydi, kesin neden bilinmiyor). Eklenti değiştiği için tarayıcıda bir kez **Yenile** gerekir; Ayarlar eski sürümü uyarır.
+
+### Düzeltildi
+- **Başlığı yalnızca "Flaş" olan son dakika haberlerinin Windows bildiriminde artık haberin kendisi yazıyor.** DHA gibi ajanslar flaş haberlerinin başlığına yalnızca etiketi ("Flaş") yazıp haberi özetin başına koyuyor; bildirim bu yüzden sadece "Flaş" diyordu. Başlık yalnızca bir etiketse bildirimde özetin ilk cümlesi (şehir/ajans satırı atılarak) gösterilir. Başlığı olan haberlerde değişiklik yok.
+
 ## [0.17.3] — 2026-10-11 — Başlığı haber olmayan kayıtlar hikâyeleri bozmuyor
 
 ### Düzeltildi

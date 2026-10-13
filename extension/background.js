@@ -1,6 +1,9 @@
 import { call, closeOpened, findProgram, readPage, readingPlan, tick } from "./lib.js";
 
-const state = { port: null, busy: false };
+const state = { port: null, busy: false, busyAt: 0 };
+// A round that has not ended after this long is stuck (a request or a page that never answers): the next alarm starts a
+// new one instead of finding the extension busy for good.
+const BUSY_MAX_MS = 10 * 60 * 1000;
 
 // Every round the program proves again that it holds the pairing code (the port found last time is asked first), so
 // the key never goes to whatever took over a port after the program stopped.
@@ -37,8 +40,9 @@ async function read(url) {
 }
 
 async function round() {
-  if (state.busy) return;
+  if (state.busy && Date.now() - state.busyAt < BUSY_MAX_MS) return;
   state.busy = true;
+  state.busyAt = Date.now();
   let wait = 60;
   try {
     await closeStaleReading();

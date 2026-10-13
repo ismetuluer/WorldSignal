@@ -20,6 +20,7 @@ from typing import Any
 from .db import Database, utc_now_iso
 from .flags import MARKER_WINDOW, strip_breaking_marker
 from .repo.settings import SettingsRepository
+from .stories.embedding import is_label_only, lead_text
 
 log = logging.getLogger(__name__)
 
@@ -126,6 +127,9 @@ class Notifier:
                       (SELECT ab.title FROM story_articles sb JOIN articles ab ON ab.id = sb.article_id
                         WHERE sb.story_id = st.id AND ab.sort_at >= :marker AND ws_breaking(ab.title)
                         ORDER BY ab.sort_at DESC LIMIT 1) AS headline,
+                      (SELECT ab.summary FROM story_articles sb JOIN articles ab ON ab.id = sb.article_id
+                        WHERE sb.story_id = st.id AND ab.sort_at >= :marker AND ws_breaking(ab.title)
+                        ORDER BY ab.sort_at DESC LIMIT 1) AS headline_summary,
                       (SELECT COUNT(DISTINCT COALESCE(NULLIF(s2.owner, ''), s2.slug))
                          FROM story_articles sa2 JOIN articles a2 ON a2.id = sa2.article_id
                          JOIN sources s2 ON s2.id = a2.source_id
@@ -140,9 +144,18 @@ class Notifier:
         need = int(prefs["notify.breaking_min_sources"])
         return [dict(r) for r in rows if r["headline"] and r["owners"] >= need]
 
+    @staticmethod
+    def _breaking_headline(story: dict[str, Any]) -> str:
+        """The labelled report's headline without the label. Some agencies (DHA's "Flaş") write only the label as the
+        headline and the report itself in the summary: then the start of the summary is what the notification says."""
+        title = strip_breaking_marker(story["headline"])
+        if is_label_only(title):
+            return lead_text(story.get("headline_summary") or "") or title
+        return title
+
     def build_breaking(self, stories: list[dict[str, Any]], lang: str) -> Alert:
         text = TEXTS.get(lang, TEXTS["tr"])
-        top = strip_breaking_marker(stories[0]["headline"])
+        top = self._breaking_headline(stories[0])
         if len(stories) == 1:
             return Alert(text["breaking"], top, stories[0]["id"])
         return Alert(text["breaking_many"].format(count=len(stories)),

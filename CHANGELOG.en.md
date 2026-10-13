@@ -3,6 +3,15 @@
 English version of [CHANGELOG.md](CHANGELOG.md), from 0.10.0 on. Version numbers follow
 [Semantic Versioning](https://semver.org/).
 
+## [0.17.4] — 2026-10-13 — The extension heals itself; the breaking-news notification shows a headline
+
+### Added
+- **When the extension goes silent, the browser of the own profile is restarted.** On 12 October the extension went silent at 14:41 and nothing was read until you pressed Reload (about 23 hours later); the browser was open (the program saw the profile open and did not start it) but the extension had stopped asking. Now, if the extension has been silent for far longer than the wait it was told to keep and for at least 30 minutes, and the own profile's browser is open, the program ends that browser and starts it again without a window (at most once an hour, and three times if the extension does not come back; after that the sidebar warning is all there is). It is done **only for World Signal's own profile** (your everyday browser is never touched) and is left alone if that profile has a window open on the screen that is not minimized (you are using it). It runs when Settings → Full text → let the program start the browser is on. The log shows a "restarting the browser" line.
+- **Extension 0.16.1:** a stuck round is reset after 10 minutes (before, if a request or a page never came back, the extension stayed "busy" for good and skipped the later rounds; this is one possible cause of the silence, the exact cause is not known). Because the extension changed, press **Reload** once in the browser; Settings warns about the old version.
+
+### Fixed
+- **The Windows notification for a breaking report whose headline is only "Flaş" now says what the report is.** Agencies such as DHA write only the label ("Flaş") as the headline of their flash reports and put the report itself at the start of the summary; the notification therefore said just "Flaş". When the headline is only a label, the notification now shows the first sentence of the summary (the place/agency line removed). Reports that have a headline are unchanged.
+
 ## [0.17.3] — 2026-10-11 — Reports whose headline is not news no longer spoil stories
 
 ### Fixed

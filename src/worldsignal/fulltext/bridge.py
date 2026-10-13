@@ -34,7 +34,7 @@ log = logging.getLogger(__name__)
 LEASE = timedelta(minutes=5)
 # The version of the shipped extension (extension/manifest.json). Bumped only when the extension itself changes, so a
 # program update that leaves the extension alone does not ask the user to press Reload.
-EXTENSION_VERSION = "0.16.0"
+EXTENSION_VERSION = "0.16.1"
 METHOD = "extension"  # article_fulltext.method for everything this reader stores, text or failure
 # The extension counts as connected while it keeps to the wait it was handed (plus this much slack: alarms are not
 # exact); the user is warned only after a longer silence, and not before the program has run this long.
@@ -53,6 +53,12 @@ VERSION_PATTERN = re.compile(r"[0-9]{1,4}(\.[0-9]{1,4}){0,3}")
 MAX_BACKOFF_STEPS = 10  # 1 minute * 2**10 is far beyond the 30 minute cap
 SILENT_LAUNCH = timedelta(minutes=10)  # the extension has been silent this long: the browser may be closed
 LAUNCH_EVERY = timedelta(minutes=30)
+# The own profile's browser runs but the extension has said nothing for this long (its loop stuck, or the browser
+# turned it off): the browser is ended and started again, at most once an hour and three times without the
+# extension coming back (then the warning in the sidebar is all there is left).
+SILENT_RESTART = timedelta(minutes=30)
+RESTART_EVERY = timedelta(hours=1)
+MAX_RESTARTS = 3
 
 
 class UnknownLease(Exception):
@@ -103,6 +109,8 @@ class ExtensionBridge:
         self.extension_version: str | None = None  # as the extension last said (None: an old copy that says nothing)
         self.last_source: str | None = None
         self._launched_at: datetime | None = None
+        self._restarted_at: datetime | None = None
+        self._restarts = 0  # in a row, without the extension coming back
         self._day = ""
         self._read_today = 0
         self._cooldown: dict[int, tuple[int, datetime]] = {}  # source id -> (failures in a row, resting until)
@@ -285,13 +293,43 @@ class ExtensionBridge:
         start(browser.executable, profile)
         return True
 
+    def restart_if_stuck(self, find_browser: Callable[[str], Any], is_running: Callable[[Any, Any], bool],
+                         stop: Callable[[Any, Any], int], start: Callable[[Any, Any], None]) -> bool:
+        """The own profile's browser is open but the extension has been silent far longer than it was told to stay away:
+        end that browser and start it again. Only ever for the program's own profile (the everyday browser is the user's)."""
+        prefs = self.settings.get_preferences()
+        if (not prefs.get("fulltext.enabled", True) or not prefs.get("fulltext.launch_browser", True)
+                or prefs.get("extension.profile") != "own" or self.own_profile is None):
+            return False
+        now = self.clock()
+        if self.last_seen is not None and self._restarted_at is not None and self.last_seen > self._restarted_at:
+            self._restarts = 0  # it came back after the last restart
+        silent = now - (self.last_seen or self._started)
+        if silent < max(SILENT_RESTART, self._last_wait + CONNECTED_GRACE) or self._restarts >= MAX_RESTARTS:
+            return False
+        if self._restarted_at is not None and now - self._restarted_at < RESTART_EVERY:
+            return False
+        browser = find_browser(str(prefs.get("fulltext.browser_path") or ""))
+        if browser is None or not is_running(browser.executable, self.own_profile):
+            return False  # closed: ``launch_if_needed`` starts it
+        stopped = stop(browser.executable, self.own_profile)
+        if stopped <= 0:
+            return False  # nothing to end, or somebody has a window of it open: left alone
+        self._restarted_at = self._launched_at = now
+        self._restarts += 1
+        log.warning("The extension has been silent for %d minutes while its browser runs: restarting the browser (%d of %d)",
+                    silent.total_seconds() // 60, self._restarts, MAX_RESTARTS)
+        start(browser.executable, self.own_profile)
+        return True
+
     async def watch_forever(self) -> None:
         from .fetch import browser_for
-        from .launcher import is_running, start_hidden
+        from .launcher import is_running, start_hidden, stop_profile
 
         while True:
             try:
                 await asyncio.to_thread(self.launch_if_needed, browser_for, is_running, start_hidden)
+                await asyncio.to_thread(self.restart_if_stuck, browser_for, is_running, stop_profile, start_hidden)
             except Exception:
                 log.exception("Starting the browser for the extension failed")
             await asyncio.sleep(60)

@@ -96,3 +96,69 @@ def test_the_own_profile_is_started_on_its_own_folder_without_a_window(tmp_path)
 
 def test_is_running_with_a_profile_asks_the_profile_lock(tmp_path):
     assert not is_running(Path("brave.exe"), tmp_path)  # nobody holds the profile
+
+
+# -- the own profile's browser runs but the extension is silent: it is restarted ------------------------------------------
+def stuck_bridge(world, tmp_path):  # noqa: F811
+    world["settings"].set_many({"extension.profile": "own", "fulltext.enabled": True})
+    clock = Clock()
+    bridge = ExtensionBridge(world["repo"], world["settings"], resting=lambda: False, clock=clock, own_profile=tmp_path / "own")
+    bridge.last_seen = clock.now
+    bridge._last_wait = timedelta(seconds=60)
+    return bridge, clock, BrowserInfo("Brave", Path("brave.exe"), Path("profile"))
+
+
+def test_a_silent_extension_in_a_running_own_profile_gets_its_browser_restarted(world, tmp_path):  # noqa: F811
+    bridge, clock, brave = stuck_bridge(world, tmp_path)
+    stopped, started = [], []
+    restart = lambda: bridge.restart_if_stuck(lambda p: brave, lambda exe, profile: True,  # noqa: E731
+                                              lambda exe, profile: stopped.append(profile) or 4,
+                                              lambda exe, profile: started.append(profile))
+    clock.now += timedelta(minutes=29)
+    assert not restart()  # silent, but not for long enough
+    clock.now += timedelta(minutes=2)
+    assert restart() and stopped == [tmp_path / "own"] and started == [tmp_path / "own"]
+    clock.now += timedelta(minutes=40)
+    assert not restart()  # at most once an hour
+    clock.now += timedelta(minutes=30)
+    assert restart() and bridge._restarts == 2
+    bridge.last_seen = clock.now + timedelta(minutes=1)  # it came back
+    clock.now += timedelta(hours=2)
+    bridge.last_seen = clock.now - timedelta(minutes=1)
+    assert not restart() and bridge._restarts == 0  # talking: nothing to do, and the count starts over
+
+
+def test_the_restarts_stop_after_three_without_the_extension_coming_back(world, tmp_path):  # noqa: F811
+    bridge, clock, brave = stuck_bridge(world, tmp_path)
+    calls = []
+    for _ in range(5):
+        clock.now += timedelta(hours=2)
+        calls.append(bridge.restart_if_stuck(lambda p: brave, lambda exe, profile: True, lambda exe, profile: 3, lambda exe, profile: None))
+    assert calls == [True, True, True, False, False]
+
+
+def test_nothing_is_restarted_for_the_everyday_browser_a_closed_profile_or_a_window_in_use(world, tmp_path):  # noqa: F811
+    bridge, clock, brave = stuck_bridge(world, tmp_path)
+    clock.now += timedelta(hours=2)
+    never = lambda exe, profile: (_ for _ in ()).throw(AssertionError("must not stop or start"))  # noqa: E731
+    world["settings"].set("extension.profile", "daily")
+    assert not bridge.restart_if_stuck(lambda p: brave, lambda exe, profile: True, never, never)  # the user's own browser
+    world["settings"].set("extension.profile", "own")
+    assert not bridge.restart_if_stuck(lambda p: brave, lambda exe, profile: False, never, never)  # closed: launch_if_needed's job
+    assert not bridge.restart_if_stuck(lambda p: brave, lambda exe, profile: True, lambda exe, profile: -1, never)  # a window is open
+    assert bridge._restarts == 0
+    world["settings"].set("fulltext.launch_browser", False)
+    assert not bridge.restart_if_stuck(lambda p: brave, lambda exe, profile: True, never, never)
+
+
+def test_stop_profile_ends_only_the_processes_of_that_profile_and_leaves_a_window_in_use(tmp_path):
+    from worldsignal.fulltext.launcher import stop_profile
+
+    killed = []
+    run = lambda cmd, **k: killed.append(cmd[-1])  # noqa: E731
+    assert stop_profile(Path("brave.exe"), tmp_path, run=run, pids_of=lambda e, p: [11, 12], visible=lambda pids: False) == 2
+    assert killed == ["11", "12"]
+    killed.clear()
+    assert stop_profile(Path("brave.exe"), tmp_path, run=run, pids_of=lambda e, p: [11], visible=lambda pids: True) == -1
+    assert stop_profile(Path("brave.exe"), tmp_path, run=run, pids_of=lambda e, p: [], visible=lambda pids: False) == 0
+    assert killed == []
